@@ -361,3 +361,20 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# SQLite local (no queremos versionar la DB local de dev)
+*.db
+*.sqlite
+*.sqlite3
+
+# Archivos de secretos de usuario (dotnet user-secrets)
+secrets.json
+
+# Archivos de publicación de IIS / perfiles locales
+Properties/PublishProfiles/
+
+# Logs de la app
+*.log
+
+# Archivos de Docker que no quieras versionar (si los generás con VS)
+docker-compose.override.yml
