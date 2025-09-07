@@ -1,0 +1,122 @@
+﻿@page "{jugadorId:int}/{partidoId:int}"
+@model SandStats.Pages.Estadisticas.CargarK2Model
+@using SandStats.Models
+
+@{
+    ViewData["Title"] = "Cargar K2";
+
+    var filas = new[]
+    {
+        new { Titulo = "Puntos jugados en K2", Fuente = FuenteK2.PuntosJugados },
+        new { Titulo = "Saques FLOTA­DOS",     Fuente = FuenteK2.SaqueFlotado },
+        new { Titulo = "Saques POTENCIA",      Fuente = FuenteK2.SaquePotencia },
+        new { Titulo = "Bloqueos ATQ a 1",     Fuente = FuenteK2.BloqueoAtqA1 },
+        new { Titulo = "Bloqueos ATQ a 6",     Fuente = FuenteK2.BloqueoAtqA6 },
+        new { Titulo = "Bloqueos ATQ a 5",     Fuente = FuenteK2.BloqueoAtqA5 },
+    };
+
+    var cols = new[]
+    {
+        new { Simbolo = "#", Key = ResultadoK2.DoblePositivo, Css="col-hash"},
+        new { Simbolo = "+", Key = ResultadoK2.Positivo,      Css="col-plus"},
+        new { Simbolo = "-", Key = ResultadoK2.Negativo,      Css="col-minus"},
+        new { Simbolo = "=", Key = ResultadoK2.DobleNegativo, Css="col-eq"}
+    };
+}
+
+@section Styles {
+    <style>
+        .table-wrap {
+            max-height: 72vh;
+            overflow: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            background: #fff
+        }
+
+        th, td {
+            white-space: nowrap
+        }
+
+        .col-hash input {
+            background: #E7F0FF !important
+        }
+
+        .col-plus input {
+            background: #EAF7EA !important
+        }
+
+        .col-minus input {
+            background: #FFF7D6 !important
+        }
+
+        .col-eq input {
+            background: #FFE9E7 !important
+        }
+
+        .table input.form-control {
+            padding: .25rem .4rem;
+            font-size: .9rem;
+            text-align: center
+        }
+
+            .table input.form-control:focus {
+                box-shadow: 0 0 0 .15rem rgba(0,0,0,.05)
+            }
+    </style>
+}
+
+<h2 class="text-center mb-2">CARGA DE K2 – <strong>@Model.Jugador?.NombreCompleto</strong></h2>
+<h6 class="text-center text-muted mb-4">@Model.PartidoDescripcion</h6>
+
+<form method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="JugadorId" />
+    <input type="hidden" asp-for="PartidoId" />
+
+    <div class="table-wrap mb-3">
+        <table class="table table-bordered table-sm align-middle text-center" style="min-width:900px">
+            <thead>
+                <tr>
+                    <th class="text-start">Sección</th>
+                    @foreach (var c in cols)
+                    {
+                        <th class="@c.Css fw-semibold">@c.Simbolo</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var f in filas)
+                {
+                    <tr>
+                        <td class="text-start fw-semibold">@f.Titulo</td>
+                        @foreach (var c in cols)
+                        {
+                            <td class="@c.Css">
+                                <input type="number" min="0" value="0"
+                                       name="K2[@f.Fuente][@c.Key]"
+                                       class="form-control form-control-sm" />
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="row mt-2 g-3 small">
+        
+        <div class="col-auto">
+            Errores varios:
+            <input type="number" min="0" value="0" name="Extras[ErroresVarios]" class="form-control form-control-sm d-inline-block" style="width:80px" />
+        </div>
+        <div class="col-auto">
+            Agregados:
+            <input type="number" min="0" value="0" name="Extras[Agregados]" class="form-control form-control-sm d-inline-block" style="width:80px" />
+        </div>
+    </div>
+
+    <div class="text-center mt-3">
+        <button type="submit" class="btn btn-success px-4 text-uppercase">💾 Guardar K2</button>
+    </div>
+</form>

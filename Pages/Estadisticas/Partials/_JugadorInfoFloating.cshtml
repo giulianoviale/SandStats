@@ -1,0 +1,102 @@
+﻿@* Cuadro flotante: nombre / rol / posición *@
+<style>
+    .player-float {
+        position: fixed;
+        left: 14px;
+        top: 32vh;
+        z-index: 1000;
+        min-width: 180px;
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 6px 14px rgba(0,0,0,.08);
+        border: 1px solid rgba(0,0,0,.05);
+        padding: .65rem .75rem
+    }
+
+        .player-float .pf-name {
+            font-weight: 700;
+            margin-bottom: .25rem
+        }
+
+        .player-float .pf-row {
+            font-size: .9rem;
+            color: #6c757d;
+            line-height: 1.1
+        }
+</style>
+
+<div id="playerInfoFloating" class="player-float" aria-live="polite">
+    <div class="pf-name" id="pfName">—</div>
+    <div class="pf-row">Rol: <span id="pfRol">—</span></div>
+    <div class="pf-row">Posición: <span id="pfPos">—</span></div>
+</div>
+
+<script>
+    (function(){
+      const rolText=(n)=> n===4 ? "4" : (n===2 ? "2" : "—");
+
+      function init(){
+        const box=document.getElementById("playerInfoFloating");
+        if(!box) return;
+
+        const nameEl=document.getElementById("pfName");
+        const rolEl=document.getElementById("pfRol");
+        const posEl=document.getElementById("pfPos");
+
+        const sections=[...document.querySelectorAll(".player-section")];
+        if(!sections.length){
+          // Aún no están montadas; reintento en el próximo frame
+          requestAnimationFrame(init);
+          return;
+        }
+
+        const apply=(el)=>{
+          if(!el) return;
+          nameEl.textContent=el.dataset.nombre||"—";
+          const r=Number(el.dataset.rol||0);
+          rolEl.textContent=rolText(r);
+          posEl.textContent=el.dataset.pos||"—";
+        };
+
+        // IntersectionObserver para cambiar con el scroll
+        const io=new IntersectionObserver((entries)=>{
+          const visible=entries.filter(e=>e.isIntersecting)
+                               .sort((a,b)=>b.intersectionRatio-a.intersectionRatio)[0];
+          if(visible) apply(visible.target);
+        },{
+          root:null,
+          threshold:[0.15,0.35,0.55,0.75],
+          rootMargin:"-30% 0px -40% 0px"
+        });
+
+        sections.forEach(s=>io.observe(s));
+
+        // Fallback por centro de viewport (cuando hay saltos bruscos)
+        const pickActive=()=>{
+          const mid=window.scrollY+window.innerHeight/2;
+          let best=null,d=Infinity;
+          for(const s of sections){
+            const r=s.getBoundingClientRect();
+            const c=r.top+window.scrollY+r.height/2;
+            const delta=Math.abs(c-mid);
+            if(delta<d){d=delta;best=s;}
+          }
+          apply(best);
+        };
+        window.addEventListener("scroll",()=>{
+          if(window.__pfTick) return;
+          window.__pfTick=true;
+          requestAnimationFrame(()=>{ window.__pfTick=false; pickActive(); });
+        },{passive:true});
+
+        // Primera carga
+        apply(sections[0]);
+      }
+
+      if(document.readyState==="loading"){
+        document.addEventListener("DOMContentLoaded",init);
+      }else{
+        init();
+      }
+    })();
+</script>

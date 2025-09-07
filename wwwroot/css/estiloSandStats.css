@@ -1,0 +1,140 @@
+﻿/* ====== SandStats UI patterns ====== */
+
+.titulo-seccion {
+    font-weight: 700;
+    color: var(--bs-primary);
+    margin-bottom: 2rem;
+    text-transform: uppercase;
+}
+
+.info-card {
+    background-color: #f8f9fa;
+    border-left: 5px solid var(--bs-primary);
+    padding: 1rem;
+}
+
+.titulo-dupla {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    font-weight: 700;
+    color: var(--bs-body-color);
+}
+
+.jugador-card {
+    border: 1px solid #ddd;
+    border-left: 5px solid var(--bs-secondary, #6c757d);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    transition: transform 0.2s ease;
+}
+
+    .jugador-card:hover {
+        transform: scale(1.01);
+    }
+
+.jugador-nombre {
+    font-weight: 600;
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    color: #212529;
+}
+
+.btn {
+    text-transform: uppercase;
+}
+
+/* ===== Formularios ===== */
+.formulario-sandstats {
+    max-width: 600px;
+    margin: 0 auto;
+    background-color: #fdfdfd;
+    padding: 2rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.10);
+}
+
+    .formulario-sandstats h2 {
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        color: var(--bs-primary);
+    }
+
+    .formulario-sandstats label {
+        font-weight: 500;
+        margin-bottom: .5rem;
+        display: block;
+    }
+
+    .formulario-sandstats input[type="text"],
+    .formulario-sandstats input[type="number"],
+    .formulario-sandstats input[type="date"],
+    .formulario-sandstats select,
+    .formulario-sandstats textarea {
+        width: 100%;
+        padding: .5rem;
+        border: 1px solid #ced4da;
+        border-radius: .375rem;
+        margin-bottom: 1rem;
+        transition: border-color .2s, box-shadow .2s;
+    }
+
+        .formulario-sandstats input:focus,
+        .formulario-sandstats select:focus,
+        .formulario-sandstats textarea:focus {
+            border-color: var(--bs-primary);
+            box-shadow: 0 0 0 .2rem rgba(42,157,143,.15);
+            outline: none;
+        }
+
+    .formulario-sandstats button {
+        width: 100%;
+        padding: .75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        border-radius: .375rem;
+    }
+
+    .formulario-sandstats .btn-primary {
+        background-color: var(--bs-primary);
+        border-color: var(--bs-primary);
+    }
+
+        .formulario-sandstats .btn-primary:hover {
+            background-color: var(--ss-primary-dark);
+            border-color: var(--ss-primary-dark);
+        }
+
+/* Espaciado entre secciones opcional */
+.form-section {
+    margin-top: 2rem;
+}
+
+/* Tablas */
+th {
+    background-color: #f8f9fa;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+td, th {
+    border: 1px solid #dee2e6;
+}
+
+.tabla-ataques {
+    overflow-x: auto;
+    max-height: 70vh;
+}
+
+/* Bandas por columnas (más suaves y según paleta) */
+.grupo-columna {
+    background-color: rgba(42,157,143,.08);
+}
+
+    .grupo-columna:nth-of-type(odd) {
+        background-color: rgba(15,23,42,.03);
+    }
+
+td input {
+    font-size: 1rem;
+    padding: 6px;
+}

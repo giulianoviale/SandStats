@@ -1,0 +1,495 @@
+﻿@page "{partidoId:int}"
+@model SandStats.Pages.Estadisticas.ResumenModel
+@using SandStats.Models
+
+<div class="container my-5">
+    <h2 class="text-primary mb-4 fw-bold">📊 Resumen de Partido</h2>
+
+    <!-- FILA SUPERIOR: Info (izq) + Observaciones/Video general (der) -->
+    <div class="row mb-5">
+        <!-- Info del partido -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title mb-3 fw-bold">Información del Partido</h5>
+                    <p><strong>Torneo:</strong> @Model.Partido.Torneo</p>
+                    <p><strong>Fecha:</strong> @Model.Partido.Fecha.ToShortDateString()</p>
+                    <p><strong>Duplas:</strong> @Model.Partido.Dupla1!.Alias vs @Model.Partido.Dupla2!.Alias</p>
+                    <p><strong>Resultado:</strong> @Model.Partido.Resultado</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Observaciones + Link de video general -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title fw-bold mb-0">📝 Observaciones & Video</h5>
+                        <small id="obsSavedAt" class="text-muted">—</small>
+                    </div>
+
+                    <form id="obsForm" method="post" class="mt-2"
+                          action="@Url.Page(null, "GuardarObservaciones", new { partidoId = Model.Partido.Id })">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="partidoId" value="@Model.Partido.Id" />
+
+                        <label for="Observaciones" class="form-label mb-1">Observaciones</label>
+                        <textarea class="form-control"
+                                  id="Observaciones"
+                                  name="observaciones"
+                                  rows="4"
+                                  maxlength="1000"
+                                  placeholder="Notas breves del partido...">@Model.Partido.Observaciones</textarea>
+
+                        <div class="d-flex justify-content-between align-items-center mt-1">
+                            <small class="text-muted"><span id="obsCount">0</span>/1000</small>
+                        </div>
+
+                        <div class="mt-3">
+                            <label for="VideoUrl" class="form-label mb-1">Link del Partido</label>
+                            <div class="input-group">
+                                <input type="url"
+                                       class="form-control"
+                                       id="VideoUrl"
+                                       name="videoUrl"
+                                       maxlength="2048"
+                                       placeholder="https://..."
+                                       value="@Model.Partido.VideoUrl" />
+                                @if (!string.IsNullOrWhiteSpace(Model.Partido.VideoUrl))
+                                {
+                                    <a class="btn btn-outline-secondary" target="_blank" rel="noopener"
+                                       href="@Model.Partido.VideoUrl">Abrir</a>
+                                }
+                            </div>
+                            <small class="text-muted">Pegá la URL del video completo o del clip.</small>
+                        </div>
+
+                        <div class="d-flex justify-content-end align-items-center gap-2 mt-3">
+                            <span id="obsStatus" class="text-muted">—</span>
+                            <button type="submit" class="btn btn-sm btn-primary">Guardar</button>
+                        </div>
+                    </form>
+
+                    @* Preview embebido si es soportado *@
+                    @{
+                        var embed = Model.TryGetEmbedUrl(Model.Partido.VideoUrl);
+                        if (!string.IsNullOrEmpty(embed))
+                        {
+                            <div class="ratio ratio-16x9 mt-3">
+                                <iframe src="@embed" allowfullscreen title="Video del partido" loading="lazy"></iframe>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @foreach (var dupla in Model.DuplasDelPartido)
+    {
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h4 class="mb-0 text-secondary">🏐 @dupla.Alias</h4>
+
+            <div class="btn-group">
+                <a class="btn btn-outline-primary btn-sm @(Model.DuplaTieneDatosEnEstePartido(dupla) ? "" : "disabled")"
+                   asp-page="/Estadisticas/ReporteDupla"
+                   asp-route-duplaId="@dupla.Id"
+                   asp-route-partidoIds="@Model.Partido.Id">
+                    📈 Reporte (este partido)
+                </a>
+
+                <button type="button"
+                        class="btn btn-primary btn-sm @(Model.PartidosPorDupla.TryGetValue(dupla.Id, out var _list) && _list.Any() ? "" : "disabled")"
+                        data-bs-toggle="modal"
+                        data-bs-target="#reporteDuplaModal-@dupla.Id">
+                    Acumulado…
+                </button>
+            </div>
+        </div>
+
+        <!-- Modal selección de partidos para la dupla -->
+        <div class="modal fade" id="reporteDuplaModal-@dupla.Id" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Reporte acumulado — @dupla.Alias</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form method="get" asp-page="/Estadisticas/ReporteDupla">
+                            <input type="hidden" name="duplaId" value="@dupla.Id" />
+
+                            <div class="row">
+                                <div class="col-12">
+                                    <p class="text-muted mb-2">Seleccioná 1 o más partidos para incluir.</p>
+                                    <div class="list-group" style="max-height: 40vh; overflow:auto;">
+                                        @foreach (var p in Model.PartidosPorDupla[dupla.Id])
+                                        {
+                                            var esActual = p.Id == Model.Partido.Id;
+                                            <label class="list-group-item d-flex align-items-center gap-2">
+                                                <input class="form-check-input" type="checkbox" name="partidoIds" value="@p.Id" @(esActual ? "checked" : "") />
+                                                <span class="small">
+                                                    <strong>@p.Fecha.ToShortDateString()</strong> — @p.Torneo —
+                                                    @p.Dupla1!.Alias vs @p.Dupla2!.Alias — @p.Resultado
+                                                    @(esActual ? " (este)" : "")
+                                                </span>
+                                            </label>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr class="my-3" />
+
+                            <div class="row g-3">
+                                <div class="col-sm-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="true" id="incluyeCierre-@dupla.Id" name="incluirCierre">
+                                        <label class="form-check-label" for="incluyeCierre-@dupla.Id">Incluir cierres de set</label>
+                                    </div>
+                                </div>
+                                <div class="col-sm-4">
+                                    <label class="form-label">Set</label>
+                                    <select class="form-select form-select-sm" name="setNumero">
+                                        <option value="">Todos</option>
+                                        <option value="1">Set 1</option>
+                                        <option value="2">Set 2</option>
+                                        <option value="3">Set 3 (tie-break)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 d-flex justify-content-end gap-2">
+                                <button class="btn btn-primary" type="submit">Ver reporte</button>
+                                <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancelar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-5">
+            @foreach (var jugador in new[] { dupla.Jugador1!, dupla.Jugador2! })
+            {
+                var links = Model.VideoLinksPorJugador.TryGetValue(jugador.Id, out var vl) ? vl : null;
+
+                <div class="col-md-6">
+                    <div class="card h-100 shadow-sm border-0 rounded-4">
+                        <div class="card-body">
+                            <h5 class="card-title fw-semibold text-dark">@jugador.NombreCompleto</h5>
+
+                            <!-- ===== Badges compactos ===== -->
+                            <div class="mb-2 d-flex flex-wrap gap-2 align-items-center">
+                                @* ATAQUE *@
+                                @if (Model.TieneAtaqueCompleto(jugador.Id))
+                                {
+                                    <span class="badge text-bg-success">Ataque — Completo ✅</span>
+                                }
+                                else
+                                {
+                                    <span class="badge text-bg-secondary">Ataque — Completo (sin cargar)</span>
+                                }
+                                @{
+                                    var cierreAtaque = new List<string>();
+                                    for (int s = 1; s <= Model.SetsJugados; s++)
+                                        cierreAtaque.Add($"S{s} {(Model.TieneAtaqueCierre(jugador.Id, s) ? "✅" : "—")}");
+                                }
+                                <span class="badge text-bg-secondary">Ataque — Cierre: @string.Join(" · ", cierreAtaque)</span>
+
+                                @* RECEPCIÓN *@
+                                @if (Model.TieneRecepcionCompleto(jugador.Id))
+                                {
+                                    <span class="badge text-bg-success ms-2">Recepción — Completo ✅</span>
+                                }
+                                else
+                                {
+                                    <span class="badge text-bg-secondary ms-2">Recepción — Completo (sin cargar)</span>
+                                }
+                                @{
+                                    var cierreRec = new List<string>();
+                                    for (int s = 1; s <= Model.SetsJugados; s++)
+                                        cierreRec.Add($"S{s} {(Model.TieneRecepcionCierre(jugador.Id, s) ? "✅" : "—")}");
+                                }
+                                <span class="badge text-bg-secondary">Recepción — Cierre: @string.Join(" · ", cierreRec)</span>
+
+                                @* K2 *@
+                                @if (Model.TieneK2Completo(jugador.Id))
+                                {
+                                    <span class="badge text-bg-success ms-2">K2 — Completo ✅</span>
+                                }
+                                else
+                                {
+                                    <span class="badge text-bg-secondary ms-2">K2 — Completo (sin cargar)</span>
+                                }
+                            </div>
+
+                            <!-- ===== Botones ===== -->
+                            <div class="d-flex flex-wrap gap-3 mt-3">
+                                @{
+                                    bool atkCompleto = Model.TieneAtaqueCompleto(jugador.Id);
+                                    string atkMainClass = atkCompleto ? "btn btn-primary btn-sm" : "btn btn-outline-primary btn-sm";
+                                    string atkSplitClass = atkCompleto ? "btn btn-primary btn-sm dropdown-toggle dropdown-toggle-split"
+                                    : "btn btn-outline-primary btn-sm dropdown-toggle dropdown-toggle-split";
+                                }
+                                <div class="btn-group">
+                                    @if (atkCompleto)
+                                    {
+                                        <a class="@atkMainClass"
+                                           asp-page="EditarAtaques"
+                                           asp-route-jugadorId="@jugador.Id"
+                                           asp-route-partidoId="@Model.Partido.Id">✏️ Editar Ataque (Completo)</a>
+                                    }
+                                    else
+                                    {
+                                        <a class="@atkMainClass"
+                                           asp-page="CargarAtaques"
+                                           asp-route-jugadorId="@jugador.Id"
+                                           asp-route-partidoId="@Model.Partido.Id">⚡ Cargar Ataque (Completo)</a>
+                                    }
+                                    <button type="button" class="@atkSplitClass" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Más acciones de cierre en Ataque">
+                                        <span class="visually-hidden">Toggle Dropdown</span>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        @for (int set = 1; set <= Model.SetsJugados; set++)
+                                        {
+                                            var existe = Model.TieneAtaqueCierre(jugador.Id, set);
+                                            var desde = SandStats.Pages.Estadisticas.ResumenModel.DesdePorDefecto(set);
+
+                                            if (existe)
+                                            {
+                                                <li>
+                                                    <a class="dropdown-item"
+                                                       asp-page="EditarAtaques"
+                                                       asp-route-jugadorId="@jugador.Id"
+                                                       asp-route-partidoId="@Model.Partido.Id"
+                                                       asp-route-Scope="Cierre"
+                                                       asp-route-SetNumero="@set"
+                                                       asp-route-DesdePunto="@desde">✏️ Editar Cierre Set @set ✅</a>
+                                                </li>
+                                            }
+                                            else
+                                            {
+                                                <li>
+                                                    <a class="dropdown-item"
+                                                       asp-page="CargarAtaques"
+                                                       asp-route-jugadorId="@jugador.Id"
+                                                       asp-route-partidoId="@Model.Partido.Id"
+                                                       asp-route-Scope="Cierre"
+                                                       asp-route-SetNumero="@set"
+                                                       asp-route-DesdePunto="@desde">⚡ Cargar Cierre Set @set —</a>
+                                                </li>
+                                            }
+                                        }
+                                    </ul>
+                                </div>
+
+                                @{
+                                    bool recCompleto = Model.TieneRecepcionCompleto(jugador.Id);
+                                    string recMainClass = recCompleto ? "btn btn-success btn-sm" : "btn btn-outline-primary btn-sm";
+                                    string recSplitClass = recCompleto ? "btn btn-success btn-sm dropdown-toggle dropdown-toggle-split"
+                                    : "btn btn-outline-primary btn-sm dropdown-toggle dropdown-toggle-split";
+                                }
+                                <div class="btn-group">
+                                    @if (recCompleto)
+                                    {
+                                        <a class="@recMainClass"
+                                           asp-page="EditarRecepciones"
+                                           asp-route-jugadorId="@jugador.Id"
+                                           asp-route-partidoId="@Model.Partido.Id">🛡️ Editar Recepción (Completo)</a>
+                                    }
+                                    else
+                                    {
+                                        <a class="@recMainClass"
+                                           asp-page="CargarRecepciones"
+                                           asp-route-jugadorId="@jugador.Id"
+                                           asp-route-partidoId="@Model.Partido.Id">🛡️ Cargar Recepción (Completo)</a>
+                                    }
+                                    <button type="button" class="@recSplitClass" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Más acciones de cierre en Recepción">
+                                        <span class="visually-hidden">Toggle Dropdown</span>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        @for (int set = 1; set <= Model.SetsJugados; set++)
+                                        {
+                                            var existeR = Model.TieneRecepcionCierre(jugador.Id, set);
+                                            var desdeR = SandStats.Pages.Estadisticas.ResumenModel.DesdePorDefecto(set);
+
+                                            if (existeR)
+                                            {
+                                                <li>
+                                                    <a class="dropdown-item"
+                                                       asp-page="EditarRecepciones"
+                                                       asp-route-jugadorId="@jugador.Id"
+                                                       asp-route-partidoId="@Model.Partido.Id"
+                                                       asp-route-Scope="Cierre"
+                                                       asp-route-SetNumero="@set"
+                                                       asp-route-DesdePunto="@desdeR">🛡️ Editar Cierre Set @set ✅</a>
+                                                </li>
+                                            }
+                                            else
+                                            {
+                                                <li>
+                                                    <a class="dropdown-item"
+                                                       asp-page="CargarRecepciones"
+                                                       asp-route-jugadorId="@jugador.Id"
+                                                       asp-route-partidoId="@Model.Partido.Id"
+                                                       asp-route-Scope="Cierre"
+                                                       asp-route-SetNumero="@set"
+                                                       asp-route-DesdePunto="@desdeR">🛡️ Cargar Cierre Set @set —</a>
+                                                </li>
+                                            }
+                                        }
+                                    </ul>
+                                </div>
+
+                                <div class="btn-group">
+                                    @if (Model.TieneK2Completo(jugador.Id))
+                                    {
+                                        <a class="btn btn-success btn-sm"
+                                           asp-page="EditarK2"
+                                           asp-route-jugadorId="@jugador.Id"
+                                           asp-route-partidoId="@Model.Partido.Id">🎯 Editar K2 (Completo)</a>
+                                    }
+                                    else
+                                    {
+                                        <a class="btn btn-outline-primary btn-sm"
+                                           asp-page="CargarK2"
+                                           asp-route-jugadorId="@jugador.Id"
+                                           asp-route-partidoId="@Model.Partido.Id">🎯 Cargar K2 (Completo)</a>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- ===== Links por jugador ===== -->
+                            <hr class="my-4" />
+                            <h6 class="fw-bold mb-2">🎬 Links por jugador</h6>
+
+                            <form class="links-form" method="post"
+                                  action="@Url.Page(null, "GuardarLinksJugador", new { partidoId = Model.Partido.Id })">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="partidoId" value="@Model.Partido.Id" />
+                                <input type="hidden" name="jugadorId" value="@jugador.Id" />
+
+                                <div class="mb-2">
+                                    <label class="form-label mb-1">Link K1</label>
+                                    <div class="input-group">
+                                        <input type="url" class="form-control" name="linkK1" maxlength="2048"
+                                               placeholder="https://..."
+                                               value="@links?.LinkK1" />
+                                        @if (!string.IsNullOrWhiteSpace(links?.LinkK1))
+                                        {
+                                            <a class="btn btn-outline-secondary" target="_blank" rel="noopener" href="@links!.LinkK1">Abrir</a>
+                                        }
+                                    </div>
+                                </div>
+
+                                <div class="mb-2">
+                                    <label class="form-label mb-1">Link K2</label>
+                                    <div class="input-group">
+                                        <input type="url" class="form-control" name="linkK2" maxlength="2048"
+                                               placeholder="https://..."
+                                               value="@links?.LinkK2" />
+                                        @if (!string.IsNullOrWhiteSpace(links?.LinkK2))
+                                        {
+                                            <a class="btn btn-outline-secondary" target="_blank" rel="noopener" href="@links!.LinkK2">Abrir</a>
+                                        }
+                                    </div>
+                                </div>
+
+                                <div class="mb-1">
+                                    <label class="form-label mb-1">Link Saque</label>
+                                    <div class="input-group">
+                                        <input type="url" class="form-control" name="linkSaque" maxlength="2048"
+                                               placeholder="https://..."
+                                               value="@links?.LinkSaque" />
+                                        @if (!string.IsNullOrWhiteSpace(links?.LinkSaque))
+                                        {
+                                            <a class="btn btn-outline-secondary" target="_blank" rel="noopener" href="@links!.LinkSaque">Abrir</a>
+                                        }
+                                    </div>
+                                </div>
+
+                                <div class="d-flex justify-content-end align-items-center gap-2 mt-2">
+                                    <small class="text-muted links-status">—</small>
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">Guardar</button>
+                                </div>
+                            </form>
+
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            // ===== Observaciones + Video general =====
+            const form = document.getElementById('obsForm');
+            if (form) {
+                const textarea = document.getElementById('Observaciones');
+                const videoInput = document.getElementById('VideoUrl');
+                const count = document.getElementById('obsCount');
+                const statusEl = document.getElementById('obsStatus');
+                const savedAtEl = document.getElementById('obsSavedAt');
+                const tokenInput = form.querySelector('input[name="__RequestVerificationToken"]');
+                const url = form.getAttribute('action');
+
+                const updateCount = () => { count.textContent = (textarea.value || '').length; };
+                updateCount();
+
+                let t; const debounce = (fn, d) => (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), d); };
+
+                async function save() {
+                    statusEl.textContent = 'Guardando…';
+                    try {
+                        const body = new URLSearchParams();
+                        body.set('partidoId', '@Model.Partido.Id');
+                        body.set('observaciones', textarea.value ?? '');
+                        body.set('videoUrl', videoInput.value ?? '');
+                        body.set('__RequestVerificationToken', tokenInput?.value || '');
+
+                        const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
+                        const data = await res.json();
+                        statusEl.textContent = data?.ok ? 'Guardado' : 'Error';
+                        if (data?.ok && data.savedAt) savedAtEl.textContent = 'Guardado ' + data.savedAt;
+                    } catch { statusEl.textContent = 'Error'; }
+                }
+                const saveDebounced = debounce(save, 800);
+                textarea.addEventListener('input', () => { updateCount(); saveDebounced(); });
+                videoInput.addEventListener('input', saveDebounced);
+                form.addEventListener('submit', ev => { ev.preventDefault(); save(); });
+            }
+
+            // ===== Links por jugador (autosave) =====
+            document.querySelectorAll('form.links-form').forEach(frm => {
+                const statusEl = frm.querySelector('.links-status');
+                const token = frm.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+                const url = frm.getAttribute('action');
+
+                let t; const debounce = (fn, d) => (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), d); };
+
+                async function saveLinks() {
+                    statusEl.textContent = 'Guardando…';
+                    try {
+                        const fd = new FormData(frm);
+                        fd.append('__RequestVerificationToken', token);
+                        const res = await fetch(url, { method: 'POST', body: new URLSearchParams(fd) });
+                        const data = await res.json();
+                        statusEl.textContent = data?.ok ? 'Guardado' : 'Error';
+                    } catch { statusEl.textContent = 'Error'; }
+                }
+                const saveDebounced = debounce(saveLinks, 700);
+
+                frm.querySelectorAll('input[type="url"]').forEach(inp => {
+                    inp.addEventListener('input', saveDebounced);
+                });
+
+                frm.addEventListener('submit', ev => { ev.preventDefault(); saveLinks(); });
+            });
+        })();
+    </script>
+}

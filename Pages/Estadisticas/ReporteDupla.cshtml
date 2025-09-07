@@ -1,0 +1,73 @@
+﻿@page
+@model SandStats.Pages.Estadisticas.ReporteDuplaModel
+@using SandStats.Models
+@using SandStats.Pages.Estadisticas
+@{
+    // helper para mostrar la posición como texto
+    Func<Jugador, string> PosTxt = j =>
+        j.Posicion == PosicionJugador.Bloqueador ? "Bloqueador" : "Defensor";
+}
+
+<!-- estilos globales del reporte (una sola vez) -->
+<partial name="Estadisticas/Partials/_ReporteStyles" />
+
+<div class="container my-4">
+    <!-- ====== Header ====== -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h3 class="mb-0">🧾 Reporte — @Model.Dupla.Alias</h3>
+        @if (Model.PartidoId.HasValue)
+        {
+            <a class="btn btn-outline-secondary btn-sm"
+               asp-page="/Estadisticas/Resumen"
+               asp-route-partidoId="@Model.PartidoId">⬅ Volver al partido</a>
+        }
+    </div>
+
+    <!-- ====== Subtítulo + lista de partidos ====== -->
+    @if (!string.IsNullOrWhiteSpace(Model.Subtitulo))
+    {
+        <p class="text-muted mb-1">
+            <a class="text-muted text-decoration-none" data-bs-toggle="collapse" href="#listaPartidosSel"
+               role="button" aria-expanded="false" aria-controls="listaPartidosSel">
+                @Model.Subtitulo <i class="bi bi-caret-down-fill ms-1"></i>
+            </a>
+        </p>
+        @if (Model.PartidosSeleccionados?.Any() == true)
+        {
+            <div class="collapse" id="listaPartidosSel">
+                <ul class="list-group list-group-flush mb-3">
+                    @foreach (var p in Model.PartidosSeleccionados)
+                    {
+                        <li class="list-group-item px-0">
+                            <span class="fw-semibold">@p.Fecha.ToShortDateString()</span> — @p.Torneo —
+                            @p.Dupla1!.Alias vs @p.Dupla2!.Alias — <span class="text-muted">@p.Resultado</span>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+    }
+
+    <!-- ====== Cuadro flotante que sigue el scroll ====== -->
+    <partial name="Estadisticas/Partials/_JugadorInfoFloating" />
+
+    <!-- ====== Jugador 1 ====== -->
+    <div class="player-section"
+         data-nombre="@Model.RepJ1.Jugador.NombreCompleto"
+         data-rol="@(Model.RepJ1.Ataque?.Rol ?? (Model.RepJ1.Jugador.RolPrincipal == RolJugador.Rol4 ? 4 : 2))"
+         data-pos="@(Model.RepJ1.Jugador.Posicion == PosicionJugador.Bloqueador ? "Bloqueador" : "Defensor")">
+        <partial name="Estadisticas/Partials/_JugadorCard"
+                 model="Model.RepJ1"
+                 view-data='new ViewDataDictionary(ViewData) { ["colorClass"] = "player-a" }' />
+    </div>
+
+    <!-- ====== Jugador 2 ====== -->
+    <div class="player-section"
+         data-nombre="@Model.RepJ2.Jugador.NombreCompleto"
+         data-rol="@(Model.RepJ2.Ataque?.Rol ?? (Model.RepJ2.Jugador.RolPrincipal == RolJugador.Rol4 ? 4 : 2))"
+         data-pos="@(Model.RepJ2.Jugador.Posicion == PosicionJugador.Bloqueador ? "Bloqueador" : "Defensor")">
+        <partial name="Estadisticas/Partials/_JugadorCard"
+                 model="Model.RepJ2"
+                 view-data='new ViewDataDictionary(ViewData) { ["colorClass"] = "player-b" }' />
+    </div>
+</div>

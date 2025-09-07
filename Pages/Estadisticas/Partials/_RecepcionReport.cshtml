@@ -1,0 +1,189 @@
+﻿@model SandStats.Pages.Estadisticas.RecepcionPlayerReport
+@using SandStats.Models.SandStats.Models
+
+@{
+    // === Helpers (si ya vienen de _ReporteHelpers, podés quitarlos) ===
+    string Pct(decimal d) => (d * 100m).ToString("0") + "%";
+    Func<decimal, string> EfClass = e => e >= 0.80m ? "ef-high" : (e >= 0.40m ? "ef-mid" : "ef-low");
+
+    var g = Model.General;                 // resumen general (suma flot+pot)
+    var tot = g.Totales;                   // DP, P, N, E del jugador
+    var totalJugador = tot.Total;
+    var totalEquipo = g.TotalEquipo;
+
+    // Orden de zonas 1-6-5
+    var zonasOrden = new[] { ZonaSaque.Zona1, ZonaSaque.Zona6, ZonaSaque.Zona5 };
+
+    // === Tabla por tipo con NUEVO ORDEN de columnas ===
+    Action<Dictionary<TipoRecepcion, SandStats.Pages.Estadisticas.RecCounts>> RenderTablaPorTipoOrdenNuevo = dict =>
+    {
+@:<div class="table-responsive">
+@:<table class="table table-sm table-bordered align-middle rec-table" style="min-width: 820px;">
+@:<thead>
+@:<tr>
+@:<th style="min-width:120px;">Tipo</th>
+@:<th class="text-center">Efect</th>
+@:<th class="text-center">%#</th>
+@:<th class="text-center">%+</th>
+@:<th class="text-center">%-</th>
+@:<th class="text-center">% =</th>
+@:<th class="text-center">TOTAL</th>
+@:<th class="text-center">#</th>
+@:<th class="text-center">+</th>
+@:<th class="text-center">-</th>
+@:<th class="text-center">=</th>
+@:</tr>
+@:</thead>
+@:<tbody>
+        var filas = new[]
+        {
+            (Label:"Adelante", K:TipoRecepcion.Adelante),
+            (Label:"Interno",  K:TipoRecepcion.Interno),
+            (Label:"Externo",  K:TipoRecepcion.Externo),
+            (Label:"Cuerpo",   K:TipoRecepcion.Cuerpo),
+        }
+        .Select(x => (x.Label, C: dict != null && dict.ContainsKey(x.K) ? dict[x.K] : new SandStats.Pages.Estadisticas.RecCounts()))
+        // antes:
+        // .OrderBy(x => x.C.Efect) // debilidades primero
+        .OrderBy(x => x.C.Efect)          // peor Efect primero
+        .ThenBy(x => x.C.PctDP)           // menor %# (doble positivo) peor -> arriba
+        .ThenBy(x => x.C.PctP)            // menor %+ peor -> arriba
+        .ThenByDescending(x => x.C.PctN)  // mayor %- peor -> arriba
+        .ThenByDescending(x => x.C.PctE)  // mayor %= peor -> arriba
+        .ThenBy(x => x.Label)    
+        .ToList();
+
+        foreach (var f in filas)
+        {
+            var c = f.C;
+@:<tr>
+@:<td>@f.Label</td>
+@:<td class="text-end fw-semibold @EfClass(c.Efect)">@Pct(c.Efect)</td>
+@:<td class="text-end">@Pct(c.PctDP)</td>
+@:<td class="text-end">@Pct(c.PctP)</td>
+@:<td class="text-end">@Pct(c.PctN)</td>
+@:<td class="text-end">@Pct(c.PctE)</td>
+@:<td class="text-end fw-semibold">@c.Total</td>
+@:<td class="text-end">@c.DP</td>
+@:<td class="text-end">@c.P</td>
+@:<td class="text-end">@c.N</td>
+@:<td class="text-end">@c.E</td>
+@:</tr>
+        }
+@:</tbody>
+@:</table>
+@:</div>
+    };
+
+    // === “Por zonas” sin card (se usa dentro de cada card) ===
+    Action<List<SandStats.Pages.Estadisticas.RecSector>> RenderSectoresSimple = lista =>
+    {
+        var dict = (lista ?? new List<SandStats.Pages.Estadisticas.RecSector>())
+                   .ToDictionary(s => s.Zona, s => s);
+
+@:<div class="row g-3">
+        foreach (var z in zonasOrden)
+        {
+            dict.TryGetValue(z, out var sec);
+            sec ??= new SandStats.Pages.Estadisticas.RecSector {
+                Zona = z, PorTipo = new Dictionary<TipoRecepcion, SandStats.Pages.Estadisticas.RecCounts>()
+            };
+@:<div class="col-12 col-lg-4">
+@:<div class="border rounded p-2 h-100">
+@:<div class="d-flex justify-content-between align-items-center mb-2">
+@:<div class="fw-semibold">Zona @((int)z)</div>
+@:<div class="text-muted small">Total: <strong>@sec.Total</strong> — <span class="fw-bold text-danger fs-5">@Pct(sec.PctSobreJugador)</span></div>
+@:</div>
+            RenderTablaPorTipoOrdenNuevo(sec.PorTipo);
+@:</div>
+@:</div>
+        }
+@:</div>
+    };
+}
+
+<!-- ======================== CARD 1: GENERAL ======================== -->
+<div class="card mb-4">
+  <div class="card-header fw-semibold">
+    Recepción — General (Flotados + Potencia)
+  </div>
+  <div class="card-body">
+
+    <!-- Grilla principal -->
+    <div class="table-responsive mb-3">
+      <table class="table table-sm table-bordered align-middle" style="min-width: 520px;">
+        <tbody>
+        <tr>
+            <th>% Rec recibida (jugador)</th>
+            <td class="text-end fw-semibold">@Pct(g.PctSobreEquipo)</td>
+          </tr>
+          <tr>
+            <th style="width:60%;">Cantidad pelotas <em>(equipo)</em></th>
+            <td class="text-end fw-semibold">@totalEquipo</td>
+          </tr>
+          <tr>
+            <th>Cantidad pelotas <em>(jugador)</em></th>
+            <td class="text-end fw-semibold">@totalJugador</td>
+          </tr>
+          <tr>
+            <th>Efectividad Rec Total</th>
+            <td class="text-end fw-semibold @EfClass(tot.Efect)">@Pct(tot.Efect)</td>
+          </tr>
+          
+          <tr><th>Cantidad #</th><td class="text-end">@tot.DP</td></tr>
+          <tr><th>Cantidad +</th><td class="text-end">@tot.P</td></tr>
+          <tr><th>Cantidad -</th><td class="text-end">@tot.N</td></tr>
+          <tr><th>Cantidad =</th><td class="text-end">@tot.E</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Tabla por tipo (suma flot+pot) -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <div class="fw-semibold">Suma Flotados + Potencia (por Tipo de Recepción)</div>
+      <span class="text-muted">Efect = (# + +) / Total</span>
+    </div>
+    @{ RenderTablaPorTipoOrdenNuevo(g.PorTipo); }
+
+    <!-- Por zonas (suma) -->
+    <h6 class="mt-3 mb-2">Por zonas (1–6–5) — Flotados + Potencia</h6>
+    @{ RenderSectoresSimple(g.Sectores); }
+
+  </div>
+</div>
+
+<!-- ======================= CARD 2: FLOTADOS ======================== -->
+<div class="card mb-4">
+  <div class="card-header fw-semibold">
+    Recepción — Saques FLOTADOS
+    <span class="text-muted float-end">Participación: @Pct(Model.Flotados.PctSobreJugador)</span>
+  </div>
+  <div class="card-body">
+
+    <!-- Tabla por tipo -->
+    @{ RenderTablaPorTipoOrdenNuevo(Model.Flotados.PorTipo); }
+
+    <!-- Por zonas (flotados) -->
+    <h6 class="mt-3 mb-2">Por zonas (1–6–5) — Flotados</h6>
+    @{ RenderSectoresSimple(Model.Flotados.Sectores); }
+
+  </div>
+</div>
+
+<!-- ======================= CARD 3: POTENCIA ======================== -->
+<div class="card mb-4">
+  <div class="card-header fw-semibold">
+    Recepción — Saques POTENCIA
+    <span class="text-muted float-end">Participación: @Pct(Model.Potencia.PctSobreJugador)</span>
+  </div>
+  <div class="card-body">
+
+    <!-- Tabla por tipo -->
+    @{ RenderTablaPorTipoOrdenNuevo(Model.Potencia.PorTipo); }
+
+    <!-- Por zonas (potencia) -->
+    <h6 class="mt-3 mb-2">Por zonas (1–6–5) — Potencia</h6>
+    @{ RenderSectoresSimple(Model.Potencia.Sectores); }
+
+  </div>
+</div>

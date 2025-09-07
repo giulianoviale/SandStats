@@ -1,0 +1,32 @@
+﻿@page "{id:int}"
+@model SandStats.Pages.Partidos.DeleteModel
+@{
+    ViewData["Title"] = "Eliminar Partido";
+}
+
+<div class="container mt-4">
+    <h2 class="mb-3 text-danger">¿Eliminar partido?</h2>
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-warning">@Model.ErrorMessage</div>
+    }
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <h5 class="card-title mb-2 fw-bold">@Model.Partido.Torneo</h5>
+            <p class="mb-1"><strong>Fecha:</strong> @Model.Partido.Fecha.ToShortDateString()</p>
+            <p class="mb-1"><strong>Duplas:</strong> @Model.Partido.Dupla1?.Alias vs @Model.Partido.Dupla2?.Alias</p>
+            <p class="mb-1"><strong>Resultado:</strong> @Model.Partido.Resultado</p>
+        </div>
+    </div>
+
+    <div class="alert alert-info">
+        Al eliminar este partido, se eliminarán también las estadísticas asociadas (Ataque, Recepción y K2).
+    </div>
+
+    <form method="post" asp-route-id="@Model.Partido.Id">
+        <button type="submit" class="btn btn-danger">Sí, eliminar</button>
+        <a class="btn btn-secondary ms-2" asp-page="./Index">Cancelar</a>
+    </form>
+</div>

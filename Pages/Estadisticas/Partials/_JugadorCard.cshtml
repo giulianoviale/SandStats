@@ -1,0 +1,24 @@
+﻿@model RecepcionPlayerReport
+@{
+    var colorClass = ViewData["colorClass"] as string ?? "player-a";
+}
+
+<div class="card shadow-sm mb-4 player-card @colorClass">
+    <div class="card-header fw-semibold d-flex align-items-center justify-content-between">
+        <span>@Model.Jugador.NombreCompleto  (@Model.Jugador.Posicion @Model.Jugador.RolPrincipal)</span>
+        <small class="text-muted">Resumen + zonas + flotados + potencia + ataque</small>
+    </div>
+
+    <div class="card-body">
+        <partial name="Estadisticas/Partials/_ReporteHelpers" />
+
+        <!-- Recepción -->
+        <partial name="Estadisticas/Partials/_RecepcionReport" model="Model" />
+
+        <!-- Ataque (una sola vez) -->
+        <partial name="Estadisticas/Partials/_AtaqueReport" model="Model.Ataque" />
+
+        <!-- K2 (único cuadro) -->
+        <partial name="Estadisticas/Partials/_K2Report" model="Model.K2" />
+    </div>
+</div>

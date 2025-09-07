@@ -1,0 +1,52 @@
+﻿@page
+@using SandStats.Models
+@model SandStats.Pages.Jugadores.CreateModel
+@{
+    ViewData["Title"] = "Crear Jugador";
+}
+
+<div class="container mt-4">
+    <h2 class="mb-4">Crear Nuevo Jugador</h2>
+
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+        <div class="mb-3">
+            <label asp-for="Jugador.Nombre" class="form-label"></label>
+            <input asp-for="Jugador.Nombre" class="form-control" />
+            <span asp-validation-for="Jugador.Nombre" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Jugador.Apellido" class="form-label"></label>
+            <input asp-for="Jugador.Apellido" class="form-control" />
+            <span asp-validation-for="Jugador.Apellido" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Jugador.RolPrincipal" class="form-label"></label>
+            <select asp-for="Jugador.RolPrincipal"
+                    asp-items="Html.GetEnumSelectList<RolJugador>()"
+                    class="form-select">
+            </select>
+            <span asp-validation-for="Jugador.RolPrincipal" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="Jugador.Posicion" class="form-label"></label>
+            <select asp-for="Jugador.Posicion"
+                    asp-items="Html.GetEnumSelectList<PosicionJugador>()"
+                    class="form-select">
+            </select>
+            <span asp-validation-for="Jugador.RolPrincipal" class="text-danger"></span>
+        </div>
+
+        <div class="mt-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary">GUARDAR JUGADOR</button>
+            <a asp-page="./Index" class="btn btn-secondary">Volver al listado</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

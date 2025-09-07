@@ -1,0 +1,172 @@
+﻿@page "{jugadorId:int}/{partidoId:int}"
+@model SandStats.Pages.Estadisticas.EditarRecepcionModel
+@using SandStats.Models
+@using SandStats.Models.SandStats.Models
+
+@if (Model.Scope == ScopeEstadistica.Cierre)
+{
+    <div class="alert alert-warning mb-3">
+        Editando <strong>ÚLTIMOS PUNTOS</strong>
+        @(Model.SetNumero.HasValue ? $"(Set {Model.SetNumero})" : "(Partido)")
+        desde el punto <strong>@Model.DesdePunto</strong>.
+    </div>
+}
+
+@{
+    ViewData["Title"] = "Editar Recepción";
+
+    // Orden forzado de zonas: 1, 6, 5
+    var zonas = new[] { ZonaSaque.Zona1, ZonaSaque.Zona6, ZonaSaque.Zona5 };
+
+    var saques = Enum.GetValues(typeof(TipoSaque)).Cast<TipoSaque>();
+    var tiposRec = Enum.GetValues(typeof(TipoRecepcion)).Cast<TipoRecepcion>();
+    var resultados = new[] {
+        new { Simbolo = "#", Valor = ResultadoRecepcion.doblePositivo },
+        new { Simbolo = "+", Valor = ResultadoRecepcion.positivo },
+        new { Simbolo = "-", Valor = ResultadoRecepcion.negativo },
+        new { Simbolo = "=", Valor = ResultadoRecepcion.dobleNegativo },
+    };
+}
+
+@section Styles {
+    <style>
+        .table-scroll {
+            max-height: 70vh;
+            overflow: auto;
+            border: 1px solid #dee2e6;
+            border-radius: .5rem;
+            background: #fff;
+        }
+
+            .table-scroll thead th {
+                position: sticky;
+                top: 0;
+                z-index: 5;
+                background: #fff;
+            }
+
+        .sticky-left {
+            position: sticky;
+            left: 0;
+            z-index: 6;
+            background: #fff;
+        }
+
+        .thead-left {
+            position: sticky;
+            left: 0;
+            z-index: 7;
+            background: #0d6efd;
+            color: #fff;
+        }
+
+        th, td {
+            white-space: nowrap;
+        }
+
+        /* colores suaves por columna */
+        .col-res-0 input.form-control {
+            background: #eaf4ff !important;
+        }
+        /* # */
+        .col-res-1 input.form-control {
+            background: #eafaf0 !important;
+        }
+        /* + */
+        .col-res-2 input.form-control {
+            background: #fff6e5 !important;
+        }
+        /* - */
+        .col-res-3 input.form-control {
+            background: #ffe9ec !important;
+        }
+        /* = */
+
+        .mesa-title {
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #0d6efd;
+            margin: 2rem 0 .5rem 0;
+        }
+
+        .mesa-sub {
+            font-weight: 600;
+            color: #6c757d;
+            margin: .25rem 0 .75rem 0;
+        }
+    </style>
+}
+
+<h2 class="text-center my-3">
+    EDICIÓN DE RECEPCIÓN – <strong>@Model.JugadorSeleccionado?.NombreCompleto</strong>
+</h2>
+<h5 class="text-center text-muted mb-4">@Model.PartidoDescripcion</h5>
+@{
+    var posTxt = Model.JugadorSeleccionado.Posicion == PosicionJugador.Bloqueador ? "Bloqueador" : "Defensor";
+    var rol = Model.JugadorSeleccionado.Posicion == PosicionJugador.Bloqueador ? 4 : 2;
+}
+
+<partial name="Estadisticas/Partials/_JugadorInfoFloating" />
+
+<div data-float-player
+     data-nombre="@Model.JugadorSeleccionado?.NombreCompleto"
+     data-rol="@rol"
+     data-pos="@posTxt">
+</div>
+<form method="post">
+    <input type="hidden" name="JugadorId" value="@Model.JugadorId" />
+    <input type="hidden" name="PartidoId" value="@Model.PartidoId" />
+    <input type="hidden" name="Scope" value="@((int)Model.Scope)" />
+    <input type="hidden" name="DesdePunto" value="@Model.DesdePunto" />
+    <input type="hidden" name="SetNumero" value="@Model.SetNumero" />
+
+    @foreach (var zona in zonas)
+    {
+        <div class="mesa-title">Zona de saque @((int)zona)</div>
+
+        @foreach (var saque in saques)
+        {
+            <div class="mesa-sub">Tipo de saque: <strong>@saque</strong></div>
+
+            <div class="table-scroll mb-4">
+                <table class="table table-bordered table-sm align-middle text-center" style="min-width: 900px;">
+                    <thead>
+                        <tr>
+                            <th class="thead-left">Tipo de recepción</th>
+                            @for (int i = 0; i < resultados.Length; i++)
+                            {
+                                <th>@resultados[i].Simbolo</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var tr in tiposRec)
+                        {
+                            <tr>
+                                <td class="sticky-left text-start">@tr</td>
+                                @for (int i = 0; i < resultados.Length; i++)
+                                {
+                                    var res = resultados[i].Valor;
+                                    var val = Model.GetValor(zona, saque, tr, res);
+
+                                    <td class="col-res-@i">
+                                        <input type="number"
+                                               name="Recepciones[@zona][@saque][@tr][@res]"
+                                               value="@val" min="0"
+                                               class="form-control form-control-sm text-center" />
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    }
+
+    <div class="text-center my-4">
+        <button type="submit" class="btn btn-success btn-lg text-uppercase px-4">
+            💾 Guardar cambios
+        </button>
+    </div>
+</form>

@@ -1,0 +1,162 @@
+﻿@page
+@using SandStats.Models
+@model SandStats.Pages.Partidos.CreateModel
+@{
+    ViewData["Title"] = "Cargar Partido";
+}
+<!-- Guardar en sessionStorage los datos del partido creado -->
+<script>
+    sessionStorage.setItem("partidoCreado", "@TempData["PartidoCreado"]");
+    sessionStorage.setItem("partidoIdUltimo", "@TempData["PartidoIdUltimo"]");
+</script>
+
+<div class="container mt-4">
+    <h2 class="mb-4">Cargar Partido</h2>
+
+    <form method="post" id="partidoForm">
+        <validation-summary model-only class="text-danger"></validation-summary>
+
+        <div class="mb-3">
+            <label asp-for="Partido.Torneo" class="form-label"></label>
+            <input asp-for="Partido.Torneo" class="form-control" />
+            <span asp-validation-for="Partido.Torneo" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Partido.Dupla1Id" class="form-label"></label>
+            <select asp-for="Partido.Dupla1Id" asp-items="Model.Duplas" class="form-select" id="dupla1-select"></select>
+            <span asp-validation-for="Partido.Dupla1Id" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Partido.Dupla2Id" class="form-label"></label>
+            <select asp-for="Partido.Dupla2Id" asp-items="Model.Duplas" class="form-select" id="dupla2-select"></select>
+            <span asp-validation-for="Partido.Dupla2Id" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Partido.Fecha" class="form-label"></label>
+            <input asp-for="Partido.Fecha" class="form-control" type="date" />
+            <span asp-validation-for="Partido.Fecha" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Partido.Clima" class="form-label"></label>
+            <select asp-for="Partido.Clima" asp-items="Html.GetEnumSelectList<Clima>()" class="form-select"></select>
+            <span asp-validation-for="Partido.Clima" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Partido.SetsGanadosDupla1" class="form-label"></label>
+            <input asp-for="Partido.SetsGanadosDupla1" class="form-control" type="number" min="0" max="2" />
+            <span asp-validation-for="Partido.SetsGanadosDupla1" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Partido.SetsGanadosDupla2" class="form-label"></label>
+            <input asp-for="Partido.SetsGanadosDupla2" class="form-control" type="number" min="0" max="2" />
+            <span asp-validation-for="Partido.SetsGanadosDupla2" class="text-danger"></span>
+        </div>
+
+        <div id="sets-container" class="mb-4">
+            <div class="set-block border rounded p-3 mb-3">
+                <h5 class="mb-3">Set 1</h5>
+                <input name="Partido.Sets[0].PuntosDupla1" placeholder="Puntos Dupla 1" class="form-control mb-2" required />
+                <input name="Partido.Sets[0].PuntosDupla2" placeholder="Puntos Dupla 2" class="form-control" required />
+            </div>
+
+            <div class="set-block border rounded p-3 mb-3">
+                <h5 class="mb-3">Set 2</h5>
+                <input name="Partido.Sets[1].PuntosDupla1" placeholder="Puntos Dupla 1" class="form-control mb-2" required />
+                <input name="Partido.Sets[1].PuntosDupla2" placeholder="Puntos Dupla 2" class="form-control" required />
+            </div>
+
+            <div class="set-block border rounded p-3 mb-3" id="set3" style="display:none;">
+                <h5 class="mb-3">Set 3 (Tie-break)</h5>
+                <input name="Partido.Sets[2].PuntosDupla1" placeholder="Puntos Dupla 1" class="form-control mb-2" />
+                <input name="Partido.Sets[2].PuntosDupla2" placeholder="Puntos Dupla 2" class="form-control" />
+            </div>
+        </div>
+
+        <div class="text-danger mb-3" id="dupla-error" style="display: none;">
+            No podés seleccionar la misma dupla en ambos campos.
+        </div>
+        <div class="mb-3 text-end">
+            <button type="submit" class="btn btn-primary">Guardar Partido</button>
+        </div>
+
+        
+
+    </form>
+</div>
+
+
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const partidoId = "@TempData["UltimoPartidoId"]";
+            if (partidoId && partidoId !== "") {
+                const modalElement = document.getElementById('postCargaModal');
+                const modal = new bootstrap.Modal(modalElement, {
+                    backdrop: 'static',
+                    keyboard: false
+                });
+
+                document.getElementById('main-content').classList.add('blur');
+
+                modalElement.addEventListener('hidden.bs.modal', () => {
+                    document.getElementById('main-content').classList.remove('blur');
+                });
+
+                modal.show();
+            }
+        });
+    </script>
+
+    <script>
+        const partidoId = '@TempData["NuevoPartidoId"]';
+        if (partidoId) {
+            sessionStorage.setItem("partidoId", partidoId);
+        }
+        const set3 = document.getElementById('set3');
+        const input1 = document.querySelector('[name="Partido.SetsGanadosDupla1"]');
+        const input2 = document.querySelector('[name="Partido.SetsGanadosDupla2"]');
+        const dupla1Select = document.getElementById('dupla1-select');
+        const dupla2Select = document.getElementById('dupla2-select');
+        const errorMsg = document.getElementById('dupla-error');
+
+        function toggleSet3() {
+            const val1 = parseInt(input1.value) || 0;
+            const val2 = parseInt(input2.value) || 0;
+            const total = val1 + val2;
+
+            if (total === 3 && val1 !== 3 && val2 !== 3) {
+                set3.style.display = 'block';
+                set3.querySelectorAll('input').forEach(input => input.setAttribute('required', 'required'));
+            } else {
+                set3.style.display = 'none';
+                set3.querySelectorAll('input').forEach(input => {
+                    input.value = '';
+                    input.removeAttribute('required');
+                });
+            }
+        }
+
+        input1.addEventListener('input', toggleSet3);
+        input2.addEventListener('input', toggleSet3);
+
+        document.getElementById('partidoForm').addEventListener('submit', function (e) {
+            if (dupla1Select.value === dupla2Select.value) {
+                e.preventDefault();
+                errorMsg.style.display = 'block';
+                return false;
+            }
+        });
+
+        dupla1Select.addEventListener('change', () => errorMsg.style.display = 'none');
+        dupla2Select.addEventListener('change', () => errorMsg.style.display = 'none');
+    </script>
+}

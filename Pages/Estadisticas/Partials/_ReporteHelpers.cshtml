@@ -1,0 +1,90 @@
+﻿@using SandStats.Models
+@using SandStats.Models.SandStats.Models
+@using SandStats.Pages.Estadisticas
+@{
+    // % y semáforo
+    string Pct(decimal d) => (d * 100m).ToString("0") + "%";
+    Func<decimal,string> EfClass = e => e >= 0.80m ? "ef-high" : (e >= 0.40m ? "ef-mid" : "ef-low");
+
+    // Orden de zonas 1,6,5
+    var zonas = new[] { ZonaSaque.Zona1, ZonaSaque.Zona6, ZonaSaque.Zona5 };
+
+    /* ========= Recepción helpers ========= */
+    Func<Dictionary<TipoRecepcion, RecCounts>, IEnumerable<(string T, RecCounts C)>> SectoresOrdenados
+        = dict => new (string, RecCounts)[] {
+            ("Corto",   dict[TipoRecepcion.Adelante]),
+            ("Interno", dict[TipoRecepcion.Interno]),
+            ("Cuerpo",  dict[TipoRecepcion.Cuerpo]),
+            ("Externo", dict[TipoRecepcion.Externo]),
+        }.OrderBy(x => x.Item2.Efect); // debilidades primero
+
+    // Tabla por tipo (suma flot+pot) — orden ASC por efect
+    Action<Dictionary<TipoRecepcion, RecCounts>> RenderTablaPorTipo = dict =>
+    {
+        var filas = new[] {
+            (Label:"Adelante", K:TipoRecepcion.Adelante),
+            (Label:"Interno",  K:TipoRecepcion.Interno),
+            (Label:"Cuerpo",   K:TipoRecepcion.Cuerpo),
+            (Label:"Externo",  K:TipoRecepcion.Externo),
+        }.Select(x => (x.Label, C: dict[x.K]))
+         .OrderBy(x => x.C.Efect);
+
+@:<tbody>
+        foreach (var f in filas)
+        {
+@:<tr>
+@:<td>@f.Label</td>
+@:<td class="text-end fw-semibold @EfClass(f.C.Efect)">@Pct(f.C.Efect)</td>
+@:<td class="text-end">@f.C.DP</td>
+@:<td class="text-end">@f.C.P</td>
+@:<td class="text-end">@f.C.N</td>
+@:<td class="text-end">@f.C.E</td>
+@:<td class="text-end fw-semibold">@f.C.Total</td>
+@:<td class="text-end">@Pct(f.C.PctDP)</td>
+@:<td class="text-end">@Pct(f.C.PctP)</td>
+@:<td class="text-end">@Pct(f.C.PctN)</td>
+@:<td class="text-end">@Pct(f.C.PctE)</td>
+@:</tr>
+        }
+@:</tbody>
+    };
+
+    /* ========= Ataque helpers ========= */
+    Func<TipoLado,string> LadoPretty = l => {
+        var s = l.ToString().ToLowerInvariant();
+        if (s.Contains("bueno")) return "Lado bueno";
+        if (s.Contains("medio")) return "Lado medio";
+        if (s.Contains("atr"))   return "Lado atrás";
+        return l.ToString();
+    };
+
+    // Tabla por acción dentro de un lado — orden por Total DESC
+    Action<Dictionary<TipoAcciones, AtkCounts>> RenderTablaAtqPorAccion = dict =>
+    {
+        var filas = (dict ?? new Dictionary<TipoAcciones, AtkCounts>())
+            .Where(kv => kv.Value.Total > 0)
+            .OrderByDescending(kv => kv.Value.Total)
+            .ThenBy(kv => kv.Key.ToString())
+            .Select(kv => (Accion: kv.Key.ToString(), C: kv.Value))
+            .ToList();
+
+@:<tbody>
+        foreach (var f in filas)
+        {
+@:<tr>
+@:<td>@f.Accion</td>
+@:<td class="text-end fw-semibold @EfClass(f.C.Efect)">@Pct(f.C.Efect)</td>
+@:<td class="text-end col-hash">@f.C.DP</td>
+@:<td class="text-end col-plus">@f.C.P</td>
+@:<td class="text-end col-minus">@f.C.N</td>
+@:<td class="text-end col-eq">@f.C.E</td>
+@:<td class="text-end fw-semibold">@f.C.Total</td>
+@:<td class="text-end">@Pct(f.C.PctDP)</td>
+@:<td class="text-end">@Pct(f.C.PctP)</td>
+@:<td class="text-end">@Pct(f.C.PctN)</td>
+@:<td class="text-end">@Pct(f.C.PctE)</td>
+@:</tr>
+        }
+@:</tbody>
+    };
+}

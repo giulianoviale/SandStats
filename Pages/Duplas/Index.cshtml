@@ -1,0 +1,46 @@
+﻿@page "{pageIndex:int?}"
+@model SandStats.Pages.Duplas.IndexModel
+@{
+    ViewData["Title"] = "Listado de Duplas";
+}
+
+<div class="container mt-4">
+    <h2 class="mb-4">Listado de Duplas</h2>
+
+    <a asp-page="Create" class="btn btn-primary mb-3">➕ NUEVA DUPLA</a>
+
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>Jugador 1</th>
+                <th>Jugador 2</th>
+                <th>Acciones</th>
+            </tr>   
+        </thead>
+        <tbody>
+            @foreach (var dupla in Model.Duplas)
+            {
+                <tr>
+                    <td>@dupla.Jugador1?.NombreCompleto</td>
+                    <td>@dupla.Jugador2?.NombreCompleto</td>
+                    <td>
+                        <a asp-page="Edit" asp-route-id="@dupla.Id" class="btn btn-sm btn-warning">✏️ Editar</a>
+                        <a class="btn btn-sm btn-outline-danger" asp-page="./Delete" asp-route-id="@dupla.Id">Eliminar</a>
+                    </td>
+                   
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <nav aria-label="Paginación de duplas">
+        <ul class="pagination justify-content-center">
+            @for (int i = 1; i <= Model.TotalPages; i++)
+            {
+                <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                    <a class="page-link" asp-route-pageIndex="@i">@i</a>
+                </li>
+            }
+        </ul>
+    </nav>
+</div>

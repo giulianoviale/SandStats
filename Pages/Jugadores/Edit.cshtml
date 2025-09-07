@@ -1,0 +1,46 @@
+﻿@page "{id:int}"
+@using SandStats.Models
+@model EditarJugadorModel
+
+<h2>Editar Jugador</h2>
+
+<form method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Jugador.Id" />
+
+    <div class="mb-3">
+        <label asp-for="Jugador.Nombre" class="form-label"></label>
+        <input asp-for="Jugador.Nombre" class="form-control" />
+        <span asp-validation-for="Jugador.Nombre" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Jugador.Apellido" class="form-label"></label>
+        <input asp-for="Jugador.Apellido" class="form-control" />
+        <span asp-validation-for="Jugador.Apellido" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Jugador.RolPrincipal" class="form-label"></label>
+        <select asp-for="Jugador.RolPrincipal" class="form-select"
+                asp-items="Html.GetEnumSelectList<RolJugador>()"></select>
+        <span asp-validation-for="Jugador.RolPrincipal" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Jugador.Posicion" class="form-label">Posición</label>
+        <select asp-for="Jugador.Posicion" class="form-select"
+                asp-items="Html.GetEnumSelectList<PosicionJugador>()">
+        </select>
+        <span asp-validation-for="Jugador.Posicion" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-success">
+        <i class="bi bi-save2 me-1"></i> Guardar cambios
+    </button>
+    <a asp-page="./Index" class="btn btn-secondary ms-2">Volver</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

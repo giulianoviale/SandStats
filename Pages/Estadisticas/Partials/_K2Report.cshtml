@@ -1,0 +1,94 @@
+﻿@model SandStats.Pages.Estadisticas.K2Report
+
+@functions {
+    string Pct(decimal d) => (d * 100m).ToString("0") + "%";
+
+    // pinta celdas numéricas para una fila K2
+    void Cells(SandStats.Pages.Estadisticas.K2Counts c)
+    {
+        @:<td class="text-end">@c.DP</td>
+        @:<td class="text-end">@c.P</td>
+        @:<td class="text-end">@c.N</td>
+        @:<td class="text-end">@c.DN</td>
+        @:<td class="text-end fw-semibold">@c.Total</td>
+        @:<td class="text-end fw-semibold">@Pct(c.Efect)</td>
+        @:<td class="text-end">@Pct(c.PctDP)</td>
+        @:<td class="text-end">@Pct(c.PctP)</td>
+        @:<td class="text-end">@Pct(c.PctN)</td>
+        @:<td class="text-end">@Pct(c.PctDN)</td>
+    }
+}
+
+<div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="fw-semibold">Efectividad K2</div>
+        <div class="badge rounded-pill text-bg-warning fs-6">@Pct(Model.EfectHeadline)</div>
+    </div>
+
+    <div class="card-body p-2">
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered align-middle mb-2">
+                <thead class="table-light">
+                    <tr>
+                        <th class="text-start" style="min-width:190px">Sección</th>
+                        <th style="width:60px">#</th>
+                        <th style="width:60px">+</th>
+                        <th style="width:60px">-</th>
+                        <th style="width:60px">=</th>
+                        <th style="width:80px">Total</th>
+                        <th style="width:72px">Efecti</th>
+                        <th style="width:72px">Efecti</th>
+                        <th style="width:72px">Efecti</th>
+                        <th style="width:72px">Efecti</th>
+                        <th style="width:72px">Efecti</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="text-start fw-semibold">Puntos jugados en K2</td>
+                        @{
+                            Cells(Model.PuntosJugados);
+                        }
+                    </tr>
+                    <tr>
+                        <td class="text-start fw-semibold">Saques FLOTADOS</td>
+                        @{
+                            Cells(Model.SaquesFlotado);
+                        }
+                    </tr>
+                    <tr>
+                        <td class="text-start fw-semibold">Saques POTENCIA</td>
+                        @{
+                            Cells(Model.SaquesPotencia);
+                        }
+                    </tr>
+                    <tr>
+                        <td class="text-start fw-semibold">Bloqueos Atq A 1</td>
+                        @{
+                            Cells(Model.BloqueoA1);
+                        }
+                    </tr>
+                    <tr>
+                        <td class="text-start fw-semibold">Bloqueos Atq A 6</td>
+                        @{
+                            Cells(Model.BloqueoA6);
+                        }
+                    </tr>
+                    <tr>
+                        <td class="text-start fw-semibold">Bloqueos At A 5</td>
+                        @{
+                            Cells(Model.BloqueoA5);
+                        }
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="row mt-2 g-3 small">
+            <div class="col-auto">Sets JUGADOS: <strong>@Model.SetsJugados</strong></div>
+            <div class="col-auto">Errores varios: <strong>@Model.ErroresVarios</strong></div>
+            <div class="col-auto">Agregados: <strong>@Model.Agregados</strong></div>
+            
+        </div>
+    </div>
+</div>

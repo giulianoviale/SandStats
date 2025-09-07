@@ -1,0 +1,315 @@
+﻿@page "{jugadorId:int}/{partidoId:int}"
+@model SandStats.Pages.Estadisticas.CargarAtaquesModel
+@using SandStats.Models
+
+@if (Model.Scope == ScopeEstadistica.Cierre)
+{
+    <div class="alert alert-warning mb-3">
+        Cargando <strong>ÚLTIMOS PUNTOS</strong>
+        @(Model.SetNumero.HasValue ? $"(Set {Model.SetNumero})" : "(Partido)")
+        desde el punto <strong>@Model.DesdePunto</strong>.
+    </div>
+}
+
+@{
+    ViewData["Title"] = "Cargar Ataques";
+
+    // === helpers ===
+    bool EsSinVE(TipoAcciones a)
+        => a == TipoAcciones.Varios
+        || a == TipoAcciones.PorAtras
+        || a.ToString().StartsWith("Atq2da", StringComparison.OrdinalIgnoreCase);
+
+    // 1) rol del jugador (viene en el modelo)
+    var esRol4 = Model.JugadorSeleccionado?.RolPrincipal == RolJugador.Rol4;
+
+    // 2) POR x según lado y rol
+    int PorDe(TipoLado l) =>
+        l == TipoLado.Medio ? 3 :
+        esRol4 ? (l == TipoLado.Bueno ? 4 : 2)
+               : (l == TipoLado.Bueno ? 2 : 4);
+
+    // 3) Título de lado usando PorDe(...)
+    string LadoTit(TipoLado l) => l switch
+    {
+        TipoLado.Bueno => $"Lado bueno (POR {PorDe(l)})",
+        TipoLado.Medio => $"Lado medio (POR {PorDe(l)})",
+        TipoLado.Atras => $"Lado atrás (POR {PorDe(l)})",
+        _ => l.ToString()
+    };
+
+    // Con V/E (dos claves por símbolo) – mismo orden y clases de Edición
+    var resultadosAgrupadosVE = new[] {
+        new { Simbolo = "#", ClaveV = ResultadoAtaque.DoblePositivoV, ClaveE = ResultadoAtaque.DoblePositivoE, Css = "col-hash" },
+        new { Simbolo = "+", ClaveV = ResultadoAtaque.PositivoV,      ClaveE = ResultadoAtaque.PositivoE,      Css = "col-plus" },
+        new { Simbolo = "-", ClaveV = ResultadoAtaque.NegativoV,      ClaveE = ResultadoAtaque.NegativoE,      Css = "col-minus"},
+        new { Simbolo = "=", ClaveV = ResultadoAtaque.DobleNegativoV, ClaveE = ResultadoAtaque.DobleNegativoE, Css = "col-eq"   },
+    };
+
+    // Sin V/E (una sola clave: usamos la variante V para unificar backend)
+    var resultadosSimple = new[] {
+        new { Simbolo = "#", Clave = ResultadoAtaque.DoblePositivoV, Css = "col-hash" },
+        new { Simbolo = "+", Clave = ResultadoAtaque.PositivoV,      Css = "col-plus" },
+        new { Simbolo = "-", Clave = ResultadoAtaque.NegativoV,      Css = "col-minus"},
+        new { Simbolo = "=", Clave = ResultadoAtaque.DobleNegativoV, Css = "col-eq"   },
+    };
+}
+
+@section Styles {
+    <style>
+        .table-wrap {
+            max-height: 72vh;
+            overflow: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            background: #fff
+        }
+
+        table.table-fixed {
+            table-layout: fixed;
+            width: 100%;
+            min-width: 1100px
+        }
+
+        th, td {
+            white-space: nowrap
+        }
+
+        .thead-row-1 th {
+            position: sticky;
+            top: 0;
+            z-index: 6;
+            background: #f8f9fa;
+            box-shadow: inset 0 -1px 0 #dee2e6
+        }
+
+        .thead-row-2 th {
+            position: sticky;
+            top: 44px;
+            z-index: 5;
+            background: #fff;
+            box-shadow: inset 0 -1px 0 #dee2e6
+        }
+
+        .sticky-left-head {
+            position: sticky;
+            left: 0;
+            z-index: 8;
+            background: #f8f9fa
+        }
+
+        .sticky-left-th-row2 {
+            position: sticky;
+            left: 0;
+            z-index: 7;
+            background: #fff;
+            box-shadow: inset -1px -1px 0 #dee2e6
+        }
+
+        .sticky-left-td {
+            position: sticky;
+            left: 0;
+            z-index: 6;
+            background: #fff;
+            box-shadow: inset -1px 0 0 #dee2e6
+        }
+
+        /* COLORES (igual Edición) */
+        .col-hash input {
+            background: #E7F0FF !important
+        }
+        /* # azul */
+        .col-plus input {
+            background: #EAF7EA !important
+        }
+        /* + verde */
+        .col-minus input {
+            background: #FFF7D6 !important
+        }
+        /* - amarillo */
+        .col-eq input {
+            background: #FFE9E7 !important
+        }
+        /* = rojo */
+
+        .lado-title {
+            color: #0d6efd;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin: 1.25rem 0 .5rem;
+            text-align: left
+        }
+
+        .sub-title {
+            font-weight: 600;
+            color: #6c757d;
+            margin: .25rem 0 .75rem
+        }
+
+        .table input.form-control {
+            padding: .25rem .4rem;
+            font-size: .9rem;
+            text-align: center
+        }
+
+            .table input.form-control:focus {
+                box-shadow: 0 0 0 .15rem rgba(0,0,0,.05)
+            }
+    </style>
+}
+
+<h2 class="text-center mb-2">
+    CARGA DE ATAQUES PARA <strong>@Model.JugadorSeleccionado?.NombreCompleto</strong>
+</h2>
+<h6 class="text-center text-muted mb-4">@Model.PartidoDescripcion</h6>
+
+<form method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="JugadorId" />
+    <input type="hidden" asp-for="PartidoId" />
+    <input type="hidden" asp-for="Scope" />
+    <input type="hidden" asp-for="DesdePunto" />
+    <input type="hidden" asp-for="SetNumero" />
+
+    @foreach (var lado in Enum.GetValues<TipoLado>())
+    {
+        var acciones = Model.AccionesPorLado[lado];
+        var accionesEspeciales = acciones.Where(a => EsSinVE(a)).ToList();
+        var accionesNormales = acciones.Where(a => !EsSinVE(a)).ToList();
+
+        <h5 class="lado-title">@LadoTit(lado)</h5>
+
+        @* ===== NORMALES ===== *@
+        if (accionesNormales.Count > 0)
+        {
+            if (lado == TipoLado.Medio)
+            {
+                @* LADO MEDIO: SIN Varilla / Entre línea *@
+                <div class="sub-title">Acciones normales (sin V/E en POR 3)</div>
+
+                <div class="table-wrap mb-4">
+                    <table class="table table-bordered table-sm text-center align-middle" style="min-width:900px;">
+                        <thead>
+                            <tr class="thead-row-1">
+                                <th class="sticky-left-head">Acción</th>
+                                @foreach (var g in resultadosSimple)
+                                {
+                                    <th class="fw-semibold">@g.Simbolo</th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var accion in accionesNormales)
+                            {
+                                <tr>
+                                    <td class="sticky-left-td text-start">@accion</td>
+                                    @foreach (var g in resultadosSimple)
+                                    {
+                                        <td class="@g.Css">
+                                            <input type="number"
+                                                   name="Impactos[@lado][@accion][@g.Clave]" @* clave simple (variante V) *@
+                                                   value="0" min="0"
+                                                   class="form-control form-control-sm" />
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                @* BUENO / ATRÁS: CON Varilla / Entre líneas *@
+                <div class="sub-title">Acciones con Varilla / Entre líneas</div>
+
+                <div class="table-wrap mb-4">
+                    <table class="table table-bordered table-sm text-center align-middle table-fixed">
+                        <thead>
+                            <tr class="thead-row-1">
+                                <th class="sticky-left-head">Acción</th>
+                                @foreach (var g in resultadosAgrupadosVE)
+                                {
+                                    <th colspan="2" class="fw-semibold">@g.Simbolo</th>
+                                }
+                            </tr>
+                            <tr class="thead-row-2">
+                                <th class="sticky-left-th-row2"></th>
+                                @foreach (var g in resultadosAgrupadosVE)
+                                {
+                                    <th>V</th>
+                                    <th>E</th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var accion in accionesNormales)
+                            {
+                                <tr>
+                                    <td class="sticky-left-td text-start">@accion</td>
+
+                                    @foreach (var g in resultadosAgrupadosVE)
+                                    {
+                                        <td class="@g.Css">
+                                            <input type="number"
+                                                   name="Impactos[@lado][@accion][@g.ClaveV]"
+                                                   value="0" min="0"
+                                                   class="form-control form-control-sm" />
+                                        </td>
+                                        <td class="@g.Css">
+                                            <input type="number"
+                                                   name="Impactos[@lado][@accion][@g.ClaveE]"
+                                                   value="0" min="0"
+                                                   class="form-control form-control-sm" />
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        }
+
+        @* ===== ESPECIALES (siempre sin V/E) ===== *@
+        if (accionesEspeciales.Count > 0)
+        {
+            <div class="sub-title">Acciones especiales (sin V/E) — se registran como totales por #, +, −, =</div>
+
+            <div class="table-wrap mb-4">
+                <table class="table table-bordered table-sm text-center align-middle" style="min-width:900px;">
+                    <thead>
+                        <tr class="thead-row-1">
+                            <th class="sticky-left-head">Acción</th>
+                            @foreach (var g in resultadosSimple)
+                            {
+                                <th class="fw-semibold">@g.Simbolo</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var accion in accionesEspeciales)
+                        {
+                            <tr>
+                                <td class="sticky-left-td text-start">@accion</td>
+                                @foreach (var g in resultadosSimple)
+                                {
+                                    <td class="@g.Css">
+                                        <input type="number"
+                                               name="ImpactosEspeciales[@lado][@accion][@g.Clave]" @* usamos variante V *@
+                                               value="0" min="0"
+                                               class="form-control form-control-sm" />
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    }
+
+    <div class="text-center mt-3">
+        <button type="submit" class="btn btn-success px-4 text-uppercase">💾 Guardar ataques</button>
+    </div>
+</form>

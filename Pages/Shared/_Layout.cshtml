@@ -1,0 +1,121 @@
+﻿@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - SandStats</title>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Saira+Condensed:wght@600;700&display=swap" rel="stylesheet">
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="~/img/logo-mark.svg" />
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/estiloSandStats.css" asp-append-version="true" />
+
+    <style>
+        /* opcional: asegura que el brand img se alinee bien */
+        .navbar-brand img {
+            display: block
+        }
+    </style>
+    @RenderSection("Styles", required: false)
+</head>
+
+<body class="d-flex flex-column min-vh-100">
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-light bg-white border-bottom">
+            <div class="container">
+                <a class="navbar-brand d-flex align-items-center gap-2" asp-page="/Index">
+                    <img src="@Url.Content("~/img/logo-mark.svg")" alt="SandStats" width="28" height="28" />
+                    <span class="fw-bold brand-title">SandStats</span>
+                </a>
+
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
+                        aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between" id="mainNav">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item"><a class="nav-link" asp-page="/Index">Inicio</a></li>
+
+                        <!-- Partidos -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navPartidos" role="button" data-bs-toggle="dropdown" aria-expanded="false">Partidos</a>
+                            <ul class="dropdown-menu" aria-labelledby="navPartidos">
+                                <li><a class="dropdown-item" asp-page="/Partidos/Index">Ver Partidos</a></li>
+                                <li><a class="dropdown-item" asp-page="/Partidos/Create">Nuevo Partido</a></li>
+                            </ul>
+                        </li>
+
+                        <!-- Jugadores -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navJugadores" role="button" data-bs-toggle="dropdown" aria-expanded="false">Jugadores</a>
+                            <ul class="dropdown-menu" aria-labelledby="navJugadores">
+                                <li><a class="dropdown-item" asp-page="/Jugadores/Index">Ver Jugadores</a></li>
+                                <li><a class="dropdown-item" asp-page="/Jugadores/Create">Nuevo Jugador</a></li>
+                            </ul>
+                        </li>
+
+                        <!-- Duplas -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navDuplas" role="button" data-bs-toggle="dropdown" aria-expanded="false">Duplas</a>
+                            <ul class="dropdown-menu" aria-labelledby="navDuplas">
+                                <li><a class="dropdown-item" asp-page="/Duplas/Index">Ver Duplas</a></li>
+                                <li><a class="dropdown-item" asp-page="/Duplas/Create">Nueva Dupla</a></li>
+                            </ul>
+                        </li>
+
+                        <!-- Estadísticas: que elijan partido en el índice -->
+                        <li class="nav-item"><a class="nav-link" asp-page="/Partidos/Index">Estadísticas</a></li>
+                    </ul>
+
+                    <div class="d-flex align-items-center gap-2">
+                        <a class="btn btn-primary btn-sm" asp-page="/Partidos/Create">➕ Nuevo Partido</a>
+                        <partial name="_LoginPartial" />
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main role="main" class="container py-5 flex-grow-1">
+        @RenderBody()
+    </main>
+
+    <!-- Modal global -->
+    <div class="modal fade" id="postCargaModal" tabindex="-1" aria-labelledby="postCargaLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow-lg rounded-3">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="postCargaLabel">¿Desea cargar las estadísticas de este partido?</h5>
+                </div>
+                <div class="modal-body">Puede hacerlo ahora o volver al listado de partidos.</div>
+                <div class="modal-footer">
+                    <!-- ojo: el parámetro es partidoId -->
+                    <form method="get" asp-page="/Estadisticas/Resumen" asp-route-partidoId="@TempData.Peek("UltimoPartidoId")">
+                        <button type="submit" class="btn btn-primary">Sí, cargar estadísticas</button>
+                    </form>
+                    <a asp-page="/Partidos/Index" class="btn btn-secondary">No, volver al listado</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="border-top py-4 mt-auto">
+        <div class="container small d-flex justify-content-between">
+            <span>© @DateTime.UtcNow.Year - SandStats</span>
+            <a asp-page="/Privacy">Privacy</a>
+        </div>
+    </footer>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

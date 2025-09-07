@@ -1,0 +1,38 @@
+﻿@page "{id:int}"
+@model SandStats.Pages.Duplas.DeleteModel
+@{
+    ViewData["Title"] = "Eliminar Dupla";
+}
+
+<div class="container mt-4">
+    <h2 class="mb-3 text-danger">¿Eliminar dupla?</h2>
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-warning">@Model.ErrorMessage</div>
+    }
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <h5 class="card-title mb-2 fw-bold">@Model.Dupla.Alias</h5>
+            <p class="mb-1"><strong>Jugador 1:</strong> @Model.Dupla.Jugador1?.NombreCompleto</p>
+            <p class="mb-1"><strong>Jugador 2:</strong> @Model.Dupla.Jugador2?.NombreCompleto</p>
+        </div>
+    </div>
+
+    @if (Model.PartidosAsociados > 0)
+    {
+        <div class="alert alert-info">
+            Esta dupla está asociada a <strong>@Model.PartidosAsociados</strong> partido(s).
+            No se puede eliminar para preservar el histórico.
+        </div>
+        <a class="btn btn-secondary" asp-page="./Index">Volver</a>
+    }
+    else
+    {
+        <form method="post" asp-route-id="@Model.Dupla.Id">
+            <button type="submit" class="btn btn-danger">Sí, eliminar</button>
+            <a class="btn btn-secondary ms-2" asp-page="./Index">Cancelar</a>
+        </form>
+    }
+</div>
