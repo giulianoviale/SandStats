@@ -5,12 +5,10 @@ using SandStats.Models.SandStats.Models;
 
 namespace SandStats.Data;
 
-public class ApplicationDbContext : IdentityDbContext
+public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-        : base(options)
-    {
-    }
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
+
 
     public DbSet<Jugador> Jugadores { get; set; }
     public DbSet<Dupla> Duplas { get; set; }
