@@ -53,93 +53,86 @@ namespace SandStats.Pages.Partidos
             Duplas = new SelectList(duplas, "Id", "Nombre");
         }
 
-        public async Task<IActionResult> OnPost()
+        public IActionResult OnPost()
         {
-            // 1) Validación duplas
+            // Evitar nulls
+            Partido.Sets ??= new List<Set>();
+
+            // Validación base
             if (Partido.Dupla1Id == Partido.Dupla2Id)
                 ModelState.AddModelError("Partido.Dupla2Id", "No se puede jugar un partido con la misma dupla.");
 
-            bool existeD1 = await _context.Duplas.AnyAsync(d => d.Id == Partido.Dupla1Id);
-            bool existeD2 = await _context.Duplas.AnyAsync(d => d.Id == Partido.Dupla2Id);
-            if (!existeD1 || !existeD2)
-                ModelState.AddModelError(string.Empty, "Alguna de las duplas seleccionadas no existe.");
+            // Deben venir 2 o 3 sets
+            if (Partido.Sets.Count < 2 || Partido.Sets.Count > 3)
+                ModelState.AddModelError(string.Empty, "Debés cargar 2 o 3 sets.");
 
-            // 2) Normalizar sets recibidos (evitar nulls)
-            Partido.Sets ??= new List<Set>();
-
-            // Tomo solo los sets con al menos un dato cargado
-            var setsValidos = Partido.Sets
-                .Where(s => s != null && (s.PuntosDupla1 > 0 || s.PuntosDupla2 > 0))
-                .ToList();
-
-            // Deben ser 2 o 3 sets
-            if (setsValidos.Count < 2)
-                ModelState.AddModelError(string.Empty, "Cargá al menos dos sets con puntaje.");
-
-            // 3) Completar cada set y validar no-empate
-            for (int i = 0; i < setsValidos.Count; i++)
+            // Si ya hay errores, corto acá
+            if (!ModelState.IsValid)
             {
-                var set = setsValidos[i];
-                set.Partido = Partido;
+                // No toques Partido.Sets: devolvé la página tal cual para no perder lo cargado
+                return Page();
+            }
+
+            // ===== Completar datos de cada set + validar ganador =====
+            int gana1 = 0, gana2 = 0;
+            for (int i = 0; i < Partido.Sets.Count; i++)
+            {
+                var set = Partido.Sets[i];
+                set.Partido = Partido;     // relacionar
                 set.NumeroSet = i + 1;
 
+                // Validar “tiene ganador”
                 if (set.PuntosDupla1 == set.PuntosDupla2)
                 {
-                    ModelState.AddModelError(string.Empty, $"El Set {set.NumeroSet} tiene un empate. Ingresá un ganador.");
+                    ModelState.AddModelError(string.Empty, $"El Set {set.NumeroSet} no tiene ganador (empate).");
                     continue;
                 }
 
+                // Determinar ganador
                 set.GanadorDuplaId = (set.PuntosDupla1 > set.PuntosDupla2)
                     ? Partido.Dupla1Id
                     : Partido.Dupla2Id;
+
+                if (set.GanadorDuplaId == Partido.Dupla1Id) gana1++; else gana2++;
             }
 
-            // Si hay errores de validación hasta acá, volver a la página
-            if (!ModelState.IsValid)
+            if (!ModelState.IsValid) return Page();
+
+            // ===== Consistencia con los campos “SetsGanados*” =====
+            // (Los mantenemos “cargables”, pero si vienen distintos los corregimos.)
+            if (Partido.SetsGanadosDupla1 != gana1 || Partido.SetsGanadosDupla2 != gana2)
             {
+                Partido.SetsGanadosDupla1 = gana1;
+                Partido.SetsGanadosDupla2 = gana2;
+                // Si preferís obligar a coincidir en vez de corregir:
+                // ModelState.AddModelError("", "Los sets ganados no coinciden con los resultados de los sets.");
+                // return Page();
+            }
+
+            // Reglas rápidas: alguien debe ganar 2 sets
+            if (gana1 != 2 && gana2 != 2)
+            {
+                ModelState.AddModelError("", "Un partido válido requiere que una dupla gane 2 sets.");
                 return Page();
             }
 
-            // 4) Sets ganados: respetar lo escrito; si quedaron en 0, inferir
-            if (Partido.SetsGanadosDupla1 == 0 && Partido.SetsGanadosDupla2 == 0)
-            {
-                Partido.SetsGanadosDupla1 = setsValidos.Count(s => s.GanadorDuplaId == Partido.Dupla1Id);
-                Partido.SetsGanadosDupla2 = setsValidos.Count(s => s.GanadorDuplaId == Partido.Dupla2Id);
-            }
-
-            // (Opcional) coherencia: si los escribieron a mano y no coinciden, avisar pero permitir
-            var sg1Calc = setsValidos.Count(s => s.GanadorDuplaId == Partido.Dupla1Id);
-            var sg2Calc = setsValidos.Count(s => s.GanadorDuplaId == Partido.Dupla2Id);
-            if (Partido.SetsGanadosDupla1 != sg1Calc || Partido.SetsGanadosDupla2 != sg2Calc)
-            {
-                // Solo aviso; si querés bloquear, convertí esto en ModelState error
-                TempData["Warn"] = "Los sets ganados no coinciden con los ganadores por set. Se guardará igualmente.";
-            }
-
-            // 5) Reemplazar por la lista validada (sin sets vacíos)
-            Partido.Sets = setsValidos;
-
-            // 6) Guardar
             try
             {
                 _context.Partidos.Add(Partido);
-                await _context.SaveChangesAsync();
+                _context.SaveChanges();
 
+                // Devuelvo al índice (o a detalle)
                 UltimoPartidoId = Partido.Id;
-                TempData["PartidoIdUltimo"] = Partido.Id;
-                TempData["PartidoCreado"] = "1";
-
                 return RedirectToPage("./Index");
             }
-            catch (DbUpdateException ex)
+            catch (Exception ex)
             {
-                // Si llegara una constraint de NOT NULL (ej: GanadorDuplaId), lo mostramos bien
-                ModelState.AddModelError(string.Empty, "No se pudo guardar el partido. Revisá que cada set tenga un ganador.");
-                // (Opcional) loguear ex.Message
-                await OnGet();
+                // Mostrar el error en la vista en lugar de página de error
+                ModelState.AddModelError("", "No se pudo guardar el partido. " + ex.Message);
                 return Page();
             }
         }
+
 
     }
 }
