@@ -14,7 +14,7 @@
     <h2 class="mb-4">Cargar Partido</h2>
 
     <form method="post" id="partidoForm">
-        <validation-summary model-only class="text-danger"></validation-summary>
+        <div asp-validation-summary="All" class="text-danger"></div>
 
         <div class="mb-3">
             <label asp-for="Partido.Torneo" class="form-label"></label>
@@ -45,6 +45,9 @@
             <select asp-for="Partido.Clima" asp-items="Html.GetEnumSelectList<Clima>()" class="form-select"></select>
             <span asp-validation-for="Partido.Clima" class="text-danger"></span>
         </div>
+        <input type="hidden" name="Partido.Sets.index" value="0" />
+        <input type="hidden" name="Partido.Sets.index" value="1" />
+        <input type="hidden" name="Partido.Sets.index" value="2" />
 
         <div class="mb-3">
             <label asp-for="Partido.SetsGanadosDupla1" class="form-label"></label>
@@ -58,25 +61,26 @@
             <span asp-validation-for="Partido.SetsGanadosDupla2" class="text-danger"></span>
         </div>
 
-        <div id="sets-container" class="mb-4">
-            <div class="set-block border rounded p-3 mb-3">
-                <h5 class="mb-3">Set 1</h5>
-                <input name="Partido.Sets[0].PuntosDupla1" placeholder="Puntos Dupla 1" class="form-control mb-2" required />
-                <input name="Partido.Sets[0].PuntosDupla2" placeholder="Puntos Dupla 2" class="form-control" required />
-            </div>
+        @Html.AntiForgeryToken()
 
-            <div class="set-block border rounded p-3 mb-3">
-                <h5 class="mb-3">Set 2</h5>
-                <input name="Partido.Sets[1].PuntosDupla1" placeholder="Puntos Dupla 1" class="form-control mb-2" required />
-                <input name="Partido.Sets[1].PuntosDupla2" placeholder="Puntos Dupla 2" class="form-control" required />
-            </div>
-
-            <div class="set-block border rounded p-3 mb-3" id="set3" style="display:none;">
-                <h5 class="mb-3">Set 3 (Tie-break)</h5>
-                <input name="Partido.Sets[2].PuntosDupla1" placeholder="Puntos Dupla 1" class="form-control mb-2" />
-                <input name="Partido.Sets[2].PuntosDupla2" placeholder="Puntos Dupla 2" class="form-control" />
-            </div>
+        <div class="set-block border rounded p-3 mb-3">
+            <h5 class="mb-3">Set 1</h5>
+            <input asp-for="Partido.Sets[0].PuntosDupla1" class="form-control mb-2" type="number" />
+            <input asp-for="Partido.Sets[0].PuntosDupla2" class="form-control" type="number" />
         </div>
+
+        <div class="set-block border rounded p-3 mb-3">
+            <h5 class="mb-3">Set 2</h5>
+            <input asp-for="Partido.Sets[1].PuntosDupla1" class="form-control mb-2" type="number" />
+            <input asp-for="Partido.Sets[1].PuntosDupla2" class="form-control" type="number" />
+        </div>
+
+        <div class="set-block border rounded p-3 mb-3" id="set3" style="display:none;">
+            <h5 class="mb-3">Set 3 (Tie-break)</h5>
+            <input asp-for="Partido.Sets[2].PuntosDupla1" class="form-control mb-2" type="number" />
+            <input asp-for="Partido.Sets[2].PuntosDupla2" class="form-control" type="number" />
+        </div>
+
 
         <div class="text-danger mb-3" id="dupla-error" style="display: none;">
             No podés seleccionar la misma dupla en ambos campos.
