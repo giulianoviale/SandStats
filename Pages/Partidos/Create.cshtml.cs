@@ -97,7 +97,6 @@ namespace SandStats.Pages.Partidos
             // Si hay errores de validación hasta acá, volver a la página
             if (!ModelState.IsValid)
             {
-                await OnGet();   // recarga SelectList Duplas
                 return Page();
             }
 
