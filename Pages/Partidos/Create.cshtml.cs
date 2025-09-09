@@ -63,7 +63,9 @@ namespace SandStats.Pages.Partidos
                 ModelState.AddModelError("Partido.Dupla2Id", "No se puede jugar un partido con la misma dupla.");
 
             Partido.Sets ??= new List<Set>();
-
+            // ✅ Normalizar la fecha que viene del <input type="date">
+            // (viene como Kind=Unspecified). Marcamos UTC y, si querés, solo la parte de fecha.
+            Partido.Fecha = DateTime.SpecifyKind(Partido.Fecha.Date, DateTimeKind.Utc);
             // 1) Quedarnos solo con sets que tienen algún puntaje (evita el "" -> 0 del set 3 oculto)
             var setsCargados = Partido.Sets
                 .Where(s => (s?.PuntosDupla1 ?? 0) > 0 || (s?.PuntosDupla2 ?? 0) > 0)
