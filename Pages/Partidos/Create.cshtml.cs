@@ -55,83 +55,91 @@ namespace SandStats.Pages.Partidos
 
         public IActionResult OnPost()
         {
-            // Evitar nulls
-            Partido.Sets ??= new List<Set>();
+            void RepoblarCombos() =>
+                Duplas = new SelectList(_context.Duplas.AsNoTracking(), "Id", "Alias");
 
-            // Validación base
+            // 0) Validación básica
             if (Partido.Dupla1Id == Partido.Dupla2Id)
                 ModelState.AddModelError("Partido.Dupla2Id", "No se puede jugar un partido con la misma dupla.");
 
-            // Deben venir 2 o 3 sets
-            if (Partido.Sets.Count < 2 || Partido.Sets.Count > 3)
-                ModelState.AddModelError(string.Empty, "Debés cargar 2 o 3 sets.");
+            Partido.Sets ??= new List<Set>();
 
-            // Si ya hay errores, corto acá
-            if (!ModelState.IsValid)
-            {
-                // No toques Partido.Sets: devolvé la página tal cual para no perder lo cargado
-                return Page();
-            }
+            // 1) Quedarnos solo con sets que tienen algún puntaje (evita el "" -> 0 del set 3 oculto)
+            var setsCargados = Partido.Sets
+                .Where(s => (s?.PuntosDupla1 ?? 0) > 0 || (s?.PuntosDupla2 ?? 0) > 0)
+                .ToList();
 
-            // ===== Completar datos de cada set + validar ganador =====
-            int gana1 = 0, gana2 = 0;
-            for (int i = 0; i < Partido.Sets.Count; i++)
+            if (setsCargados.Count == 0)
+                ModelState.AddModelError(string.Empty, "Debe cargar al menos un set con puntajes.");
+
+            // 2) Armar/validar cada set y calcular ganadores
+            int ganados1 = 0, ganados2 = 0;
+            for (int i = 0; i < setsCargados.Count; i++)
             {
-                var set = Partido.Sets[i];
-                set.Partido = Partido;     // relacionar
+                var set = setsCargados[i];
+
+                set.Partido = Partido;          // EF setea FK
                 set.NumeroSet = i + 1;
 
-                // Validar “tiene ganador”
-                if (set.PuntosDupla1 == set.PuntosDupla2)
+                var p1 = set.PuntosDupla1;
+                var p2 = set.PuntosDupla2;
+
+                if (p1 == p2)
                 {
-                    ModelState.AddModelError(string.Empty, $"El Set {set.NumeroSet} no tiene ganador (empate).");
+                    ModelState.AddModelError(string.Empty, $"El Set {set.NumeroSet} no tiene ganador (puntajes iguales).");
                     continue;
                 }
 
-                // Determinar ganador
-                set.GanadorDuplaId = (set.PuntosDupla1 > set.PuntosDupla2)
-                    ? Partido.Dupla1Id
-                    : Partido.Dupla2Id;
+                set.GanadorDuplaId = (p1 > p2) ? Partido.Dupla1Id : Partido.Dupla2Id;
 
-                if (set.GanadorDuplaId == Partido.Dupla1Id) gana1++; else gana2++;
+                if (set.GanadorDuplaId == Partido.Dupla1Id) ganados1++; else ganados2++;
             }
 
-            if (!ModelState.IsValid) return Page();
+            // 3) Reemplazar colección por la normalizada
+            Partido.Sets = setsCargados;
 
-            // ===== Consistencia con los campos “SetsGanados*” =====
-            // (Los mantenemos “cargables”, pero si vienen distintos los corregimos.)
-            if (Partido.SetsGanadosDupla1 != gana1 || Partido.SetsGanadosDupla2 != gana2)
+            if (!ModelState.IsValid)
             {
-                Partido.SetsGanadosDupla1 = gana1;
-                Partido.SetsGanadosDupla2 = gana2;
-                // Si preferís obligar a coincidir en vez de corregir:
-                // ModelState.AddModelError("", "Los sets ganados no coinciden con los resultados de los sets.");
-                // return Page();
-            }
-
-            // Reglas rápidas: alguien debe ganar 2 sets
-            if (gana1 != 2 && gana2 != 2)
-            {
-                ModelState.AddModelError("", "Un partido válido requiere que una dupla gane 2 sets.");
+                RepoblarCombos();
                 return Page();
             }
 
+            // 4) Mantener tu lógica de carga manual de SetsGanados.
+            //    Si vienen en 0, los completamos con lo calculado para no romper reportes.
+            if (Partido.SetsGanadosDupla1 == 0 && Partido.SetsGanadosDupla2 == 0)
+            {
+                Partido.SetsGanadosDupla1 = ganados1;
+                Partido.SetsGanadosDupla2 = ganados2;
+            }
+            else
+            {
+                // (Opcional) coherencia: la suma debería coincidir con la cantidad de sets cargados
+                var suma = Partido.SetsGanadosDupla1 + Partido.SetsGanadosDupla2;
+                if (suma != setsCargados.Count)
+                {
+                    ModelState.AddModelError(string.Empty,
+                        $"La suma de sets ganados ({suma}) no coincide con los sets cargados ({setsCargados.Count}).");
+                    RepoblarCombos();
+                    return Page();
+                }
+            }
             try
             {
                 _context.Partidos.Add(Partido);
                 _context.SaveChanges();
 
-                // Devuelvo al índice (o a detalle)
-                UltimoPartidoId = Partido.Id;
+                UltimoPartidoId = Partido.Id; // por si lo usás en la UI
                 return RedirectToPage("./Index");
             }
-            catch (Exception ex)
+            catch (DbUpdateException ex)
             {
-                // Mostrar el error en la vista en lugar de página de error
-                ModelState.AddModelError("", "No se pudo guardar el partido. " + ex.Message);
+                var msg = ex.InnerException?.Message ?? ex.Message;
+                ModelState.AddModelError(string.Empty, $"No se pudo guardar el partido. {msg}");
+                RepoblarCombos();
                 return Page();
             }
         }
+
 
 
     }
