@@ -55,63 +55,92 @@ namespace SandStats.Pages.Partidos
 
         public async Task<IActionResult> OnPost()
         {
-            // Validación: duplas distintas
+            // 1) Validación duplas
             if (Partido.Dupla1Id == Partido.Dupla2Id)
                 ModelState.AddModelError("Partido.Dupla2Id", "No se puede jugar un partido con la misma dupla.");
 
-            // Aseguro estructuras
+            bool existeD1 = await _context.Duplas.AnyAsync(d => d.Id == Partido.Dupla1Id);
+            bool existeD2 = await _context.Duplas.AnyAsync(d => d.Id == Partido.Dupla2Id);
+            if (!existeD1 || !existeD2)
+                ModelState.AddModelError(string.Empty, "Alguna de las duplas seleccionadas no existe.");
+
+            // 2) Normalizar sets recibidos (evitar nulls)
             Partido.Sets ??= new List<Set>();
-            while (Partido.Sets.Count < 3) Partido.Sets.Add(new Set());
 
-            // Completar cada set
-            for (int i = 0; i < Partido.Sets.Count; i++)
+            // Tomo solo los sets con al menos un dato cargado
+            var setsValidos = Partido.Sets
+                .Where(s => s != null && (s.PuntosDupla1 > 0 || s.PuntosDupla2 > 0))
+                .ToList();
+
+            // Deben ser 2 o 3 sets
+            if (setsValidos.Count < 2)
+                ModelState.AddModelError(string.Empty, "Cargá al menos dos sets con puntaje.");
+
+            // 3) Completar cada set y validar no-empate
+            for (int i = 0; i < setsValidos.Count; i++)
             {
-                var set = Partido.Sets[i];
-
-                // Ignorar el set 3 vacío (si no hubo tie-break)
-                if (i == 2 && set.PuntosDupla1 == 0 && set.PuntosDupla2 == 0)
-                    continue;
-
+                var set = setsValidos[i];
                 set.Partido = Partido;
                 set.NumeroSet = i + 1;
 
-                // Ganador por puntos
-                if (set.PuntosDupla1 != set.PuntosDupla2)
+                if (set.PuntosDupla1 == set.PuntosDupla2)
                 {
-                    set.GanadorDuplaId = (set.PuntosDupla1 > set.PuntosDupla2)
-                        ? Partido.Dupla1Id
-                        : Partido.Dupla2Id;
+                    ModelState.AddModelError(string.Empty, $"El Set {set.NumeroSet} tiene un empate. Ingresá un ganador.");
+                    continue;
                 }
+
+                set.GanadorDuplaId = (set.PuntosDupla1 > set.PuntosDupla2)
+                    ? Partido.Dupla1Id
+                    : Partido.Dupla2Id;
             }
 
-            // Si el usuario NO cargó SetsGanados (ambos en 0), los infiero de los sets
-            if (Partido.SetsGanadosDupla1 == 0 && Partido.SetsGanadosDupla2 == 0)
-            {
-                var sg1 = Partido.Sets.Count(s => s.GanadorDuplaId == Partido.Dupla1Id);
-                var sg2 = Partido.Sets.Count(s => s.GanadorDuplaId == Partido.Dupla2Id);
-                Partido.SetsGanadosDupla1 = sg1;
-                Partido.SetsGanadosDupla2 = sg2;
-            }
-            // 👆 Si el usuario los cargó manualmente, los respetamos (tal como pediste).
-
-            // Revalidar modelo
-            ModelState.Clear();
-            TryValidateModel(Partido);
-
+            // Si hay errores de validación hasta acá, volver a la página
             if (!ModelState.IsValid)
             {
-                await OnGet(); // recargar combos
+                await OnGet();   // recarga SelectList Duplas
                 return Page();
             }
 
-            _context.Partidos.Add(Partido);
-            await _context.SaveChangesAsync();
+            // 4) Sets ganados: respetar lo escrito; si quedaron en 0, inferir
+            if (Partido.SetsGanadosDupla1 == 0 && Partido.SetsGanadosDupla2 == 0)
+            {
+                Partido.SetsGanadosDupla1 = setsValidos.Count(s => s.GanadorDuplaId == Partido.Dupla1Id);
+                Partido.SetsGanadosDupla2 = setsValidos.Count(s => s.GanadorDuplaId == Partido.Dupla2Id);
+            }
 
-            UltimoPartidoId = Partido.Id;               // usado por tu script
-            TempData["PartidoIdUltimo"] = Partido.Id;   // (por si usás esta key también)
-            TempData["PartidoCreado"] = "1";
+            // (Opcional) coherencia: si los escribieron a mano y no coinciden, avisar pero permitir
+            var sg1Calc = setsValidos.Count(s => s.GanadorDuplaId == Partido.Dupla1Id);
+            var sg2Calc = setsValidos.Count(s => s.GanadorDuplaId == Partido.Dupla2Id);
+            if (Partido.SetsGanadosDupla1 != sg1Calc || Partido.SetsGanadosDupla2 != sg2Calc)
+            {
+                // Solo aviso; si querés bloquear, convertí esto en ModelState error
+                TempData["Warn"] = "Los sets ganados no coinciden con los ganadores por set. Se guardará igualmente.";
+            }
 
-            return RedirectToPage("./Index");
+            // 5) Reemplazar por la lista validada (sin sets vacíos)
+            Partido.Sets = setsValidos;
+
+            // 6) Guardar
+            try
+            {
+                _context.Partidos.Add(Partido);
+                await _context.SaveChangesAsync();
+
+                UltimoPartidoId = Partido.Id;
+                TempData["PartidoIdUltimo"] = Partido.Id;
+                TempData["PartidoCreado"] = "1";
+
+                return RedirectToPage("./Index");
+            }
+            catch (DbUpdateException ex)
+            {
+                // Si llegara una constraint de NOT NULL (ej: GanadorDuplaId), lo mostramos bien
+                ModelState.AddModelError(string.Empty, "No se pudo guardar el partido. Revisá que cada set tenga un ganador.");
+                // (Opcional) loguear ex.Message
+                await OnGet();
+                return Page();
+            }
         }
+
     }
 }
