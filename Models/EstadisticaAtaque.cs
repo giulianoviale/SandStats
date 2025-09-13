@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SandStats.Models
 {
@@ -17,7 +18,10 @@ namespace SandStats.Models
         public ResultadoAtaque Resultado { get; set; }
         public int Cantidad { get; set; }
 
-        public DateTime FechaCarga { get; set; } = DateTime.Now;
+        // usando System.ComponentModel.DataAnnotations.Schema;
+        [Column(TypeName = "timestamp with time zone")]
+        public DateTime FechaCarga { get; set; } = DateTime.UtcNow;
+
         // NUEVOS (para soportar “últimos puntos”):
         public ScopeEstadistica Scope { get; set; } = ScopeEstadistica.PartidoCompleto;
         public int? DesdePunto { get; set; } // ej. 16 (sets a 21) u 11 (tie-break a 15)

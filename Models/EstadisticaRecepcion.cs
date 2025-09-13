@@ -22,7 +22,10 @@
             public Jugador? Jugador { get; set; }
 
 
-            public DateTime FechaCarga { get; set; } = DateTime.Now;
+            // usando System.ComponentModel.DataAnnotations.Schema;
+            [Column(TypeName = "timestamp with time zone")]
+            public DateTime FechaCarga { get; set; } = DateTime.UtcNow;
+
 
             public ZonaSaque ZonaRecepcion { get; set; }
             public TipoRecepcion TipoRecepcion { get; set; }

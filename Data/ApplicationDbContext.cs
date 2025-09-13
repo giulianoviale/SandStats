@@ -9,7 +9,60 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
+    // Normaliza DateTime/DateTime? a UTC antes de guardar
+    private void NormalizeDateTimesToUtc()
+    {
+        var entries = ChangeTracker.Entries()
+            .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);
 
+        foreach (var entry in entries)
+        {
+            foreach (var prop in entry.Properties)
+            {
+                // DateTime (no nullable)
+                if (prop.Metadata.ClrType == typeof(DateTime))
+                {
+                    if (prop.CurrentValue is DateTime dt)
+                    {
+                        if (dt.Kind == DateTimeKind.Local)
+                            prop.CurrentValue = dt.ToUniversalTime();
+                        else if (dt.Kind == DateTimeKind.Unspecified)
+                            prop.CurrentValue = DateTime.SpecifyKind(dt, DateTimeKind.Utc);
+                    }
+                }
+                // DateTime? (nullable)
+                else if (prop.Metadata.ClrType == typeof(DateTime?))
+                {
+                    // EF boxea el DateTime? con valor como DateTime
+                    if (prop.CurrentValue is DateTime v)
+                    {
+                        if (v.Kind == DateTimeKind.Local)
+                            prop.CurrentValue = v.ToUniversalTime();
+                        else if (v.Kind == DateTimeKind.Unspecified)
+                            prop.CurrentValue = DateTime.SpecifyKind(v, DateTimeKind.Utc);
+                    }
+                }
+            }
+        }
+    }
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        NormalizeDateTimesToUtc();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        NormalizeDateTimesToUtc();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        NormalizeDateTimesToUtc();
+        return base.SaveChangesAsync(cancellationToken);
+    }
     public DbSet<Jugador> Jugadores { get; set; }
     public DbSet<Dupla> Duplas { get; set; }
     public DbSet<Partido> Partidos { get; set; }
