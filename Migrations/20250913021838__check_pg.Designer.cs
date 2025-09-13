@@ -9,11 +9,11 @@ using SandStats.Data;
 
 #nullable disable
 
-namespace SandStats.Data.Migrations
+namespace SandStats.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250908015800_PgSync")]
-    partial class PgSync
+    [Migration("20250913021838__check_pg")]
+    partial class _check_pg
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
