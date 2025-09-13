@@ -9,11 +9,16 @@ using System.Linq; // para LINQ en el seed
 static async Task SeedAsync(IHost app)
 {
     using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     var cfg = scope.ServiceProvider.GetRequiredService<IConfiguration>();
     var env = scope.ServiceProvider.GetRequiredService<IHostEnvironment>();
     var roles = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
+    // APLICA MIGRACIONES SIEMPRE al arrancar (local y Render)
+    db.Database.Migrate();
+
+    // Controla si además querés sembrar datos (roles/usuario)
     var runSeed = env.IsDevelopment() ||
                   (cfg["RUN_SEED"]?.Equals("true", StringComparison.OrdinalIgnoreCase) ?? false);
     if (!runSeed) return;
@@ -53,7 +58,6 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AllowAnonymousToAreaPage("Identity", "/Account/AccessDenied");
 });
 
-
 // 🔌 Conexión (nube: Postgres por env var / local: SQLite por appsettings)
 var pgConn = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
 var localConn = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -91,14 +95,8 @@ builder.Services.ConfigureApplicationCookie(o =>
     o.AccessDeniedPath = "/Identity/Account/AccessDenied";
     o.SlidingExpiration = true;
 });
-var app = builder.Build();
 
-// 🚀 Crear/actualizar schema al arrancar (SQLite local / Postgres nube)
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    await db.Database.MigrateAsync();
-}
+var app = builder.Build();
 
 // 🌐 Pipeline HTTP
 if (app.Environment.IsDevelopment())
@@ -123,5 +121,7 @@ app.UseAuthorization();
 
 app.MapRazorPages();
 
+// 🚀 Migrar DB y (opcional) sembrar roles/usuario admin
 await SeedAsync(app);
+
 app.Run();
