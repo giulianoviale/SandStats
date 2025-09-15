@@ -525,19 +525,46 @@ namespace SandStats.Pages.Estadisticas
                     if (r.Accion == TipoAcciones.PorAtras) continue;
 
                     var c = porAccion[r.Accion];
+                    // ➜ NUEVO: “Varios” no suma en Varilla/Entre Línea, pero sí en totales
+                    bool cuentaParaVE = r.Accion != TipoAcciones.Varios;
+
                     switch (r.Resultado)
                     {
-                        // VARILLA
-                        case ResultadoAtaque.DoblePositivoV: c.DP += r.S; tot.DP += r.S; varT += r.S; varillaPorAccion[r.Accion] += r.S; break;
-                        case ResultadoAtaque.PositivoV: c.P += r.S; tot.P += r.S; varT += r.S; varillaPorAccion[r.Accion] += r.S; break;
-                        case ResultadoAtaque.NegativoV: c.N += r.S; tot.N += r.S; varT += r.S; varillaPorAccion[r.Accion] += r.S; break;
-                        case ResultadoAtaque.DobleNegativoV: c.E += r.S; tot.E += r.S; varT += r.S; varillaPorAccion[r.Accion] += r.S; break;
+                        // VARILLA (…V)
+                        case ResultadoAtaque.DoblePositivoV:
+                            c.DP += r.S; tot.DP += r.S;
+                            if (cuentaParaVE) { varT += r.S; varillaPorAccion[r.Accion] += r.S; }
+                            break;
+                        case ResultadoAtaque.PositivoV:
+                            c.P += r.S; tot.P += r.S;
+                            if (cuentaParaVE) { varT += r.S; varillaPorAccion[r.Accion] += r.S; }
+                            break;
+                        case ResultadoAtaque.NegativoV:
+                            c.N += r.S; tot.N += r.S;
+                            if (cuentaParaVE) { varT += r.S; varillaPorAccion[r.Accion] += r.S; }
+                            break;
+                        case ResultadoAtaque.DobleNegativoV:
+                            c.E += r.S; tot.E += r.S;
+                            if (cuentaParaVE) { varT += r.S; varillaPorAccion[r.Accion] += r.S; }
+                            break;
 
-                        // ENTRE LÍNEA
-                        case ResultadoAtaque.DoblePositivoE: c.DP += r.S; tot.DP += r.S; linT += r.S; entreLineaPorAccion[r.Accion] += r.S; break;
-                        case ResultadoAtaque.PositivoE: c.P += r.S; tot.P += r.S; linT += r.S; entreLineaPorAccion[r.Accion] += r.S; break;
-                        case ResultadoAtaque.NegativoE: c.N += r.S; tot.N += r.S; linT += r.S; entreLineaPorAccion[r.Accion] += r.S; break;
-                        case ResultadoAtaque.DobleNegativoE: c.E += r.S; tot.E += r.S; linT += r.S; entreLineaPorAccion[r.Accion] += r.S; break;
+                        // ENTRE LÍNEA (…E)
+                        case ResultadoAtaque.DoblePositivoE:
+                            c.DP += r.S; tot.DP += r.S;
+                            if (cuentaParaVE) { linT += r.S; entreLineaPorAccion[r.Accion] += r.S; }
+                            break;
+                        case ResultadoAtaque.PositivoE:
+                            c.P += r.S; tot.P += r.S;
+                            if (cuentaParaVE) { linT += r.S; entreLineaPorAccion[r.Accion] += r.S; }
+                            break;
+                        case ResultadoAtaque.NegativoE:
+                            c.N += r.S; tot.N += r.S;
+                            if (cuentaParaVE) { linT += r.S; entreLineaPorAccion[r.Accion] += r.S; }
+                            break;
+                        case ResultadoAtaque.DobleNegativoE:
+                            c.E += r.S; tot.E += r.S;
+                            if (cuentaParaVE) { linT += r.S; entreLineaPorAccion[r.Accion] += r.S; }
+                            break;
                     }
 
                     if (r.Accion == TipoAcciones.Atq2daA1 ||
