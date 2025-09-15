@@ -99,23 +99,26 @@ namespace SandStats.Pages.Estadisticas
             RepJ2.Ataque.Rol = 2; // jugador de rol por 2
 
             // ----- K2 (cuadro único por jugador) -----
-            var pid = PartidoId ?? PartidosSeleccionados?.FirstOrDefault()?.Id;
+            int? pid = PartidosSeleccionados.Count == 1
+                ? PartidosSeleccionados[0].Id
+                : (int?)null;
 
-            // Referencia al Partido (necesaria para calcular SetsJugados)
-            Partido? partidoRef = null;
-            if (pid.HasValue)
-                partidoRef = PartidosSeleccionados.FirstOrDefault(p => p.Id == pid.Value)
-                             ?? await _db.Partidos.FindAsync(pid.Value);
+            // Partido de referencia si es 1 solo
+            Partido? partidoRef = pid.HasValue
+                ? PartidosSeleccionados.FirstOrDefault(p => p.Id == pid.Value)
+                  ?? await _db.Partidos.FindAsync(pid.Value)
+                : null;
 
             // J1
             RepJ1.K2 = await CargarK2JugadorAsync(RepJ1.Jugador.Id, pid);
-            RepJ1.K2.Partido = partidoRef;          // 👈 para SetsJugados
-            RepJ1.Ataque.K2 = RepJ1.K2;             // 👈 Ataque ahora “ve” K2
+            if (pid.HasValue) RepJ1.K2.Partido = partidoRef;
+            else RepJ1.K2.Partidos = PartidosSeleccionados;
 
             // J2
             RepJ2.K2 = await CargarK2JugadorAsync(RepJ2.Jugador.Id, pid);
-            RepJ2.K2.Partido = partidoRef;          // 👈 para SetsJugados
-            RepJ2.Ataque.K2 = RepJ2.K2;             // 👈 Ataque ahora “ve” K2
+            if (pid.HasValue) RepJ2.K2.Partido = partidoRef;
+            else RepJ2.K2.Partidos = PartidosSeleccionados;
+
 
 
 
@@ -835,8 +838,17 @@ namespace SandStats.Pages.Estadisticas
             // 👇 agregá esta propiedad
             public Partido? Partido { get; set; }
 
+            // 🔹 agregá esto:
+            public List<Partido>? Partidos { get; set; }
+
+            // 👇 ahora calcula bien para 1 o varios partidos
+            public int SetsJugados =>
+                (Partidos != null && Partidos.Count > 0)
+                    ? Partidos.Sum(p => (p.SetsGanadosDupla1 + p.SetsGanadosDupla2))
+                    : (Partido?.SetsJugados ?? 0);
+
+
             // ahora podés calcular SetsJugados
-            public int SetsJugados => Partido?.SetsJugados ?? 0;
             public decimal EfectHeadline => PuntosJugados.Efect;
             public int ErroresVarios { get; set; }
             public int Agregados { get; set; }

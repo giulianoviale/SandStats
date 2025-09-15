@@ -364,8 +364,10 @@ FodyWeavers.xsd
 
 # SQLite local (no queremos versionar la DB local de dev)
 *.db
+*.db*
 *.sqlite
 *.sqlite3
+*.db-journal
 
 # Archivos de secretos de usuario (dotnet user-secrets)
 secrets.json
