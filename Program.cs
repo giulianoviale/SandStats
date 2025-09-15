@@ -1,9 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics; // <-- NUEVO
 using SandStats.Data;
 using SandStats.Security;
-using System.Linq; // para LINQ en el seed
+using System.Linq;
 
 // --- SEED: crea roles y un usuario admin si no existen ---
 static async Task SeedAsync(IHost app)
@@ -15,8 +16,12 @@ static async Task SeedAsync(IHost app)
     var roles = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
-    // APLICA MIGRACIONES SIEMPRE al arrancar (local y Render)
-    db.Database.Migrate();
+    // --- INIT DB: DEV => EnsureCreated / PROD => Migrate  ---------------------
+    if (env.IsDevelopment())
+        await db.Database.EnsureCreatedAsync();   // <-- CAMBIO (antes hacía Migrate siempre)
+    else
+        await db.Database.MigrateAsync();
+    // -------------------------------------------------------------------------
 
     // Controla si además querés sembrar datos (roles/usuario)
     var runSeed = env.IsDevelopment() ||
@@ -69,6 +74,10 @@ builder.Services.AddDbContext<ApplicationDbContext>(opt =>
         opt.UseNpgsql(conn);   // nube (Render)
     else
         opt.UseSqlite(conn);   // local
+
+    // En DEV ignoramos el warning de "pending model changes" para que no explote
+    if (builder.Environment.IsDevelopment())
+        opt.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning)); // <-- NUEVO
 });
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
@@ -110,18 +119,13 @@ else
 }
 
 app.UseHttpsRedirection();
-
-// 📦 MUY IMPORTANTE: servir estáticos ANTES de routing/autorización
 app.UseStaticFiles();
-
 app.UseRouting();
-
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapRazorPages();
 
-// 🚀 Migrar DB y (opcional) sembrar roles/usuario admin
+// 🚀 Inicializar DB y (opcional) sembrar roles/usuario admin
 await SeedAsync(app);
 
 app.Run();
