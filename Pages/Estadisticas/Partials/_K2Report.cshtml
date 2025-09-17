@@ -2,21 +2,26 @@
 
 @functions {
     string Pct(decimal d) => (d * 100m).ToString("0") + "%";
+}
 
-    // pinta celdas numéricas para una fila K2
-    void Cells(SandStats.Pages.Estadisticas.K2Counts c)
+@{
+    // Armamos filas y totales
+    var filas = new[]
     {
-        @:<td class="text-end">@c.DP</td>
-        @:<td class="text-end">@c.P</td>
-        @:<td class="text-end">@c.N</td>
-        @:<td class="text-end">@c.DN</td>
-        @:<td class="text-end fw-semibold">@c.Total</td>
-        @:<td class="text-end fw-semibold">@Pct(c.Efect)</td>
-        @:<td class="text-end">@Pct(c.PctDP)</td>
-        @:<td class="text-end">@Pct(c.PctP)</td>
-        @:<td class="text-end">@Pct(c.PctN)</td>
-        @:<td class="text-end">@Pct(c.PctDN)</td>
-    }
+        new { Nombre = "Puntos jugados en K2", C = Model.PuntosJugados },
+        new { Nombre = "Saques FLOTADOS",      C = Model.SaquesFlotado },
+        new { Nombre = "Saques POTENCIA",      C = Model.SaquesPotencia },
+        new { Nombre = "Bloqueos Atq A 1",     C = Model.BloqueoA1 },
+        new { Nombre = "Bloqueos Atq A 6",     C = Model.BloqueoA6 },
+        new { Nombre = "Bloqueos At A 5",      C = Model.BloqueoA5 }
+    };
+
+    int totalAll = filas.Sum(r => r.C.Total);
+    int sumDP = filas.Sum(r => r.C.DP);
+    int sumP = filas.Sum(r => r.C.P);
+    int sumN = filas.Sum(r => r.C.N);
+    int sumDN = filas.Sum(r => r.C.DN);
+    decimal efectTotal = totalAll == 0 ? 0m : (sumDP + sumP) / (decimal)totalAll;
 }
 
 <div class="card mb-3">
@@ -27,59 +32,52 @@
 
     <div class="card-body p-2">
         <div class="table-responsive">
-            <table class="table table-sm table-bordered align-middle mb-2">
+            <table class="table table-sm table-bordered align-middle text-center mb-2">
                 <thead class="table-light">
                     <tr>
-                        <th class="text-start" style="min-width:190px">Sección</th>
-                        <th style="width:60px">#</th>
-                        <th style="width:60px">+</th>
-                        <th style="width:60px">-</th>
-                        <th style="width:60px">=</th>
-                        <th style="width:80px">Total</th>
-                        <th style="width:72px">Efecti</th>
-                        <th style="width:72px">Efecti</th>
-                        <th style="width:72px">Efecti</th>
-                        <th style="width:72px">Efecti</th>
-                        <th style="width:72px">Efecti</th>
+                        <th class="text-start">Acción</th>
+                        <th>%T <span class="text-muted small">(K2)</span></th>
+                        <th>Efect</th>
+                        <th>%#</th>
+                        <th>%+</th>
+                        <th>%-</th>
+                        <th>%=</th>
+                        <th>TOTAL</th>
+                      
+                        <th>#</th>
+                        <th>+</th>
+                        <th>-</th>
+                        <th>=</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td class="text-start fw-semibold">Puntos jugados en K2</td>
-                        @{
-                            Cells(Model.PuntosJugados);
-                        }
-                    </tr>
-                    <tr>
-                        <td class="text-start fw-semibold">Saques FLOTADOS</td>
-                        @{
-                            Cells(Model.SaquesFlotado);
-                        }
-                    </tr>
-                    <tr>
-                        <td class="text-start fw-semibold">Saques POTENCIA</td>
-                        @{
-                            Cells(Model.SaquesPotencia);
-                        }
-                    </tr>
-                    <tr>
-                        <td class="text-start fw-semibold">Bloqueos Atq A 1</td>
-                        @{
-                            Cells(Model.BloqueoA1);
-                        }
-                    </tr>
-                    <tr>
-                        <td class="text-start fw-semibold">Bloqueos Atq A 6</td>
-                        @{
-                            Cells(Model.BloqueoA6);
-                        }
-                    </tr>
-                    <tr>
-                        <td class="text-start fw-semibold">Bloqueos At A 5</td>
-                        @{
-                            Cells(Model.BloqueoA5);
-                        }
-                    </tr>
+                    @foreach (var r in filas)
+                    {
+                        var c = r.C;
+                        var pctT = totalAll == 0 ? 0m : (decimal)c.Total / totalAll;
+
+                        <tr>
+                            <td class="text-start fw-semibold">@r.Nombre</td>
+                            <td>@Pct(pctT)</td>
+                            <td class="text-end fw-semibold">@Pct(c.Efect)</td>
+
+                            <td>@Pct(c.PctDP)</td>
+                            <td>@Pct(c.PctP)</td>
+                            <td>@Pct(c.PctN)</td>
+                            <td>@Pct(c.PctDN)</td>
+
+                            <td class="text-end fw-semibold">@c.Total</td>
+
+                          
+
+                            <td class="text-end">@c.DP</td>
+                            <td class="text-end">@c.P</td>
+                            <td class="text-end">@c.N</td>
+                            <td class="text-end">@c.DN</td>
+                        </tr>
+                    }
+
+                    
                 </tbody>
             </table>
         </div>
@@ -88,7 +86,6 @@
             <div class="col-auto">Sets JUGADOS: <strong>@Model.SetsJugados</strong></div>
             <div class="col-auto">Errores varios: <strong>@Model.ErroresVarios</strong></div>
             <div class="col-auto">Agregados: <strong>@Model.Agregados</strong></div>
-            
         </div>
     </div>
 </div>
