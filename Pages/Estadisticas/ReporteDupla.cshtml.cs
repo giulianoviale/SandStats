@@ -336,22 +336,26 @@ namespace SandStats.Pages.Estadisticas
             // K1 total = TotalJugador - K2
             var k1Total = Math.Max(0, totalJugador - k2Total);
 
-            // K1 por “segunda” y “sin segunda”
-            var k1De2da = atq2da.Total;             // solo familia Atq2da
-            var k1Sin2da = Math.Max(0, k1Total - k1De2da);
-
-            // Para Efectividad K1, restamos del total global los impactos que son K2
+            // Desglose de DP/P solo para K1 (sacando lo que es K2)
             int k1DP = countsAll.DP - k2Counts.DP;
             int k1P = countsAll.P - k2Counts.P;
-            int k1N = countsAll.N - k2Counts.N;
-            int k1E = countsAll.E - k2Counts.E;
 
-            decimal efectK1 = k1Total > 0 ? (k1DP + k1P) / (decimal)k1Total : 0m;
+            // ---- EFECTIVIDADES ----
+            // K1 principal (recepción + 2da)
+            decimal efectK1Principal = k1Total > 0 ? (k1DP + k1P) / (decimal)k1Total : 0m;
+
+            // K1 solo 2da  -> usar familia Atq2da (es “K1 de 2da”)
+            decimal efectK1De2da = atq2da.Total > 0 ? (atq2da.DP + atq2da.P) / (decimal)atq2da.Total : 0m;
+
+            // K1 sin 2da  -> K1 principal menos Atq2da
+            int k1Sin2daTotal = Math.Max(0, k1Total - atq2da.Total);
+            int sin2daDP = k1DP - atq2da.DP;
+            int sin2daP = k1P - atq2da.P;
+            decimal efectK1Sin2da = k1Sin2daTotal > 0 ? (sin2daDP + sin2daP) / (decimal)k1Sin2daTotal : 0m;
+
             decimal efectAtk = countsAll.Efect;
-
             decimal pctK1 = totalJugador > 0 ? k1Total / (decimal)totalJugador : 0m;
             decimal pctNoK1 = 1m - pctK1;
-
             // ===================================================================
 
             return new AtaquePlayerReport
@@ -369,12 +373,20 @@ namespace SandStats.Pages.Estadisticas
 
                 // === Métricas K1/K2 para el cuadro principal ===
                 TotalK1 = k1Total,
-                TotalK1Sin2da = k1Sin2da,
-                TotalK1De2da = k1De2da,
+                TotalK1Sin2da = k1Sin2daTotal,
+                TotalK1De2da = atq2da.Total,
                 PctK1 = pctK1,
                 PctNoK1 = pctNoK1,
-                EfectividadK1 = efectK1,
-                EfectividadAtaque = efectAtk
+                EfectividadK1 = efectK1Principal,        // por compatibilidad con lo que ya usabas
+                EfectividadAtaque = efectAtk,
+                // NUEVAS: efectividades pedidas
+                EfectividadK1Principal = efectK1Principal,
+                EfectividadK1Sin2da = efectK1Sin2da,
+                EfectividadK1De2da = efectK1De2da,
+
+                // (opcional) Totales/efect K2 si querés mostrarlos
+                TotalK2 = k2Total,
+                EfectividadK2 = k2Counts.Efect
             };
         }
         private static bool EsK1(TipoAcciones a)
@@ -811,6 +823,13 @@ namespace SandStats.Pages.Estadisticas
         public decimal PctK1 { get; set; }
         public decimal PctNoK1 { get; set; }
         public K2Report? K2 { get; set; }
+
+        public int TotalK2 { get; set; }
+        public decimal EfectividadK2 { get; set; }
+
+        public decimal EfectividadK1Principal { get; set; }  // K1 (recep + 2da)
+        public decimal EfectividadK1Sin2da { get; set; }      // K1 sin 2da
+        public decimal EfectividadK1De2da { get; set; }       // K1 solo 2da
 
         public decimal EfectividadK1 { get; set; }
         public decimal EfectividadAtaque { get; set; }

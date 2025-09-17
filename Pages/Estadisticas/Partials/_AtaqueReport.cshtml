@@ -59,97 +59,106 @@
 
 }
 
-<!-- ======================= ATAQUE — RESUMEN ======================= -->
+@* ======================= ATAQUE — RESUMEN ======================= *@
+@{
+    // Helpers
+    string Pct(decimal d) => (d * 100m).ToString("0") + "%";
+    Func<decimal, string> Semaforo = v => v >= 0.70m ? "ef-high" : (v >= 0.50m ? "ef-mid" : "ef-low"); // umbrales K1
+
+    
+    // Efectividades (ajustá los orígenes si tus nombres difieren)
+    // Principal (K1 total = sin2da + de2da)
+    var totalK1Principal = totalK1Sin2da + totalK1De2da;
+    var efectK1Principal = efectAtk;                    // ya lo tenías calculado
+
+    // K1 SIN 2da: si ya lo tenés, usalo; si no, calculo a partir de breakdown
+    // decimal efectK1Sin2da = Model.K1Sin2daTotales?.Efect ?? 0m;
+    decimal efectK1Sin2da = efectK1Principal; // <-- si no tenés otro valor, dejá este y luego lo reemplazás por el real
+
+    
+    decimal efectK1De2da = Model.TotalK2;  // si ya tenés esa propiedad
+
+    // Efectividad K2 (opcional, para mostrarla en su fila)
+    decimal efectK2 = Model.TotalK2 ;
+
+}
+
 <div class="card bg-light mb-3">
     <div class="card-header fw-semibold">Ataque — Resumen</div>
     <div class="card-body">
-        <div class="row g-3">
-            <div class="col-12 col-lg-8">
-                <div class="border rounded p-3">
-                    <table class="table table-sm mb-0">
-                        <tbody>
-                            <tr>
-                                <td>Cantidad ataques</td>
-                                <td class="text-end fw-semibold">@Model.Totales.Total</td>
-                            </tr>
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered align-middle w-100" style="min-width: 760px;">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:55%;">Métrica</th>
+                        <th class="text-end" style="width:15%;">Cant.</th>
+                        <th class="text-end" style="width:15%;">Efect.</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Cantidad de ataques</td>
+                        <td class="text-end fw-semibold">@Model.Totales.Total</td>
+                        <td class="text-end text-muted">—</td>
+                    </tr>
 
-                            <tr>
-                                <td>Efectividad de K1</td>
-                                <td class="text-end fw-semibold @Semaforo(efectAtk)">
-                                    @Pct(efectAtk)
-                                </td>
-                            </tr>
-
-                        <td>Total K1 SIN 2da</td>
-                        <td class="text-end fw-semibold">
-                            @totalK1Sin2da
-                            <span class="text-muted">
-                                (@Pct(pctK1SobreTotal))
-                            </span>
+                    <tr>
+                        <td>K1 (principal: recepción + 2da)</td>
+                        <td class="text-end fw-semibold">@Model.TotalK1</td>
+                        <td class="text-end fw-semibold @Semaforo(Model.EfectividadK1Principal)">
+                            @Pct(Model.EfectividadK1Principal)
                         </td>
-                        </tr>
+                    </tr>
 
-                        <tr>
-                            <td>Total K1 CON 2da</td>
-                            <td class="text-end fw-semibold">
-                                @totalK1De2da
-                                <span class="text-muted">
-                                    (@Pct(pct2daSobreTotalK1yK2))
-                                </span>
-                            </td>
-                        </tr>
+                    <tr>
+                        <td>K1 sin pelotas de 2da</td>
+                        <td class="text-end fw-semibold">@Model.TotalK1Sin2da</td>
+                        <td class="text-end fw-semibold @Semaforo(Model.EfectividadK1Sin2da)">
+                            @Pct(Model.EfectividadK1Sin2da)
+                        </td>
+                    </tr>
 
+                    <tr>
+                        <td>K1 solo de 2da</td>
+                        <td class="text-end fw-semibold">@Model.TotalK1De2da</td>
+                        <td class="text-end fw-semibold @Semaforo(Model.EfectividadK1De2da)">
+                            @Pct(Model.EfectividadK1De2da)
+                        </td>
+                    </tr>
 
+                    <tr>
                         <td>Total K2</td>
-                        <td class="text-end fw-semibold">
-                            @totalK2
-                            <span class="text-muted">(@Pct(pctK2SobreTotal))</span>
+                        <td class="text-end fw-semibold">@Model.TotalK2</td>
+                        <td class="text-end fw-semibold @Semaforo(Model.EfectividadK2)">
+                            @Pct(Model.EfectividadK2)
                         </td>
-                        </tr>
-                            <tr>
-                                <td>Cantidad #</td>
-                                <td class="text-end">
-                                    @Model.Totales.DP
-                                    <span class="text-muted">(@Pct(Model.Totales.PctDP))</span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Cantidad +</td>
-                                <td class="text-end">
-                                    @Model.Totales.P
-                                    <span class="text-muted">(@Pct(Model.Totales.PctP))</span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Cantidad −</td>
-                                <td class="text-end">
-                                    @Model.Totales.N
-                                    <span class="text-muted">(@Pct(Model.Totales.PctN))</span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Cantidad =</td>
-                                <td class="text-end">
-                                    @Model.Totales.E
-                                    <span class="text-muted">(@Pct(Model.Totales.PctE))</span>
-                                </td>
-                            </tr>
+                    </tr>
 
-                        
-
-                           
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="col-12 col-lg-4">
-                @* espacio para paneles laterales si los querés *@
-            </div>
+                    <tr>
+                        <td>Cantidad #</td>
+                        <td class="text-end">@Model.Totales.DP</td>
+                        <td class="text-end text-muted">@Pct(Model.Totales.PctDP)</td>
+                    </tr>
+                    <tr>
+                        <td>Cantidad +</td>
+                        <td class="text-end">@Model.Totales.P</td>
+                        <td class="text-end text-muted">@Pct(Model.Totales.PctP)</td>
+                    </tr>
+                    <tr>
+                        <td>Cantidad −</td>
+                        <td class="text-end">@Model.Totales.N</td>
+                        <td class="text-end text-muted">@Pct(Model.Totales.PctN)</td>
+                    </tr>
+                    <tr>
+                        <td>Cantidad =</td>
+                        <td class="text-end">@Model.Totales.E</td>
+                        <td class="text-end text-muted">@Pct(Model.Totales.PctE)</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
-
 <!-- ======================= ATAQUE — POR LADO ======================= -->
 @foreach (var lado in ordenLados)
 {
