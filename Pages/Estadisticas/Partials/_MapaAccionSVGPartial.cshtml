@@ -1,0 +1,134 @@
+﻿@model SandStats.Pages.Estadisticas.MapaAtaqueViewModel
+@using SandStats.Models
+@using SandStats.Pages.Estadisticas
+@using System.Globalization
+@using System.Text
+
+@functions {
+    string Pct(decimal d) => (d * 100m).ToString("0") + "%";
+    string PctInt(decimal d) => Math.Round(d * 100m).ToString("0") + "%";
+
+    string Normalize(string s)
+    {
+        s ??= "";
+        var nf = s.Normalize(NormalizationForm.FormD);
+        var sb = new StringBuilder(nf.Length);
+        foreach (var ch in nf)
+            if (CharUnicodeInfo.GetUnicodeCategory(ch) != UnicodeCategory.NonSpacingMark)
+                sb.Append(char.ToLowerInvariant(ch));
+        return sb.ToString().Normalize(NormalizationForm.FormC);
+    }
+    string BucketFromTitle(string t)
+    {
+        var n = Normalize(t);
+        bool atq = n.Contains("ataque") || n.Contains("atq");
+        bool toq = n.Contains("toque");
+        bool lin = n.Contains("linea");
+        bool dia = n.Contains("diago");
+        bool d2 = n.Contains("2da");
+        if (d2) return "2DA";
+        if (atq && dia) return "AD";
+        if (atq && lin) return "AL";
+        if (toq && dia) return "TD";
+        if (toq && lin) return "TL";
+        return "AL";
+    }
+    string ColorFor(string bucket) => bucket switch
+    {
+        "AD" => "#D9F2D9",
+        "AL" => "#FFE58A",
+        "TD" => "#CFE5FF",
+        "TL" => "#EEE5D0",
+        "2DA" => "#EBD7FF",
+        _ => "#EEE"
+    };
+
+    // Geometría
+    const int margin = 10;
+    const int headerH = 24;
+    const int cw = 120, ch = 54; // celdas 3x3
+    // Fijamos altura para que TODAS las canchitas midan igual (se alinean)
+    const int svgW = 380;
+    const int svgH = 300;
+
+    int ox = margin;
+    int oy = margin + headerH;
+    (int x, int y) CellPos(int c, int r) => (ox + c * cw, oy + r * ch);
+    string FillFor(bool hasData) => hasData ? "#f2f2f2" : "#ffffff";
+}
+
+@{
+    var totalGlobal = Model.TotalAtaques;
+    var acciones = Model.Acciones ?? new List<MapaAccionVM>();
+    var bucket = BucketFromTitle(Model.Titulo);
+    var headerColor = ColorFor(bucket);
+
+    var fieldW = svgW - margin * 2;
+    var redY = oy + ch * 3 + 6;
+    var campoY = redY + 8 + 12;
+
+    // Sticker: usar Url.Content para que SIEMPRE resuelva el path
+    var playerHref = Url.Content("~/img/player_attack.svg");
+    // posición segun lado/rol
+    int leftX = margin + 36;
+    int rightX = margin + fieldW - 36;
+    int centerX = margin + (fieldW / 2) - 10;
+    int px =
+        Model.Lado == SandStats.Models.TipoLado.Medio ? centerX :
+        Model.Lado == SandStats.Models.TipoLado.Bueno ? (Model.Rol == 4 ? leftX : rightX) :
+        /* Atrás */                                       (Model.Rol == 2 ? leftX : rightX);
+    int py = campoY + 26;
+    const int playerW = 22, playerH = 30;
+    int imgX = px - playerW / 2, imgY = py - playerH / 2;
+}
+
+<svg class="mapa-svg" viewBox="0 0 380 300" width="100%" role="img"
+     aria-label="Mapa @Model.Titulo" shape-rendering="crispEdges">
+    <!-- Marco -->
+    <rect x="1" y="1" width="@(svgW - 2)" height="@(svgH - 2)" fill="none" stroke="#000" stroke-width="2" />
+
+    <!-- Header coloreado -->
+    <rect x="@margin" y="@margin" width="@fieldW" height="24" fill="@headerColor" stroke="#d0d0d0" />
+    <text x="@(margin + 6)" y="@(margin + 16)" font-size="13" font-weight="700" fill="#333">@Model.Titulo</text>
+
+    <!-- Fondo suave bajo grilla -->
+    <rect x="@margin" y="@oy" width="@fieldW" height="@(3 * ch)" fill="@headerColor" fill-opacity="0.25" stroke="none" />
+
+    <!-- Grilla 3x3 -->
+    @for (int r = 0; r < 3; r++)
+    {
+        for (int c = 0; c < 3; c++)
+        {
+            var (x, y) = CellPos(c, r);
+            var acc = acciones.FirstOrDefault(a => a.Col == c && a.Row == r);
+            var hasData = (acc?.C?.Total ?? 0) > 0;
+            <rect x="@x" y="@y" width="@cw" height="@ch" fill="@FillFor(hasData)" stroke="#cfcfcf" />
+        }
+    }
+
+    <!-- Texto por celda (si hay datos) -->
+    @foreach (var a in acciones)
+    {
+        var (x, y) = CellPos(a.Col, a.Row);
+        var cts = a.C ?? new AtkCounts();
+        var cant = cts.Total;
+        var frac = (Model.TotalAtaques > 0) ? (decimal)cant / Model.TotalAtaques : 0m;
+
+
+        <g transform="translate(@x,@y)">
+            <text x="8" y="16" font-size="11" fill="#666">Efec @Pct(cts.Efect) - Cant @cant</text>
+            <text x="8" y="28" font-size="10" fill="#666">@cts.DP#/@cts.P+/@cts.N−/@cts.E=</text>
+            <text x="8" y="48" font-size="12" font-weight="700" fill="#333">@a.Nombre</text>
+            <text x="@(cw - 8)" y="48" font-size="14" font-weight="800" fill="#d00000" text-anchor="end">@PctInt(frac)</text>
+        </g>
+    }
+
+    <!-- Red -->
+    <rect x="@margin" y="@redY" width="@fieldW" height="8" fill="#444" />
+
+    <!-- Campo propio -->
+    <rect x="@margin" y="@campoY" width="@fieldW" height="70" fill="#f8f9fa" stroke="#cfcfcf" />
+
+    <!-- Sticker -->
+    <image href="@playerHref" x="@imgX" y="@imgY" width="@playerW" height="@playerH" preserveAspectRatio="xMidYMid meet" />
+</svg>

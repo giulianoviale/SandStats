@@ -1,0 +1,93 @@
+﻿@using SandStats.Models.SandStats.Models   /* TipoAcciones */
+@using SandStats.Pages.Estadisticas        /* AtkCounts */
+@model MapaAtaqueViewModel
+
+@{
+    string Pct(decimal d) => (d * 100m).ToString("0") + "%";
+    string Sem(decimal p) => p > 0.30m ? "sem-high" : (p >= 0.15m ? "sem-mid" : "sem-low");
+    string Fill(bool has) => has ? "#f2f2f2" : "#ffffff";
+
+    // % global del bloque (familia) sobre todos los ataques
+    var pctGlobal = (Model.TotalAtaques <= 0) ? 0m : (decimal)Model.TotalFamilia / Model.TotalAtaques;
+
+    // Helpers por acción
+    Func<AtkCounts, string> EfectTxt = c => c.Total == 0 ? "0%" : Pct((c.DP + c.P) / (decimal)c.Total);
+    Func<AtkCounts, string> Desglose = c => $"{c.DP}#/{c.P}+/{c.N}−/{c.E}=";
+    Func<AtkCounts, string> PctSobreFamilia = c => Model.TotalFamilia == 0 ? "0%" : Pct(c.Total / (decimal)Model.TotalFamilia);
+
+    // Geometría (coincide con lo que ya aprobaste visualmente)
+    int x0 = 10, y0 = 10, cellW = 120, cellH = 54;   // grilla rival
+    int frameW = 360, frameH = 240;
+    int netH = 8, ownH = 70;
+}
+
+<style>
+    .sem-low {
+        color: #d00000;
+        font-weight: 700;
+    }
+    /* rojo   */
+    .sem-mid {
+        color: #d39e00;
+        font-weight: 700;
+    }
+    /* amarillo */
+    .sem-high {
+        color: #2f9e44;
+        font-weight: 700;
+    }
+    /* verde  */
+</style>
+
+<h3 style="margin:.5rem 0;">
+    @Model.Titulo <span class="@Sem(pctGlobal)">(@Pct(pctGlobal))</span>
+</h3>
+
+<svg viewBox="0 0 380 260" width="420" role="img" aria-label="@Model.Titulo" shape-rendering="crispEdges">
+    <!-- marco -->
+    <rect x="@x0" y="@y0" width="@frameW" height="@frameH" fill="none" stroke="#000" stroke-width="2" />
+
+    <!-- grilla rival 3×3: columnas 0..2, filas 0..2 -->
+    @for (var r = 0; r < 3; r++)
+    {
+        for (var c = 0; c < 3; c++)
+        {
+            var rx = x0 + c * cellW;
+            var ry = y0 + r * cellH;
+            <rect x="@rx" y="@ry" width="@cellW" height="@cellH" fill="#fff" stroke="#cfcfcf" />
+        }
+    }
+
+    <!-- celdas ocupadas por las acciones del bloque (fondo gris si hay datos) -->
+    @foreach (var a in Model.Acciones)
+    {
+        var rx = x0 + a.Col * cellW;
+        var ry = y0 + a.Row * cellH;
+        <rect x="@rx" y="@ry" width="@cellW" height="@cellH" fill="@Fill(a.C.Total > 0)" stroke="#cfcfcf" />
+        <g transform="translate(@rx,@ry)">
+            <text x="8" y="16" font-size="11" fill="#666">Efec @EfectTxt(a.C) - Cant @a.C.Total</text>
+            <text x="8" y="28" font-size="10" fill="#666">@Desglose(a.C)</text>
+            <text x="8" y="48" font-size="12" font-weight="700" fill="#333">@a.Nombre</text>
+            <text x="@(cellW - 8)" y="48" font-size="14" font-weight="800" fill="#d00000" text-anchor="end">@PctSobreFamilia(a.C)</text>
+        </g>
+    }
+
+    <!-- red -->
+    <rect x="@x0" y="@(y0 + cellH * 3)" width="@frameW" height="@netH" fill="#444" />
+
+    <!-- campo propio (hasta borde inferior del marco) -->
+    <rect x="@x0" y="@(y0 + cellH * 3 + netH)" width="@frameW" height="@ownH" fill="#f8f9fa" stroke="#cfcfcf" />
+
+    <!-- silueta jugador: izquierda (rol 4) o derecha (rol 2) -->
+    @{
+        // offsets silueta
+        var px = Model.PlayerRight ? (x0 + frameW - 24) : (x0 + 26);
+        var py = y0 + cellH * 3 + netH + 26;
+    }
+    <g transform="translate(@px,@py)" stroke="#222" stroke-width="3" stroke-linecap="round">
+        <circle cx="10" cy="-6" r="6" fill="#222" />
+        <line x1="10" y1="0" x2="10" y2="22" />
+        <line x1="10" y1="6" x2="0" y2="18" />
+        <line x1="10" y1="6" x2="20" y2="18" />
+    </g>
+</svg>

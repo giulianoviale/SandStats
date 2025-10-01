@@ -830,7 +830,7 @@ namespace SandStats.Pages.Estadisticas
         public decimal EfectividadK1Principal { get; set; }  // K1 (recep + 2da)
         public decimal EfectividadK1Sin2da { get; set; }      // K1 sin 2da
         public decimal EfectividadK1De2da { get; set; }       // K1 solo 2da
-
+    
         public decimal EfectividadK1 { get; set; }
         public decimal EfectividadAtaque { get; set; }
         public AtaqueResumen General
@@ -926,4 +926,35 @@ namespace SandStats.Pages.Estadisticas
             K2 = new K2Report()
         };
     }
+    //Mapa Ataque VM 
+    public class MapaAtaqueViewModel
+    {
+        public string Titulo { get; set; } = "";
+        public bool PlayerRight { get; set; }  // true si el muñeco va a la derecha
+        public int TotalAtaques { get; set; }  // denominador global (K1 + 2da, sin PorAtras)
+        public List<MapaAccionVM> Acciones { get; set; } = new();
+
+        // ⬇ resumen en el hueco (fila 2, col 3 visual / col=2,row=1 en 0-based)
+        public List<(string Label, decimal Pct)>? Resumen { get; set; }
+        public int ResumenCol { get; set; } = 2;
+        public int ResumenRow { get; set; } = 1;
+        public int TotalFamilia { get; set; }
+        // NUEVO — en tu clase existente:
+        public int Rol { get; set; }            // 2 ó 4
+        public SandStats.Models.TipoLado Lado { get; set; }   // Bueno / Medio / Atras
+    }
+
+    public class MapaAccionVM
+    {
+        public string Nombre { get; set; } = "";  // "TL1", "ATQ 6", "TD 9", "2da A6", etc.
+        public AtkCounts C { get; set; } = new(); // DP,P,N,E,Total
+        public int Col { get; set; }              // 0..2
+        public int Row { get; set; }              // 0..2
+        public MapaAccionVM() { }
+        public MapaAccionVM(string nombre, AtkCounts counts, int col, int row)
+        { Nombre = nombre; C = counts; Col = col; Row = row; }
+    }
+  
+
+
 }

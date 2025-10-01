@@ -1,0 +1,32 @@
+﻿@model (SandStats.Pages.Estadisticas.AtaqueLado lado, int rol, int totalGlobal)
+
+@{
+    // helpers locales
+    string Pct(decimal d) => (d * 100m).ToString("0") + "%";
+    int PorDe(SandStats.Models.TipoLado l, int r)
+    {
+        if (l == SandStats.Models.TipoLado.Medio) return 3;
+        if (r == 4) return l == SandStats.Models.TipoLado.Bueno ? 4 : 2;
+        return l == SandStats.Models.TipoLado.Bueno ? 2 : 4;
+    }
+
+    var data = Model.lado;
+    var totalLado = data.Totales?.Total ?? 0;
+
+    // porcentaje global del título (acciones de este lado sobre total global)
+    var pctGlobal = Model.totalGlobal == 0 ? 0m : (decimal)totalLado / Model.totalGlobal;
+}
+
+
+<div class="col map-slot">
+    <div class="card h-100">
+        <div class="card-header d-flex justify-content-between">
+            <span class="fw-semibold">Lado @data.Lado (POR @PorDe(data.Lado, Model.rol))</span>
+            <span class="fw-bold text-danger">@Pct(pctGlobal)</span>
+        </div>
+        <div class="card-body">
+            @* acá dentro llamás al SVG parcial que ya tenés *@
+            @await Html.PartialAsync("_MapaAccionSVGPartial", data)
+        </div>
+    </div>
+</div>
