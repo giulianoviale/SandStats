@@ -58,10 +58,15 @@
 }
 
 @{
-    var totalGlobal = Model.TotalAtaques;
     var acciones = Model.Acciones ?? new List<MapaAccionVM>();
     var bucket = BucketFromTitle(Model.Titulo);
     var headerColor = ColorFor(bucket);
+
+    // Denominador global para el % rojo
+    bool is2daBucket = (bucket == "2DA");
+    int denomGlobal = is2daBucket && Model.TotalFamilia > 0
+        ? Model.TotalFamilia        // % sobre el total global de 2da
+        : Model.TotalAtaques;       // %T (sin 2da) en los mapas normales
 
     var fieldW = svgW - margin * 2;
     var redY = oy + ch * 3 + 6;
@@ -69,6 +74,7 @@
 
     // Sticker: usar Url.Content para que SIEMPRE resuelva el path
     var playerHref = Url.Content("~/img/player_attack.svg");
+
     // posición segun lado/rol
     int leftX = margin + 36;
     int rightX = margin + fieldW - 36;
@@ -112,14 +118,20 @@
         var (x, y) = CellPos(a.Col, a.Row);
         var cts = a.C ?? new AtkCounts();
         var cant = cts.Total;
-        var frac = (Model.TotalAtaques > 0) ? (decimal)cant / Model.TotalAtaques : 0m;
 
+        int varillas = a.TotalVarilla;
+        int entrelineas = a.TotalEntreLinea;
+
+        decimal pctVar = cant == 0 ? 0m : (decimal)varillas / cant;
+        decimal pctEnt = cant == 0 ? 0m : (decimal)entrelineas / cant;
 
         <g transform="translate(@x,@y)">
-            <text x="8" y="16" font-size="11" fill="#666">Efec @Pct(cts.Efect) - Cant @cant</text>
-            <text x="8" y="28" font-size="10" fill="#666">@cts.DP#/@cts.P+/@cts.N−/@cts.E=</text>
+            <text x="8" y="16" font-size="11" fill="#666">@("Efec " + Pct(cts.Efect) + " - Cant " + cant)</text>
+            <text x="8" y="28" font-size="10" fill="#666">@($"{cts.DP}#/ {cts.P}+ / {cts.N}− / {cts.E}=")</text>
             <text x="8" y="48" font-size="12" font-weight="700" fill="#333">@a.Nombre</text>
-            <text x="@(cw - 8)" y="48" font-size="14" font-weight="800" fill="#d00000" text-anchor="end">@PctInt(frac)</text>
+            <text x="@(cw - 8)" y="48" font-size="14" font-weight="800" fill="#d00000" text-anchor="end">
+                @PctInt(denomGlobal == 0 ? 0 : (decimal)cant / denomGlobal)
+            </text>
         </g>
     }
 

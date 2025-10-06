@@ -32,6 +32,10 @@ namespace SandStats.Pages.Estadisticas
         public RecepcionPlayerReport RepJ1 { get; set; } = default!;
         public RecepcionPlayerReport RepJ2 { get; set; } = default!;
 
+        public MapaAtaqueViewModel? MapaJ1 { get; set; }
+        public MapaAtaqueViewModel? MapaJ2 { get; set; } // si lo querés para el otro jugador
+
+
         public async Task<IActionResult> OnGetAsync()
         {
             if (DuplaId == 0) return RedirectToPage("/Duplas/Index");
@@ -98,6 +102,27 @@ namespace SandStats.Pages.Estadisticas
             RepJ1.Ataque.Rol = 4; // jugador de rol por 4
             RepJ2.Ataque.Rol = 2; // jugador de rol por 2
 
+            // --- ejemplo para J1 ---
+            var mapaJ1 = new MapaAtaqueViewModel
+            {
+                Titulo = "Atq línea",                      // adaptalo si corresponde
+                PlayerRight = false,
+                TotalAtaques = RepJ1.Ataque.Totales.Total, // denominador global
+                Rol = RepJ1.Ataque.Rol,
+                Lado = TipoLado.Bueno                      // o el lado que quieras mostrar
+            };
+
+            // Mapear acciones y totales V/E globales para el mapa
+            mapaJ1.Acciones = BuildMapaAccionesFromLados(RepJ1.Ataque.Lados);
+
+            // Totales V/E del mapa (suma de acciones)
+            mapaJ1.TotalVarilla = mapaJ1.Acciones.Sum(x => x.TotalVarilla);
+            mapaJ1.TotalEntreLinea = mapaJ1.Acciones.Sum(x => x.TotalEntreLinea);
+
+            // Asignalo a una propiedad del PageModel para la vista:
+            this.MapaJ1 = mapaJ1;
+
+
             // ----- K2 (cuadro único por jugador) -----
             int? pid = PartidosSeleccionados.Count == 1
                 ? PartidosSeleccionados[0].Id
@@ -108,16 +133,19 @@ namespace SandStats.Pages.Estadisticas
                 ? PartidosSeleccionados.FirstOrDefault(p => p.Id == pid.Value)
                   ?? await _db.Partidos.FindAsync(pid.Value)
                 : null;
-
             // J1
             RepJ1.K2 = await CargarK2JugadorAsync(RepJ1.Jugador.Id, pid);
-            if (pid.HasValue) RepJ1.K2.Partido = partidoRef;
-            else RepJ1.K2.Partidos = PartidosSeleccionados;
+            // ↓ sincronizá con el subreporte de ataque:
+            RepJ1.Ataque.K2 = RepJ1.K2;
+            RepJ1.Ataque.TotalK2 = RepJ1.K2.PuntosJugados.Total;
+            RepJ1.Ataque.EfectividadK2 = RepJ1.K2.PuntosJugados.Efect;
 
             // J2
             RepJ2.K2 = await CargarK2JugadorAsync(RepJ2.Jugador.Id, pid);
-            if (pid.HasValue) RepJ2.K2.Partido = partidoRef;
-            else RepJ2.K2.Partidos = PartidosSeleccionados;
+            RepJ2.Ataque.K2 = RepJ2.K2;
+            RepJ2.Ataque.TotalK2 = RepJ2.K2.PuntosJugados.Total;
+            RepJ2.Ataque.EfectividadK2 = RepJ2.K2.PuntosJugados.Efect;
+
 
 
 
@@ -310,8 +338,8 @@ namespace SandStats.Pages.Estadisticas
                 && EsK1(kv.Key)                        // Atq, Tl, Td, Varios
                 && !EsAtq2da(kv.Key))                  // sin 2da
                 .Sum(kv => kv.Value.Total);
-
-
+           
+            
             // Por lado (Bueno/Medio/Atrás)
             var lados = await ContarPorLado(qJugador, totalJugador,totalK1Sin2daJugador);
 
@@ -322,9 +350,11 @@ namespace SandStats.Pages.Estadisticas
 
             var atq2da = FamOrEmpty("Atq2da");
             var varios = FamOrEmpty("Varios");
+            int variosCount = varios.Total;
+            decimal variosEfect = varios.Efect;   // AtkCounts.Efect es decimal
             // PorAtras disponible si lo querés mostrar aparte, pero NO suma en K2/Totales
             var porAtras = FamOrEmpty("PorAtras");
-
+           
             var k2Counts = new AtkCounts(
                 atq2da.DP + varios.DP,
                 atq2da.P + varios.P,
@@ -339,7 +369,7 @@ namespace SandStats.Pages.Estadisticas
             // Desglose de DP/P solo para K1 (sacando lo que es K2)
             int k1DP = countsAll.DP - k2Counts.DP;
             int k1P = countsAll.P - k2Counts.P;
-
+           
             // ---- EFECTIVIDADES ----
             // K1 principal (recepción + 2da)
             decimal efectK1Principal = k1Total > 0 ? (k1DP + k1P) / (decimal)k1Total : 0m;
@@ -386,7 +416,10 @@ namespace SandStats.Pages.Estadisticas
 
                 // (opcional) Totales/efect K2 si querés mostrarlos
                 TotalK2 = k2Total,
-                EfectividadK2 = k2Counts.Efect
+                EfectividadK2 = k2Counts.Efect,
+
+                VariosCantidad = variosCount,
+                VariosEfectividad = variosEfect,
             };
         }
         private static bool EsK1(TipoAcciones a)
@@ -689,6 +722,54 @@ namespace SandStats.Pages.Estadisticas
             return rep;
         }
 
+        private List<MapaAccionVM> BuildMapaAccionesFromLados(List<AtaqueLado> lados)
+        {
+            var acciones = new List<MapaAccionVM>();
+
+            foreach (var lado in lados ?? Enumerable.Empty<AtaqueLado>())
+            {
+                foreach (var aa in lado.Acciones ?? Enumerable.Empty<AtaqueAccion>())
+                {
+                    // aa.TotalVarilla / aa.TotalEntreLinea provienen de ContarPorLado
+                    var mapa = new MapaAccionVM
+                    {
+                        Nombre = aa.Accion.ToString(),   // ajusta si querés labels más amigables
+                        C = aa.C ?? new AtkCounts(),
+                        Col = MapColFromAccion(aa.Accion),
+                        Row = MapRowFromLado(lado.Lado),
+                        TotalVarilla = aa.TotalVarilla,
+                        TotalEntreLinea = aa.TotalEntreLinea
+                    };
+
+                    acciones.Add(mapa);
+                }
+            }
+
+            return acciones;
+        }
+
+        // helpers simples para posicionar (ajustá según tu lógica visual)
+        private int MapRowFromLado(TipoLado lado) => lado switch
+        {
+            TipoLado.Bueno => 0,
+            TipoLado.Medio => 1,
+            TipoLado.Atras => 2,
+            _ => 1
+        };
+
+        private int MapColFromAccion(TipoAcciones accion)
+        {
+            var s = accion.ToString().ToLowerInvariant();
+
+            // ejemplo: mapear por familia/nombre; ajustalo a tu conveniencia
+            if (s.StartsWith("atq2da") || s.Contains("2da")) return 2; // ubicar 2da en columna derecha, ej.
+            if (s.StartsWith("atq")) return 2;
+            if (s.StartsWith("tl")) return 1;
+            if (s.StartsWith("td")) return 1;
+            if (s.StartsWith("poratras")) return 0;
+            // fallback
+            return 0;
+        }
 
 
 
@@ -812,7 +893,8 @@ namespace SandStats.Pages.Estadisticas
         public Dictionary<TipoAcciones, AtkCounts> PorAccion { get; set; } = new();
         public Dictionary<string, AtkCounts> Familias { get; set; } = new();
         public List<AtaqueLado> Lados { get; set; } = new();
-
+        public int VariosCantidad { get; set; }
+        public decimal VariosEfectividad { get; set; }
         public int Rol { get; set; } = 2; // 4 o 2
                                           // ======== NUEVO: métricas K1/K2 para mostrar en el resumen ========
                                           // Total K1 mostrado en el cuadro principal
@@ -942,6 +1024,8 @@ namespace SandStats.Pages.Estadisticas
         // NUEVO — en tu clase existente:
         public int Rol { get; set; }            // 2 ó 4
         public SandStats.Models.TipoLado Lado { get; set; }   // Bueno / Medio / Atras
+        public int TotalVarilla { get; set; }   // suma de ...V
+        public int TotalEntreLinea { get; set; }// suma de ...E
     }
 
     public class MapaAccionVM
@@ -950,6 +1034,9 @@ namespace SandStats.Pages.Estadisticas
         public AtkCounts C { get; set; } = new(); // DP,P,N,E,Total
         public int Col { get; set; }              // 0..2
         public int Row { get; set; }              // 0..2
+                                                  // --- nuevas ---
+        public int TotalVarilla { get; set; }   // suma de ...V para esta acción
+        public int TotalEntreLinea { get; set; }// suma de ...E para esta acción
         public MapaAccionVM() { }
         public MapaAccionVM(string nombre, AtkCounts counts, int col, int row)
         { Nombre = nombre; C = counts; Col = col; Row = row; }

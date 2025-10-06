@@ -1,55 +1,39 @@
 ﻿@model SandStats.Pages.Estadisticas.PctResumenVM
 @using System.Globalization
 @using System.Text
-@functions {
-    string ColorFor(string label)
-    {
-        label = (label ?? "").ToLowerInvariant();
-        // Colores suaves que combinan con los headers de los mapas
-        if (label.Contains("ataque diagonal") || label.Contains("atq diago")) return "#e6f7ec"; // verde muy claro
-        if (label.Contains("ataque línea") || label.Contains("atq línea")) return "#fff3bf"; // amarillo suave
-        if (label.Contains("toque diagonal")) return "#e8f0ff"; // celeste muy claro
-        if (label.Contains("toque línea")) return "#f2f2f2"; // gris claro
-        if (label.Contains("2da") || label.Contains("2ª")) return "#efe6ff"; // lila muy suave
-        return "#ffffff";
-    }
-}
 
 @functions {
+    // Normaliza: quita acentos y pasa a minúsculas
     string Normalize(string s)
     {
         s ??= "";
         var nf = s.Normalize(NormalizationForm.FormD);
-        var sb = new StringBuilder(s.Length);
+        var sb = new StringBuilder(nf.Length);
         foreach (var ch in nf)
             if (CharUnicodeInfo.GetUnicodeCategory(ch) != UnicodeCategory.NonSpacingMark)
                 sb.Append(char.ToLowerInvariant(ch));
         return sb.ToString().Normalize(NormalizationForm.FormC);
     }
-    string BucketOf(string label)
+
+    string ColorFor(string label)
     {
         var n = Normalize(label);
-        bool hasAtq = n.Contains("ataque") || n.Contains("atq");
-        bool hasToq = n.Contains("toque");
-        bool linea = n.Contains("linea");
-        bool diago = n.Contains("diago");
-        bool is2da = n.Contains("2da");
-
-        if (is2da) return "2DA";
-        if (hasAtq && diago) return "AD";
-        if (hasAtq && linea) return "AL";
-        if (hasToq && diago) return "TD";
-        if (hasToq && linea) return "TL";
-        return "AL";
+        if (n.Contains("ataque diagonal") || n.Contains("atq diago")) return "#e6f7ec"; // verde muy claro
+        if (n.Contains("ataque linea") || n.Contains("atq linea")) return "#fff3bf"; // amarillo suave
+        if (n.Contains("toque diagonal")) return "#e8f0ff"; // celeste muy claro
+        if (n.Contains("toque linea")) return "#EEE5D0"; // marron claro
+        if (n.Contains("2da") || n.Contains("2ª")) return "#efe6ff"; // lila muy suave
+        return "#ffffff";
     }
-    
-    string Pct(double v) => (v).ToString("0") + "%";
+
+    string Pct(double v) => v.ToString("0") + "%";
 }
 
 <div class="card">
     <div class="card-body p-2">
         <div class="d-flex justify-content-between align-items-center mb-1">
             <div class="fw-semibold">Distribución de acciones</div>
+            <!-- Solo AL+AD+TL+TD (sin 2da) -->
             <div class="text-muted small">Total: @Model.TotalAcciones</div>
         </div>
 
@@ -65,10 +49,10 @@
                     @foreach (var it in Model.Items)
                     {
                         var bg = ColorFor(it.Label);
-                        <tr style="background-color:@bg">
-                            <td>@it.Label</td>
-                            <td class="text-end text-danger fw-semibold">
-                                @($"{Math.Round(it.Pct)}%")
+                        <tr>
+                            <td style="background-color:@bg">@it.Label</td>
+                            <td class="text-end text-danger fw-semibold" style="background-color:@bg">
+                                @Pct(Math.Round(it.Pct))
                             </td>
                         </tr>
                     }
