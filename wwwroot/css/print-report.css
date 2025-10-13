@@ -1,0 +1,122 @@
+﻿@media print {
+    @page {
+        size: A4 landscape;
+        margin: 8mm;
+    }
+
+    header, nav, .navbar, footer, .no-print, .pagination, .breadcrumb,
+    .modal, .toast, form, .filters-bar {
+        display: none !important;
+    }
+
+    #reporte-dupla,
+    #reporte-dupla.container,
+    #reporte-dupla.container-fluid {
+        max-width: none !important;
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        font-size: 11.5px;
+        line-height: 1.25;
+    }
+
+        #reporte-dupla .row {
+            display: block !important;
+            margin: 0 !important;
+        }
+
+        #reporte-dupla [class*="col-"] {
+            width: 100% !important;
+            max-width: 100% !important;
+            padding: 0 !important;
+            float: none !important;
+        }
+
+        #reporte-dupla .table-responsive {
+            overflow: visible !important;
+        }
+
+        #reporte-dupla .shadow, #reporte-dupla .shadow-sm, #reporte-dupla .shadow-lg {
+            box-shadow: none !important;
+        }
+
+    .print-page {
+        width: 100%;
+        padding: 4mm;
+        box-sizing: border-box;
+        break-after: page;
+        page-break-after: always;
+    }
+
+    .avoid-break {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    /* === switches de visibilidad por página === */
+    /* Recepción */
+    .rec-report .rec-section {
+        display: none;
+    }
+
+    .rec-show-general .rec-general {
+        display: block;
+    }
+
+    .rec-show-flotados .rec-flotados {
+        display: block;
+    }
+
+    .rec-show-potencia .rec-potencia {
+        display: block;
+    }
+
+    .rec-show-zonas .rec-zonas {
+        display: block;
+    }
+    /* si dividís zonas aparte */
+
+    /* Ataque */
+    .atk-report .atk-section {
+        display: none;
+    }
+
+    .atk-show-resumen .atk-resumen {
+        display: block;
+    }
+
+    .atk-show-bueno .atk-lado-bueno {
+        display: block;
+    }
+
+    .atk-show-medio .atk-lado-medio {
+        display: block;
+    }
+
+    .atk-show-atras .atk-lado-atras {
+        display: block;
+    }
+
+    /* K2 (si lo envolvemos) */
+    .k2-report {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    /* densidad de tablas */
+    #reporte-dupla .table th, #reporte-dupla .table td {
+        padding: .22rem .35rem !important;
+    }
+
+    #reporte-dupla img, #reporte-dupla svg, #reporte-dupla canvas {
+        max-width: 100% !important;
+        height: auto !important;
+    }
+
+    /* por si los lados de ataque son “densos” */
+    .page-ataque-lado {
+        font-size: 11px;
+    }
+}

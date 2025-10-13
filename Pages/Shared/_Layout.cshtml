@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Saira+Condensed:wght@600;700&display=swap" rel="stylesheet">
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="~/img/logo-mark.svg" />
+    <link rel="stylesheet" href="~/css/print-report.css" asp-append-version="true" />
 
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
@@ -71,6 +72,11 @@
 
                         <!-- Estadísticas: que elijan partido en el índice -->
                         <li class="nav-item"><a class="nav-link" asp-page="/Partidos/Index">Estadísticas</a></li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" asp-page="/Reportes/Selector">Reportes</a>
+                        </li>
+
                     </ul>
 
                     <div class="d-flex align-items-center gap-2">

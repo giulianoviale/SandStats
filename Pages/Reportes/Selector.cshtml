@@ -1,0 +1,204 @@
+﻿@page
+@model SandStats.Pages.Reportes.SelectorModel
+@using SandStats.Models
+@{
+    ViewData["Title"] = "Reportes";
+    var hayResultados = Model.Partidos?.Any() == true;
+}
+
+<div class="container my-4">
+    <h2 class="fw-bold text-primary mb-3">📊 Selección de Reportes</h2>
+
+    <!-- Filtros -->
+    <form method="post" asp-page-handler="Buscar" class="card card-body shadow-sm mb-4">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">Dupla</label>
+                <select class="form-select" asp-for="Filtro.DuplaId" asp-items="Model.Duplas">
+                    <option value="">-- Seleccionar --</option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">Desde</label>
+                <input type="date" class="form-control" asp-for="Filtro.Desde" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">Hasta</label>
+                <input type="date" class="form-control" asp-for="Filtro.Hasta" />
+            </div>
+
+            <div class="col-md-2 d-grid">
+                <button class="btn btn-primary text-uppercase">Buscar</button>
+            </div>
+
+            <div class="col-12 d-flex flex-wrap align-items-center gap-3 mt-2">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" asp-for="Filtro.IncluirAmistosos" id="amist">
+                    <label class="form-check-label" for="amist">Incluir amistosos</label>
+                </div>
+
+                <div class="vr"></div>
+
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" asp-for="Filtro.SoloConRecepcion" id="conrec">
+                    <label class="form-check-label" for="conrec">Solo con Recepción</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" asp-for="Filtro.SoloConAtaque" id="conatk">
+                    <label class="form-check-label" for="conatk">Solo con Ataque</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" asp-for="Filtro.SoloConK2" id="conk2">
+                    <label class="form-check-label" for="conk2">Solo con K2</label>
+                </div>
+
+                <div class="vr"></div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <label class="form-label mb-0">Últimos</label>
+                    <select class="form-select form-select-sm" style="width:110px" asp-for="Filtro.UltimosN">
+                        <option value="">Todos</option>
+                        <option value="5">5 partidos</option>
+                        <option value="10">10 partidos</option>
+                        <option value="20">20 partidos</option>
+                        <option value="50">50 partidos</option>
+                    </select>
+                </div>
+
+                <div class="vr"></div>
+
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" asp-for="Filtro.IncluirCierre" id="cierre">
+                    <label class="form-check-label" for="cierre">Incluir Cierre</label>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <label class="form-label mb-0">Set</label>
+                    <select class="form-select form-select-sm" style="width:100px" asp-for="Filtro.SetNumero">
+                        <option value="">Todos</option>
+                        <option value="1">Set 1</option>
+                        <option value="2">Set 2</option>
+                        <option value="3">Set 3</option>
+                    </select>
+                </div>
+
+                <div class="vr"></div>
+
+                <!-- 🔽 Nuevo: Filtro de Clima -->
+                <div class="d-flex align-items-center gap-2">
+                    <label class="form-label mb-0">Clima</label>
+                    <select class="form-select form-select-sm" style="width:150px" asp-for="Filtro.Clima" asp-items="Model.Climas">
+                        <option value="">Todos</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <!-- 🔹 Badge resumen si hay clima filtrado -->
+    @if (hayResultados && Model.Filtro.Clima.HasValue)
+    {
+        var climaStr = Model.Filtro.Clima?.ToString();
+        <div class="alert alert-info py-2 px-3 mb-3 shadow-sm small">
+            <span class="fw-semibold">Filtro activo:</span>
+            <span class="badge bg-info text-dark">@climaStr</span>
+            —
+            <span>@Model.Partidos!.Count partido@(Model.Partidos!.Count != 1 ? "s" : "") con este clima</span>
+        </div>
+    }
+
+    <!-- Resultados -->
+    @if (hayResultados)
+    {
+        <form method="post" asp-page-handler="VerReportes" class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="fw-semibold">Partidos encontrados: @Model.Partidos!.Count</div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-success btn-sm text-uppercase">Ver resúmenes</button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width:36px;">
+                                <input type="checkbox" id="chkAll" class="form-check-input" />
+                            </th>
+                            <th>Fecha</th>
+                            <th>Torneo</th>
+                            <th>Rival</th>
+                            <th>Sets</th>
+                            <th>Clima</th>
+                            <th style="width:220px;">Módulos</th>
+                            <th>Acceso</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in Model.Partidos!)
+                        {
+                            <tr>
+                                <td>
+                                    <input type="checkbox" class="form-check-input chk" name="Seleccionados" value="@p.Id" />
+                                </td>
+                                <td>@p.Fecha.ToString("yyyy-MM-dd")</td>
+                                <td>@p.Torneo</td>
+                                <td>@p.Rival</td>
+                                <td>@p.CantSets</td>
+                                <td><span class="badge bg-light text-dark">@p.Clima</span></td>
+                                <td>
+                                    @if (p.TieneRecepcion)
+                                    {
+                                        <span class="badge text-bg-success">Recep</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge text-bg-secondary">Recep</span>
+                                    }
+
+                                    @if (p.TieneAtaque)
+                                    {
+                                        <span class="badge text-bg-success">Atq</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge text-bg-secondary">Atq</span>
+                                    }
+
+                                    @if (p.TieneK2)
+                                    {
+                                        <span class="badge text-bg-success">K2</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge text-bg-secondary">K2</span>
+                                    }
+                                </td>
+                                <td>
+                                    <a class="btn btn-link btn-sm p-0" asp-page="/Estadisticas/Resumen" asp-route-partidoId="@p.Id">Ver</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- ✅ Hidden inputs corregidos -->
+            <input type="hidden" name="Filtro.DuplaId" value="@Model.Filtro.DuplaId" />
+            <input type="hidden" name="Filtro.IncluirCierre" value="@Model.Filtro.IncluirCierre" />
+            <input type="hidden" name="Filtro.SetNumero" value="@(Model.Filtro.SetNumero?.ToString() ?? "")" />
+            <input type="hidden" name="Filtro.Clima" value="@(Model.Filtro.Clima?.ToString())" />
+        </form>
+
+        <script>
+            const chkAll = document.getElementById('chkAll');
+            chkAll?.addEventListener('change', () => {
+                document.querySelectorAll('.chk').forEach(c => c.checked = chkAll.checked);
+            });
+        </script>
+    }
+    else if (Model.BusquedaRealizada)
+    {
+        <div class="alert alert-warning">No se encontraron partidos con esos filtros.</div>
+    }
+</div>
