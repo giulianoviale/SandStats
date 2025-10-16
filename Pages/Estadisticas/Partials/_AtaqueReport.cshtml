@@ -231,11 +231,9 @@
 @foreach (var lado in new[] { TipoLado.Bueno, TipoLado.Medio, TipoLado.Atras })
 /* ======================= POR LADO ======================= */
 {
-    
-
     var data = Model.Lados?.FirstOrDefault(x => x.Lado == lado)
                ?? new SandStats.Pages.Estadisticas.AtaqueLado { Lado = lado, Totales = new SandStats.Pages.Estadisticas.AtkCounts() };
-    
+
     // POR *visual* que define las zonas válidas de este lado
     int porVisual = (data.Lado == TipoLado.Medio)
         ? (Model.Rol == 4 ? 4 : 2)   // Medio imita POR4 si rol=4, POR2 si rol=2
@@ -270,12 +268,30 @@
     var accAD = BuildAccionesPara("AD", porVisual, data.Lado, accionesDelLado);
     var acc2DA = BuildAccionesPara("2DA", porVisual, data.Lado, accionesDelLado);
 
-    // Mapas: AL/AD/TL/TD con total sin 2da; 2da con denominador global de 2da
+    // ===== Leyenda “Ataques de 2da (A1 xx% – A6 yy% – A5 zz%)” =====
+    var titulo2da = "Ataques de 2da";
+    if (Model.Total2da > 0 && !string.IsNullOrWhiteSpace(Model.Dist2daInline))
+    {
+        titulo2da += " " + Model.Dist2daInline;
+    }
+
+    // Mapas: AL/AD/TL/TD con total sin 2da; 2da con denominador GLOBAL de 2da
     var vmTL = new SandStats.Pages.Estadisticas.MapaAtaqueViewModel { Titulo = "Toques Línea", PlayerRight = playerRight, TotalAtaques = totalLadoK1Sin2da, Acciones = accTL, Rol = Model.Rol, Lado = data.Lado };
     var vmTD = new SandStats.Pages.Estadisticas.MapaAtaqueViewModel { Titulo = "Toque diago", PlayerRight = playerRight, TotalAtaques = totalLadoK1Sin2da, Acciones = accTD, Rol = Model.Rol, Lado = data.Lado };
     var vmAL = new SandStats.Pages.Estadisticas.MapaAtaqueViewModel { Titulo = "Atq línea", PlayerRight = playerRight, TotalAtaques = totalLadoK1Sin2da, Acciones = accAL, Rol = Model.Rol, Lado = data.Lado };
     var vmAD = new SandStats.Pages.Estadisticas.MapaAtaqueViewModel { Titulo = "Atq Diago", PlayerRight = playerRight, TotalAtaques = totalLadoK1Sin2da, Acciones = accAD, Rol = Model.Rol, Lado = data.Lado };
-    var vm2DA = new SandStats.Pages.Estadisticas.MapaAtaqueViewModel { Titulo = "Ataques de 2da", PlayerRight = playerRight, TotalAtaques = totalLadoK1Sin2da, Acciones = acc2DA, Rol = Model.Rol, Lado = data.Lado, TotalFamilia = totalK1De2da /*denom global 2da*/ };
+
+    // 👇 Aquí va la leyenda + denominador global de 2da
+    var vm2DA = new SandStats.Pages.Estadisticas.MapaAtaqueViewModel
+    {
+        Titulo = titulo2da,
+        PlayerRight = playerRight,
+        TotalAtaques = totalK1De2da,                    // denominador global de 2da
+        Acciones = acc2DA,
+        Rol = Model.Rol,
+        Lado = data.Lado,
+        TotalFamilia = totalK1De2da                     // por si el partial usa esta propiedad
+    };
 
     <div class="card mb-3">
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -299,17 +315,11 @@
 
                 <div class="col-md-4">
                     @{
-                        // Totales por bucket ya calculados arriba:
-                        // totAL, totAD, totTL, totTD, tot2da
-                        // Y globales del jugador:
-                        //int totalK1Incl2da = K1 principal: recepción + 2da
-                        // totalK1De2da
-
                         // Denominador del cuadro (solo acciones K1 sin 2da)
                         int totalSin2da = totAD + totAL + totTD + totTL;
                         double P(int v) => totalSin2da > 0 ? 100.0 * v / totalSin2da : 0.0;
 
-                        // % global de 2da sobre K1 principal (siempre este, aunque en el lado no haya 2da)
+                        // % global de 2da sobre K1 principal
                         double pct2daGlobal = totalK1Principal > 0 ? 100.0 * totalK1De2da / totalK1Principal : 0.0;
 
                         var vmPct = new PctResumenVM { TotalAcciones = totalSin2da };
@@ -318,14 +328,16 @@
                         vmPct.Items.Add(new PctResumenItem { Label = "Toque Diagonal (por lado)", Pct = P(totTD) });
                         vmPct.Items.Add(new PctResumenItem { Label = "Toque Línea (por lado)", Pct = P(totTL) });
 
-                        // 👇 SIEMPRE mostrar 2da con % GLOBAL sobre K1 principal
                         vmPct.Items.Add(new PctResumenItem
                         {
                             Label = $"2da (Cant: {totalK1De2da} / total K1({totalK1Principal}))",
                             Pct = pct2daGlobal
                         });
                     }
-                    @await Html.PartialAsync("Partials/_CuadroResumenPct", vmPct)
+                    @await Html.PartialAsync(
+                    "Estadisticas/Partials/_CuadroResumenPct",
+                                vmPct,
+                                new ViewDataDictionary(ViewData) { ["Titulo"] = "Distribución de acciones" })
                 </div>
 
             </div>

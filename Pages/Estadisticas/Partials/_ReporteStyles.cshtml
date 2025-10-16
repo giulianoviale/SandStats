@@ -1,5 +1,31 @@
 ﻿@* sin modelo *@
 <style>
+    /* Colores pastel por tipo de acción en el cuadro resumen */
+    .table-palette tr.row-ad > td {
+        background-color: #D9F2D9;
+    }
+    /* Ataque Diagonal - verde suave */
+    .table-palette tr.row-al > td {
+        background-color: #FFE58A;
+    }
+    /* Ataque Línea    - amarillo suave */
+    .table-palette tr.row-td > td {
+        background-color: #CFE5FF;
+    }
+    /* Toque Diagonal  - celeste suave */
+    .table-palette tr.row-tl > td {
+        background-color: #EEE5D0;
+    }
+    /* Toque Línea     - lila suave */
+    .table-palette tr.row-2da > td {
+        background-color: #EBD7FF;
+    }
+    /* 2da             - rosa suave */
+
+    /* Que el % siga viéndose bien encima del pastel */
+    .table-palette td.fw-semibold {
+        font-weight: 700;
+    }
     /* ===== Semáforo 0–39 rojo | 40–79 amarillo | 80–100 verde ===== */
     .ef-high {
         background: #d1fae5 !important;

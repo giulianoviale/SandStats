@@ -328,6 +328,14 @@ namespace SandStats.Pages.Estadisticas
 
             // Por acción
             var porAccion = await ContarPorAccion(qJugador);
+            // ===== Distribución 2da: A1/A6/A5 =====
+            int getTotal(TipoAcciones a) =>
+                porAccion.TryGetValue(a, out var c) ? c.Total : 0;
+
+            int a1_2da = getTotal(TipoAcciones.Atq2daA1);
+            int a6_2da = getTotal(TipoAcciones.Atq2daA6);
+            int a5_2da = getTotal(TipoAcciones.Atq2daA5);
+            int total2da = a1_2da + a6_2da + a5_2da;
 
             // Por familias (Atq, Tl, Td, Atq2da, Varios, PorAtras)
             var familias = AgruparFamilias(porAccion);
@@ -420,6 +428,11 @@ namespace SandStats.Pages.Estadisticas
 
                 VariosCantidad = variosCount,
                 VariosEfectividad = variosEfect,
+                // >>> NUEVO: distribución 2da
+                Total2da = total2da,
+                A1_2da = a1_2da,
+                A6_2da = a6_2da,
+                A5_2da = a5_2da
             };
         }
         private static bool EsK1(TipoAcciones a)
@@ -935,6 +948,23 @@ namespace SandStats.Pages.Estadisticas
                 Lados = value.Lados ?? new();
             }
         }
+        // ====== Distribución específica de 2da (A1/A6/A5) ======
+        public int Total2da { get; set; }
+        public int A1_2da { get; set; }
+        public int A6_2da { get; set; }
+        public int A5_2da { get; set; }
+
+        // % ya formateado para usar inline en el título
+        public string Dist2daInline =>
+            Total2da > 0
+                ? $"(A1 {Pct(A1_2da)} - A6 {Pct(A6_2da)} - A5 {Pct(A5_2da)})"
+                : string.Empty;
+
+        private string Pct(int part) =>
+            Total2da > 0
+                ? Math.Round(100.0 * part / (double)Total2da).ToString("0") + "%"
+                : "0%";
+
     }
 
     // ==================== ViewModel K2 (único cuadro) ====================

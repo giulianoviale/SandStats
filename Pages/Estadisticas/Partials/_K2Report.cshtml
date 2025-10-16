@@ -5,17 +5,25 @@
 }
 
 @{
-    // Armamos filas y totales
+    // --- Suma de bloqueos (A1 + A6 + A5) en una sola fila ---
+    var bloq = new SandStats.Pages.Estadisticas.K2Counts
+    {
+        DP = (Model.BloqueoA1?.DP ?? 0) + (Model.BloqueoA6?.DP ?? 0) + (Model.BloqueoA5?.DP ?? 0),
+        P = (Model.BloqueoA1?.P ?? 0) + (Model.BloqueoA6?.P ?? 0) + (Model.BloqueoA5?.P ?? 0),
+        N = (Model.BloqueoA1?.N ?? 0) + (Model.BloqueoA6?.N ?? 0) + (Model.BloqueoA5?.N ?? 0),
+        DN = (Model.BloqueoA1?.DN ?? 0) + (Model.BloqueoA6?.DN ?? 0) + (Model.BloqueoA5?.DN ?? 0),
+    };
+
+    // Filas a mostrar (las demás quedan igual)
     var filas = new[]
     {
         new { Nombre = "Puntos jugados en K2", C = Model.PuntosJugados },
         new { Nombre = "Saques FLOTADOS",      C = Model.SaquesFlotado },
         new { Nombre = "Saques POTENCIA",      C = Model.SaquesPotencia },
-        new { Nombre = "Bloqueos Atq A 1",     C = Model.BloqueoA1 },
-        new { Nombre = "Bloqueos Atq A 6",     C = Model.BloqueoA6 },
-        new { Nombre = "Bloqueos At A 5",      C = Model.BloqueoA5 }
+        new { Nombre = "Bloqueos",             C = bloq } // 👈 fila única sumada
     };
 
+    // Totales (sobre las filas efectivamente mostradas)
     int totalAll = filas.Sum(r => r.C.Total);
     int sumDP = filas.Sum(r => r.C.DP);
     int sumP = filas.Sum(r => r.C.P);
@@ -43,7 +51,6 @@
                         <th>%-</th>
                         <th>%=</th>
                         <th>TOTAL</th>
-                      
                         <th>#</th>
                         <th>+</th>
                         <th>-</th>
@@ -68,16 +75,12 @@
 
                             <td class="text-end fw-semibold">@c.Total</td>
 
-                          
-
                             <td class="text-end">@c.DP</td>
                             <td class="text-end">@c.P</td>
                             <td class="text-end">@c.N</td>
                             <td class="text-end">@c.DN</td>
                         </tr>
                     }
-
-                    
                 </tbody>
             </table>
         </div>
