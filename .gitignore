@@ -362,3 +362,9 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /SandStats.db
+
+# Base de datos local
+SandStats.db
+SandStats.db-shm
+SandStats.db-wal
+
