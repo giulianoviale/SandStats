@@ -1,0 +1,59 @@
+﻿@model SandStats.Pages.Estadisticas.PctResumenVM
+@using System.Globalization
+
+@{
+    var titulo = (ViewData["Titulo"] as string) ?? "Resumen";
+    string Pct(double d) => d.ToString("0'%'",
+        CultureInfo.InvariantCulture);
+
+    string RowClass(string label)
+    {
+        label = label ?? string.Empty;
+
+        // Mapeos por prefijo (ajusta si tus textos son distintos)
+        if (label.StartsWith("Ataque Diagonal", StringComparison.OrdinalIgnoreCase)) return "row-ad";  // verde
+        if (label.StartsWith("Ataque Línea", StringComparison.OrdinalIgnoreCase)) return "row-al";  // amarillo
+        if (label.StartsWith("Toque Diagonal", StringComparison.OrdinalIgnoreCase)) return "row-td";  // celeste
+        if (label.StartsWith("Toque Línea", StringComparison.OrdinalIgnoreCase)) return "row-tl";  // lila
+        if (label.StartsWith("2da", StringComparison.OrdinalIgnoreCase)) return "row-2da"; // rosa
+
+        return string.Empty;
+    }
+}
+
+<div class="card shadow-sm mb-3">
+    <div class="card-header py-2 d-flex align-items-center"
+         style="background-color:#efe6ff; border-bottom:1px solid #d5c8ff">
+        <div class="fw-semibold">@titulo</div>
+        <div class="ms-auto small text-muted">Total: @Model.TotalAcciones</div>
+    </div>
+
+    <div class="card-body p-0">
+        <table class="table table-sm table-bordered mb-0 align-middle text-center table-palette">
+            <thead class="table-light">
+                <tr>
+                    <th class="text-start">Ítem</th>
+                    <th style="width:110px">%</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Items?.Count > 0)
+                {
+                    foreach (var it in Model.Items)
+                    {
+                        <tr class="@RowClass(it.Label)">
+                            <td class="text-start">@it.Label</td>
+                            <td class="fw-semibold">@Pct(it.Pct)</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="2" class="text-center text-muted py-3">Sin datos</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

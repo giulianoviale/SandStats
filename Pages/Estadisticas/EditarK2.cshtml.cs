@@ -63,6 +63,7 @@ namespace SandStats.Pages.Estadisticas
 
         public async Task<IActionResult> OnPostAsync()
         {
+            var now = DateTime.UtcNow;   // UNA sola vez
             // --- 1) Borramos lo previo (para este jugador/partido/scope) ---
             await _db.EstadisticaK2
                 .Where(e => e.PartidoId == PartidoId
@@ -107,7 +108,7 @@ namespace SandStats.Pages.Estadisticas
                     Fuente = fuente,
                     Resultado = resultado,
                     Cantidad = cant,
-                    FechaCarga = DateTime.Now,
+                    FechaCarga = now,
 
                     // Scope & extras (mismo valor en todas las filas)
                     Scope = Scope,

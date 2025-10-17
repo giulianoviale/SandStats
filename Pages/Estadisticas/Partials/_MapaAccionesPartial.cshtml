@@ -1,0 +1,126 @@
+﻿@model (SandStats.Pages.Estadisticas.AtaqueLado lado, int rol, int totalGlobal, int total2daGlobal)
+
+@{
+    // helpers locales
+    string Pct(decimal d) => (d * 100m).ToString("0") + "%";
+    string Pct0(decimal d) => (d * 100m).ToString("0") + "%";
+
+    bool Es2da(SandStats.Models.TipoAcciones a)
+        => a.ToString().StartsWith("Atq2da", StringComparison.OrdinalIgnoreCase);
+
+    int PorDe(SandStats.Models.TipoLado l, int r)
+    {
+        if (l == SandStats.Models.TipoLado.Medio) return 3;
+        if (r == 4) return l == SandStats.Models.TipoLado.Bueno ? 4 : 2;
+        return l == SandStats.Models.TipoLado.Bueno ? 2 : 4;
+    }
+
+    var data = Model.lado;
+    var totalLado = data.Totales?.Total ?? 0;
+
+    // porcentaje global del título (acciones de este lado sobre total global)
+    var pctGlobal = Model.totalGlobal == 0 ? 0m : (decimal)totalLado / Model.totalGlobal;
+
+    // === 2da (solo para header): acciones de este lado con % sobre total 2da GLOBAL ===
+    var total2daGlobal = Model.total2daGlobal;
+    var acciones2daEsteLado = data.Acciones
+        .Where(a => Es2da(a.Accion))
+        .Select(a => new
+        {
+            a.Accion,
+            T = a.C?.Total ?? 0
+        })
+        .Where(x => x.T > 0)
+        .Select(x => new
+        {
+            x.Accion,
+            x.T,
+            PctSobre2daGlobal = total2daGlobal == 0 ? 0m : (decimal)x.T / total2daGlobal
+        })
+        .OrderByDescending(x => x.PctSobre2daGlobal)
+        .ThenByDescending(x => x.T)
+        .ToList();
+
+    // si querés limitar la cantidad de chips (Top N):
+    // acciones2daEsteLado = acciones2daEsteLado.Take(3).ToList();
+}
+
+<div class="col map-slot">
+    <div class="card h-100">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">Lado @data.Lado (POR @PorDe(data.Lado, Model.rol))</span>
+                <span class="fw-bold text-danger">@Pct(pctGlobal)</span>
+            </div>
+
+
+
+            @* === Header 2da por lado, con % sobre total2daGlobal === *@
+            @if (total2daGlobal > 0)
+            {
+                <div class="mt-1 small">
+                    <span class="me-2 fw-semibold text-muted">2da:</span>
+                    @if (!acciones2daEsteLado.Any())
+                    {
+                        <span class="text-muted">—</span>
+                    }
+                    else
+                    {
+                        foreach (var it in acciones2daEsteLado)
+                        {
+                            <span class="badge text-bg-light border me-1">
+                                @it.Accion.ToString() — @Pct0(it.PctSobre2daGlobal) (@it.T)
+                            </span>
+                        }
+                    }
+                    <span class="ms-2 text-muted">(global: @total2daGlobal)</span>
+                </div>
+            }
+        </div>
+
+        <div class="card-body">
+            @* acá dentro llamás al SVG parcial que ya tenés *@
+            @functions {
+                // ubicación en grilla 3x3 (ajustá si tenés otra regla)
+                int MapRowFromLado(SandStats.Models.TipoLado l) => l == SandStats.Models.TipoLado.Bueno ? 0 :
+                l == SandStats.Models.TipoLado.Medio ? 1 : 2;
+
+                int MapColFromAccion(SandStats.Models.TipoAcciones a)
+                {
+                    var s = a.ToString().ToLowerInvariant();
+                    if (s.StartsWith("atq2da")) return 2;
+                    if (s.StartsWith("atq")) return 2;
+                    if (s.StartsWith("tl")) return 1;
+                    if (s.StartsWith("td")) return 1;
+                    if (s == "varios") return 0;
+                    return 0;
+                }
+            }
+
+            @{
+                // 'data' ya lo tenés como AtaqueLado
+                var mapVm = new SandStats.Pages.Estadisticas.MapaAtaqueViewModel
+                {
+                    Titulo = $"Lado {data.Lado} (POR @PorDe(data.Lado, Model.rol))",
+                    PlayerRight = false, // opcional
+                    TotalAtaques = Model.totalGlobal,      // denominador global para la esquina derecha
+                    Rol = Model.rol,
+                    Lado = data.Lado,
+                    TotalVarilla = data.TotalVarilla,
+                    TotalEntreLinea = data.TotalEntreLinea,
+                    Acciones = data.Acciones.Select(aa => new SandStats.Pages.Estadisticas.MapaAccionVM
+                    {
+                        Nombre = aa.Accion.ToString(),
+                        C = aa.C ?? new SandStats.Pages.Estadisticas.AtkCounts(),
+                        Col = MapColFromAccion(aa.Accion),
+                        Row = MapRowFromLado(data.Lado),
+                        TotalVarilla = aa.TotalVarilla,
+                        TotalEntreLinea = aa.TotalEntreLinea
+                    }).ToList()
+                };
+            }
+
+            @await Html.PartialAsync("_MapaAccionSVGPartial", mapVm)
+        </div>
+    </div>
+</div>

@@ -87,4 +87,52 @@
         }
 @:</tbody>
     };
+   
+@functions {
+    // Redondeo tipo “Largest Remainder” para que la suma de enteros = 100
+    int[] RoundTo100(params decimal[] fracs)
+    {
+        if (fracs.Length == 0) return Array.Empty<int>();
+        var sum = fracs.Sum();
+        if (sum <= 0m) return fracs.Select(_ => 0).ToArray();
+
+        var raw = fracs.Select(f => f / sum * 100m).ToList();
+        var floors = raw.Select(x => (int)Math.Floor(x)).ToArray();
+        int remain = 100 - floors.Sum();
+
+        // indices ordenados por mayor parte decimal
+        var idx = raw.Select((v,i) => (i, frac: v - Math.Floor(v)))
+                     .OrderByDescending(x => x.frac)
+                     .Select(x => x.i).ToList();
+        for (int k = 0; k < remain && k < idx.Count; k++) floors[idx[k]]++;
+        return floors;
+    }
+    // Acceso seguro a PorAccion
+    SandStats.Pages.Estadisticas.AtkCounts A(Dictionary<SandStats.Models.TipoAcciones, SandStats.Pages.Estadisticas.AtkCounts> dict,
+                                             SandStats.Models.TipoAcciones key)
+        => (dict != null && dict.TryGetValue(key, out var c)) ? c : new SandStats.Pages.Estadisticas.AtkCounts();
+
+    // Construye el VM para el partial del mapa
+    SandStats.Pages.Estadisticas.MapaAtaqueViewModel BuiFldMapa(
+        string titulo,
+        string familiaKey, // "Tl", "Atq", "Td", "Atq2da" (sólo informativo aquí)
+        bool playerRight,
+        int totalAtaques,  // 👈 denominador GLOBAL
+        Dictionary<string, SandStats.Pages.Estadisticas.AtkCounts> familias,  // no obligatorio para celdas
+        Dictionary<SandStats.Models.TipoAcciones, SandStats.Pages.Estadisticas.AtkCounts> porAccion,
+        params (string nombre, SandStats.Models.TipoAcciones acc, int col, int row)[] acciones)
+    {
+        var vm = new SandStats.Pages.Estadisticas.MapaAtaqueViewModel {
+            Titulo = titulo,
+            TotalAtaques = totalAtaques,   // 👈 todas las celdas y el título usan este denominador
+            PlayerRight = playerRight,
+            Acciones = new List<SandStats.Pages.Estadisticas.MapaAccionVM>()
+        };
+        foreach (var a in acciones)
+            vm.Acciones.Add(new SandStats.Pages.Estadisticas.MapaAccionVM(a.nombre, A(porAccion, a.acc), a.col, a.row));
+        return vm;
+    }
+}
+
+
 }

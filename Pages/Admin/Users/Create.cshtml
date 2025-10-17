@@ -1,0 +1,55 @@
+﻿@page
+@model SandStats.Pages.Admin.Users.CreateModel
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+@{
+    ViewData["Title"] = "Crear usuario";
+}
+<div class="container my-5">
+    <h2 class="mb-4">Crear usuario</h2>
+
+    <form method="post">
+        <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input asp-for="Input.Email" class="form-control" />
+            <span asp-validation-for="Input.Email" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Nombre completo (opcional)</label>
+            <input asp-for="Input.FullName" class="form-control" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Contraseña inicial</label>
+            <input asp-for="Input.Password" class="form-control" type="password" />
+            <span asp-validation-for="Input.Password" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Rol</label>
+            <select asp-for="Input.Role" class="form-select">
+                <option>Coach</option>
+                <option>Player</option>
+                <option>Admin</option>
+            </select>
+        </div>
+
+        <div class="form-check mb-3">
+            <input asp-for="Input.EmailConfirmed" class="form-check-input" />
+            <label class="form-check-label">Habilitar acceso (Email confirmado)</label>
+        </div>
+
+        <!-- Si agregaste IsActive en ApplicationUser, destildar/usar este switch -->
+        <!--<div class="form-check mb-3">
+            <input asp-for="Input.IsActive" class="form-check-input" />
+            <label class="form-check-label">Usuario activo</label>
+        </div>-->
+
+        <button class="btn btn-primary btn-lg" type="submit">CREAR</button>
+        <a asp-page="/Index" class="btn btn-outline-secondary ms-2">CANCELAR</a>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -23,8 +23,10 @@ namespace SandStats.Models
 
         [Range(0, int.MaxValue)]
         public int Cantidad { get; set; }
+        // usando System.ComponentModel.DataAnnotations.Schema;
+        [Column(TypeName = "timestamp with time zone")]
+        public DateTime FechaCarga { get; set; } = DateTime.UtcNow;
 
-        public DateTime FechaCarga { get; set; } = DateTime.Now;
         // === NUEVOS: para “últimos puntos” ===
         public ScopeEstadistica Scope { get; set; } = ScopeEstadistica.PartidoCompleto;
         public int? DesdePunto { get; set; }   // 16 o 11 (TB)

@@ -32,6 +32,9 @@ namespace SandStats.Pages.Estadisticas
         public RecepcionPlayerReport RepJ1 { get; set; } = default!;
         public RecepcionPlayerReport RepJ2 { get; set; } = default!;
 
+        public MapaAtaqueViewModel? MapaJ1 { get; set; }
+        public MapaAtaqueViewModel? MapaJ2 { get; set; } // si lo querés para el otro jugador
+
         public async Task<IActionResult> OnGetAsync()
         {
             if (DuplaId == 0) return RedirectToPage("/Duplas/Index");
@@ -98,26 +101,53 @@ namespace SandStats.Pages.Estadisticas
             RepJ1.Ataque.Rol = 4; // jugador de rol por 4
             RepJ2.Ataque.Rol = 2; // jugador de rol por 2
 
-            // ----- K2 (cuadro único por jugador) -----
-            var pid = PartidoId ?? PartidosSeleccionados?.FirstOrDefault()?.Id;
+            // --- ejemplo para J1 ---
+            var mapaJ1 = new MapaAtaqueViewModel
+            {
+                Titulo = "Atq línea",
+                PlayerRight = false,
+                TotalAtaques = RepJ1.Ataque.Totales.Total,
+                Rol = RepJ1.Ataque.Rol,
+                Lado = TipoLado.Bueno
+            };
 
-            // Referencia al Partido (necesaria para calcular SetsJugados)
-            Partido? partidoRef = null;
-            if (pid.HasValue)
-                partidoRef = PartidosSeleccionados.FirstOrDefault(p => p.Id == pid.Value)
-                             ?? await _db.Partidos.FindAsync(pid.Value);
+            // Mapear acciones y totales V/E globales para el mapa
+            mapaJ1.Acciones = BuildMapaAccionesFromLados(RepJ1.Ataque.Lados);
+
+            // Totales V/E del mapa (suma de acciones)
+            mapaJ1.TotalVarilla = mapaJ1.Acciones.Sum(x => x.TotalVarilla);
+            mapaJ1.TotalEntreLinea = mapaJ1.Acciones.Sum(x => x.TotalEntreLinea);
+
+            this.MapaJ1 = mapaJ1;
+
+            // ----- K2 (cuadro único por jugador) -----
+            int? pid = PartidosSeleccionados.Count == 1
+                ? PartidosSeleccionados[0].Id
+                : (int?)null;
 
             // J1
             RepJ1.K2 = await CargarK2JugadorAsync(RepJ1.Jugador.Id, pid);
-            RepJ1.K2.Partido = partidoRef;          // 👈 para SetsJugados
-            RepJ1.Ataque.K2 = RepJ1.K2;             // 👈 Ataque ahora “ve” K2
+            // >>> Poblar partidos para SetsJugados
+            if (pid.HasValue)
+                RepJ1.K2.Partido = PartidosSeleccionados.First(p => p.Id == pid.Value);
+            else
+                RepJ1.K2.Partidos = PartidosSeleccionados.ToList();
+
+            // ↓ sincronizar con subreporte de ataque:
+            RepJ1.Ataque.K2 = RepJ1.K2;
+            RepJ1.Ataque.TotalK2 = RepJ1.K2.PuntosJugados.Total;
+            RepJ1.Ataque.EfectividadK2 = RepJ1.K2.PuntosJugados.Efect;
 
             // J2
             RepJ2.K2 = await CargarK2JugadorAsync(RepJ2.Jugador.Id, pid);
-            RepJ2.K2.Partido = partidoRef;          // 👈 para SetsJugados
-            RepJ2.Ataque.K2 = RepJ2.K2;             // 👈 Ataque ahora “ve” K2
+            if (pid.HasValue)
+                RepJ2.K2.Partido = PartidosSeleccionados.First(p => p.Id == pid.Value);
+            else
+                RepJ2.K2.Partidos = PartidosSeleccionados.ToList();
 
-
+            RepJ2.Ataque.K2 = RepJ2.K2;
+            RepJ2.Ataque.TotalK2 = RepJ2.K2.PuntosJugados.Total;
+            RepJ2.Ataque.EfectividadK2 = RepJ2.K2.PuntosJugados.Efect;
 
             return Page();
         }
@@ -152,23 +182,17 @@ namespace SandStats.Pages.Estadisticas
             IQueryable<EstadisticaRecepcion> qJugador,
             int totalEquipo)
         {
-            // Totales generales jugador
             var countsAll = await ContarResultadosRec(qJugador);
             var totalJugador = countsAll.Total;
 
-            // Por TipoRecepcion (suma Flot+Pot)
             var porTipo_All = await ContarPorTipoRecepcion(qJugador);
-
-            // Por sectores (suma Flot+Pot)
             var sectores_All = await ContarPorSector(qJugador, totalJugador);
 
-            // Flotados
             var qF = qJugador.Where(e => e.TipoSaque == TipoSaque.Flotado);
             var flotCounts = await ContarResultadosRec(qF);
             var porTipo_F = await ContarPorTipoRecepcion(qF);
             var sectores_F = await ContarPorSector(qF, flotCounts.Total);
 
-            // Potencia
             var qP = qJugador.Where(e => e.TipoSaque == TipoSaque.Potencia);
             var potCounts = await ContarResultadosRec(qP);
             var porTipo_P = await ContarPorTipoRecepcion(qP);
@@ -184,7 +208,6 @@ namespace SandStats.Pages.Estadisticas
                     PorTipo = porTipo_All,
                     Sectores = sectores_All,
                     TotalEquipo = totalEquipo
-
                 },
                 Flotados = new RecepcionSeccionTipoSaque
                 {
@@ -287,41 +310,40 @@ namespace SandStats.Pages.Estadisticas
         // ================= ATAQUE =================
 
         private async Task<AtaquePlayerReport> ConstruirReporteAtaque(
-    Jugador jugador,
-    IQueryable<EstadisticaAtaque> qJugador,
-    int totalEquipo)
+            Jugador jugador,
+            IQueryable<EstadisticaAtaque> qJugador,
+            int totalEquipo)
         {
-            // Totales jugador (suma de Cantidad) – excluye PorAtras en el método
             var countsAll = await ContarResultadosAtk(qJugador);
             var totalJugador = countsAll.Total;
 
-            // Por acción
             var porAccion = await ContarPorAccion(qJugador);
 
-            // Por familias (Atq, Tl, Td, Atq2da, Varios, PorAtras)
+            int getTotal(TipoAcciones a) =>
+                porAccion.TryGetValue(a, out var c) ? c.Total : 0;
+
+            int a1_2da = getTotal(TipoAcciones.Atq2daA1);
+            int a6_2da = getTotal(TipoAcciones.Atq2daA6);
+            int a5_2da = getTotal(TipoAcciones.Atq2daA5);
+            int total2da = a1_2da + a6_2da + a5_2da;
+
             var familias = AgruparFamilias(porAccion);
 
-            // Denominador: K1 SIN 2da para TODO el jugador (Atq/Tl/Td sin Atq2da, y sin PorAtras)
             var totalK1Sin2daJugador = porAccion
-                .Where(kv => kv.Key != TipoAcciones.PorAtras     // espejo, no suma
-                && EsK1(kv.Key)                        // Atq, Tl, Td, Varios
-                && !EsAtq2da(kv.Key))                  // sin 2da
+                .Where(kv => kv.Key != TipoAcciones.PorAtras
+                    && EsK1(kv.Key)
+                    && !EsAtq2da(kv.Key))
                 .Sum(kv => kv.Value.Total);
 
+            var lados = await ContarPorLado(qJugador, totalJugador, totalK1Sin2daJugador);
 
-            // Por lado (Bueno/Medio/Atrás)
-            var lados = await ContarPorLado(qJugador, totalJugador,totalK1Sin2daJugador);
-
-            // ==== K1 / K2 (Excel-like) =========================================
-            // K2 = Atq2da + Varios  (NO contamos PorAtras porque es espejo)
             AtkCounts FamOrEmpty(string key) =>
                 familias.TryGetValue(key, out var v) ? v : new AtkCounts();
 
             var atq2da = FamOrEmpty("Atq2da");
             var varios = FamOrEmpty("Varios");
-            // PorAtras disponible si lo querés mostrar aparte, pero NO suma en K2/Totales
-            var porAtras = FamOrEmpty("PorAtras");
-
+            int variosCount = varios.Total;
+            decimal variosEfect = varios.Efect;
             var k2Counts = new AtkCounts(
                 atq2da.DP + varios.DP,
                 atq2da.P + varios.P,
@@ -330,26 +352,22 @@ namespace SandStats.Pages.Estadisticas
             );
             var k2Total = k2Counts.Total;
 
-            // K1 total = TotalJugador - K2
             var k1Total = Math.Max(0, totalJugador - k2Total);
 
-            // K1 por “segunda” y “sin segunda”
-            var k1De2da = atq2da.Total;             // solo familia Atq2da
-            var k1Sin2da = Math.Max(0, k1Total - k1De2da);
-
-            // Para Efectividad K1, restamos del total global los impactos que son K2
             int k1DP = countsAll.DP - k2Counts.DP;
             int k1P = countsAll.P - k2Counts.P;
-            int k1N = countsAll.N - k2Counts.N;
-            int k1E = countsAll.E - k2Counts.E;
 
-            decimal efectK1 = k1Total > 0 ? (k1DP + k1P) / (decimal)k1Total : 0m;
+            decimal efectK1Principal = k1Total > 0 ? (k1DP + k1P) / (decimal)k1Total : 0m;
+            decimal efectK1De2da = atq2da.Total > 0 ? (atq2da.DP + atq2da.P) / (decimal)atq2da.Total : 0m;
+
+            int k1Sin2daTotal = Math.Max(0, k1Total - atq2da.Total);
+            int sin2daDP = k1DP - atq2da.DP;
+            int sin2daP = k1P - atq2da.P;
+            decimal efectK1Sin2da = k1Sin2daTotal > 0 ? (sin2daDP + sin2daP) / (decimal)k1Sin2daTotal : 0m;
+
             decimal efectAtk = countsAll.Efect;
-
             decimal pctK1 = totalJugador > 0 ? k1Total / (decimal)totalJugador : 0m;
             decimal pctNoK1 = 1m - pctK1;
-
-            // ===================================================================
 
             return new AtaquePlayerReport
             {
@@ -364,24 +382,38 @@ namespace SandStats.Pages.Estadisticas
                 Familias = familias,
                 Lados = lados,
 
-                // === Métricas K1/K2 para el cuadro principal ===
                 TotalK1 = k1Total,
-                TotalK1Sin2da = k1Sin2da,
-                TotalK1De2da = k1De2da,
+                TotalK1Sin2da = k1Sin2daTotal,
+                TotalK1De2da = atq2da.Total,
                 PctK1 = pctK1,
                 PctNoK1 = pctNoK1,
-                EfectividadK1 = efectK1,
-                EfectividadAtaque = efectAtk
+                EfectividadK1 = efectK1Principal,
+                EfectividadAtaque = efectAtk,
+
+                EfectividadK1Principal = efectK1Principal,
+                EfectividadK1Sin2da = efectK1Sin2da,
+                EfectividadK1De2da = efectK1De2da,
+
+                TotalK2 = k2Total,
+                EfectividadK2 = k2Counts.Efect,
+
+                VariosCantidad = variosCount,
+                VariosEfectividad = variosEfect,
+
+                Total2da = total2da,
+                A1_2da = a1_2da,
+                A6_2da = a6_2da,
+                A5_2da = a5_2da
             };
         }
+
         private static bool EsK1(TipoAcciones a)
         {
             var s = a.ToString();
             return s.StartsWith("Atq", StringComparison.OrdinalIgnoreCase)
                 || s.StartsWith("Tl", StringComparison.OrdinalIgnoreCase)
                 || s.StartsWith("Td", StringComparison.OrdinalIgnoreCase)
-                || s.Equals("Varios", StringComparison.OrdinalIgnoreCase); // ✅ ahora suma en K1
-
+                || s.Equals("Varios", StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool EsAtq2da(TipoAcciones a)
@@ -389,7 +421,6 @@ namespace SandStats.Pages.Estadisticas
 
         private static async Task<AtkCounts> ContarResultadosAtk(IQueryable<EstadisticaAtaque> q)
         {
-            // 🚫 Excluir 'PorAtras' de los totales generales (es un espejo)
             q = q.Where(e => e.Accion != TipoAcciones.PorAtras);
 
             var raw = await q.GroupBy(e => e.Resultado)
@@ -415,7 +446,6 @@ namespace SandStats.Pages.Estadisticas
             return new AtkCounts(dp, p, n, e0);
         }
 
-
         private static async Task<Dictionary<TipoAcciones, AtkCounts>> ContarPorAccion(IQueryable<EstadisticaAtaque> q)
         {
             var raw = await q.GroupBy(e => new { e.Accion, e.Resultado })
@@ -432,13 +462,10 @@ namespace SandStats.Pages.Estadisticas
                 {
                     case ResultadoAtaque.DoblePositivoV:
                     case ResultadoAtaque.DoblePositivoE: c.DP += r.S; break;
-
                     case ResultadoAtaque.PositivoV:
                     case ResultadoAtaque.PositivoE: c.P += r.S; break;
-
                     case ResultadoAtaque.NegativoV:
                     case ResultadoAtaque.NegativoE: c.N += r.S; break;
-
                     case ResultadoAtaque.DobleNegativoV:
                     case ResultadoAtaque.DobleNegativoE: c.E += r.S; break;
                 }
@@ -477,23 +504,22 @@ namespace SandStats.Pages.Estadisticas
                 dst.E += kv.Value.E;
             }
 
-            // remover familias con Total=0
             return result.Where(x => x.Value.Total > 0)
                          .ToDictionary(x => x.Key, x => x.Value);
         }
 
         private static bool EsV(ResultadoAtaque r) =>
-                    r == ResultadoAtaque.DoblePositivoV || r == ResultadoAtaque.PositivoV ||
-                    r == ResultadoAtaque.NegativoV || r == ResultadoAtaque.DobleNegativoV;
+            r == ResultadoAtaque.DoblePositivoV || r == ResultadoAtaque.PositivoV ||
+            r == ResultadoAtaque.NegativoV || r == ResultadoAtaque.DobleNegativoV;
 
         private static bool EsE(ResultadoAtaque r) =>
-                    r == ResultadoAtaque.DoblePositivoE || r == ResultadoAtaque.PositivoE ||
-                    r == ResultadoAtaque.NegativoE || r == ResultadoAtaque.DobleNegativoE;
+            r == ResultadoAtaque.DoblePositivoE || r == ResultadoAtaque.PositivoE ||
+            r == ResultadoAtaque.NegativoE || r == ResultadoAtaque.DobleNegativoE;
 
         private static async Task<List<AtaqueLado>> ContarPorLado(
-    IQueryable<EstadisticaAtaque> q,
-    int totalJugador,
-    int totalK1Sin2daJugador)   // 👈 denominador correcto para % por lado
+            IQueryable<EstadisticaAtaque> q,
+            int totalJugador,
+            int totalK1Sin2daJugador)
         {
             var raw = await q.GroupBy(e => new { e.Lado, e.Accion, e.Resultado })
                              .Select(g => new { g.Key.Lado, g.Key.Accion, g.Key.Resultado, S = g.Sum(x => x.Cantidad) })
@@ -505,8 +531,6 @@ namespace SandStats.Pages.Estadisticas
             foreach (var lado in lados)
             {
                 var porAccion = Enum.GetValues<TipoAcciones>().ToDictionary(a => a, a => new AtkCounts());
-
-                // 👇 NUEVO: contadores V/E por ACCIÓN (además del total por lado)
                 var varillaPorAccion = Enum.GetValues<TipoAcciones>().ToDictionary(a => a, a => 0);
                 var entreLineaPorAccion = Enum.GetValues<TipoAcciones>().ToDictionary(a => a, a => 0);
 
@@ -518,23 +542,46 @@ namespace SandStats.Pages.Estadisticas
 
                 foreach (var r in raw.Where(x => x.Lado == lado))
                 {
-                    // espejo fuera de totales
                     if (r.Accion == TipoAcciones.PorAtras) continue;
 
                     var c = porAccion[r.Accion];
+                    bool cuentaParaVE = r.Accion != TipoAcciones.Varios;
+
                     switch (r.Resultado)
                     {
-                        // VARILLA
-                        case ResultadoAtaque.DoblePositivoV: c.DP += r.S; tot.DP += r.S; varT += r.S; varillaPorAccion[r.Accion] += r.S; break;
-                        case ResultadoAtaque.PositivoV: c.P += r.S; tot.P += r.S; varT += r.S; varillaPorAccion[r.Accion] += r.S; break;
-                        case ResultadoAtaque.NegativoV: c.N += r.S; tot.N += r.S; varT += r.S; varillaPorAccion[r.Accion] += r.S; break;
-                        case ResultadoAtaque.DobleNegativoV: c.E += r.S; tot.E += r.S; varT += r.S; varillaPorAccion[r.Accion] += r.S; break;
+                        case ResultadoAtaque.DoblePositivoV:
+                            c.DP += r.S; tot.DP += r.S;
+                            if (cuentaParaVE) { varT += r.S; varillaPorAccion[r.Accion] += r.S; }
+                            break;
+                        case ResultadoAtaque.PositivoV:
+                            c.P += r.S; tot.P += r.S;
+                            if (cuentaParaVE) { varT += r.S; varillaPorAccion[r.Accion] += r.S; }
+                            break;
+                        case ResultadoAtaque.NegativoV:
+                            c.N += r.S; tot.N += r.S;
+                            if (cuentaParaVE) { varT += r.S; varillaPorAccion[r.Accion] += r.S; }
+                            break;
+                        case ResultadoAtaque.DobleNegativoV:
+                            c.E += r.S; tot.E += r.S;
+                            if (cuentaParaVE) { varT += r.S; varillaPorAccion[r.Accion] += r.S; }
+                            break;
 
-                        // ENTRE LÍNEA
-                        case ResultadoAtaque.DoblePositivoE: c.DP += r.S; tot.DP += r.S; linT += r.S; entreLineaPorAccion[r.Accion] += r.S; break;
-                        case ResultadoAtaque.PositivoE: c.P += r.S; tot.P += r.S; linT += r.S; entreLineaPorAccion[r.Accion] += r.S; break;
-                        case ResultadoAtaque.NegativoE: c.N += r.S; tot.N += r.S; linT += r.S; entreLineaPorAccion[r.Accion] += r.S; break;
-                        case ResultadoAtaque.DobleNegativoE: c.E += r.S; tot.E += r.S; linT += r.S; entreLineaPorAccion[r.Accion] += r.S; break;
+                        case ResultadoAtaque.DoblePositivoE:
+                            c.DP += r.S; tot.DP += r.S;
+                            if (cuentaParaVE) { linT += r.S; entreLineaPorAccion[r.Accion] += r.S; }
+                            break;
+                        case ResultadoAtaque.PositivoE:
+                            c.P += r.S; tot.P += r.S;
+                            if (cuentaParaVE) { linT += r.S; entreLineaPorAccion[r.Accion] += r.S; }
+                            break;
+                        case ResultadoAtaque.NegativoE:
+                            c.N += r.S; tot.N += r.S;
+                            if (cuentaParaVE) { linT += r.S; entreLineaPorAccion[r.Accion] += r.S; }
+                            break;
+                        case ResultadoAtaque.DobleNegativoE:
+                            c.E += r.S; tot.E += r.S;
+                            if (cuentaParaVE) { linT += r.S; entreLineaPorAccion[r.Accion] += r.S; }
+                            break;
                     }
 
                     if (r.Accion == TipoAcciones.Atq2daA1 ||
@@ -544,7 +591,6 @@ namespace SandStats.Pages.Estadisticas
                         sum2daEsteLado += r.S;
                     }
 
-                    // numerador de “K1 sin 2da” por lado
                     if (EsK1(r.Accion) && !EsAtq2da(r.Accion))
                         k1Sin2daEsteLado += r.S;
                 }
@@ -554,7 +600,6 @@ namespace SandStats.Pages.Estadisticas
                 var dictConDatos = porAccion.Where(kv => kv.Value.Total > 0)
                                             .ToDictionary(kv => kv.Key, kv => kv.Value);
 
-                // 👇 al crear cada fila (AtaqueAccion), rellenamos los totales V/E por acción
                 var accionesVm = dictConDatos.Select(kv => new AtaqueAccion
                 {
                     Accion = kv.Key,
@@ -570,13 +615,9 @@ namespace SandStats.Pages.Estadisticas
                     Total = tot.Total,
                     PctSobreJugador = totalJugador == 0 ? 0m : (decimal)tot.Total / totalJugador,
                     Acciones = accionesVm,
-
-                    // totales V/E por LADO (ya los tenías)
                     TotalVarilla = varT,
                     TotalEntreLinea = linT,
-
                     Pct2daSobreTotal = totalJugador == 0 ? 0m : (decimal)sum2daEsteLado / totalJugador,
-
                     PctK1Sin2daSobreJugador = totalK1Sin2daJugador == 0
                         ? 0m
                         : (decimal)k1Sin2daEsteLado / totalK1Sin2daJugador
@@ -585,9 +626,6 @@ namespace SandStats.Pages.Estadisticas
 
             return lista;
         }
-
-
-
 
         // ================= K2 (único cuadro) =================
 
@@ -602,8 +640,7 @@ namespace SandStats.Pages.Estadisticas
             else if (PartidosSeleccionados?.Any() == true)
                 q = q.Where(e => PartidosSeleccionados.Select(p => p.Id).Contains(e.PartidoId));
 
-            // ⚠️ A veces los datos quedan en Cierre, otras en PartidoCompleto.
-            // Para no “comernos” datos, aceptamos ambos:
+            // Aceptar PartidoCompleto y Cierre
             q = q.Where(e => e.Scope == ScopeEstadistica.PartidoCompleto
                           || e.Scope == ScopeEstadistica.Cierre);
 
@@ -620,7 +657,6 @@ namespace SandStats.Pages.Estadisticas
                 DN = raw.Where(x => x.Fuente == f && x.Resultado == ResultadoK2.DobleNegativo).Sum(x => x.Cant),
             };
 
-            // 🔎 fallback: si no hay registros con Fuente=PuntosJugados, calculo totalK2 sumando todas las fuentes
             int totalK2Fallback = raw.Sum(x => x.Cant);
 
             var any = await q.FirstOrDefaultAsync(x => x.Agregados.HasValue || x.ErroresVarios.HasValue);
@@ -637,19 +673,59 @@ namespace SandStats.Pages.Estadisticas
                 Agregados = any?.Agregados ?? 0
             };
 
-            // si PuntosJugados.Total quedó en 0 pero hay datos, uso el fallback
             if (rep.PuntosJugados.Total == 0 && totalK2Fallback > 0)
             {
                 rep.PuntosJugados.DP = 0;
-                rep.PuntosJugados.P = totalK2Fallback; // o repartilo si tenés el detalle; sirve para contar total
+                rep.PuntosJugados.P = totalK2Fallback;
             }
 
             return rep;
         }
 
+        private List<MapaAccionVM> BuildMapaAccionesFromLados(List<AtaqueLado> lados)
+        {
+            var acciones = new List<MapaAccionVM>();
 
+            foreach (var lado in lados ?? Enumerable.Empty<AtaqueLado>())
+            {
+                foreach (var aa in lado.Acciones ?? Enumerable.Empty<AtaqueAccion>())
+                {
+                    var mapa = new MapaAccionVM
+                    {
+                        Nombre = aa.Accion.ToString(),
+                        C = aa.C ?? new AtkCounts(),
+                        Col = MapColFromAccion(aa.Accion),
+                        Row = MapRowFromLado(lado.Lado),
+                        TotalVarilla = aa.TotalVarilla,
+                        TotalEntreLinea = aa.TotalEntreLinea
+                    };
 
+                    acciones.Add(mapa);
+                }
+            }
 
+            return acciones;
+        }
+
+        private int MapRowFromLado(TipoLado lado) => lado switch
+        {
+            TipoLado.Bueno => 0,
+            TipoLado.Medio => 1,
+            TipoLado.Atras => 2,
+            _ => 1
+        };
+
+        private int MapColFromAccion(TipoAcciones accion)
+        {
+            var s = accion.ToString().ToLowerInvariant();
+
+            if (s.StartsWith("atq2da") || s.Contains("2da")) return 2;
+            if (s.StartsWith("atq")) return 2;
+            if (s.StartsWith("tl")) return 1;
+            if (s.StartsWith("td")) return 1;
+            if (s.StartsWith("poratras")) return 0;
+            return 0;
+        }
     }
 
     // ==================== ViewModels RECEPCIÓN ====================
@@ -687,8 +763,7 @@ namespace SandStats.Pages.Estadisticas
         public decimal PctSobreEquipo { get; set; }
         public Dictionary<TipoRecepcion, RecCounts> PorTipo { get; set; } = new();
         public List<RecSector> Sectores { get; set; } = new();
-        public int TotalEquipo { get; set; }   // <<< agregar esta línea
-
+        public int TotalEquipo { get; set; }
     }
 
     public class RecepcionSeccionTipoSaque
@@ -725,28 +800,24 @@ namespace SandStats.Pages.Estadisticas
         public TipoAcciones Accion { get; set; }
         public AtkCounts C { get; set; } = new();
         public decimal PctDentroDelLado { get; set; }
-        // NUEVO: desglose V/E por acción (solo aplica para Bueno/Atrás)
-        public int TotalVarilla { get; set; }      // suma de ...V
-        public int TotalEntreLinea { get; set; }   // suma de ...E
+        public int TotalVarilla { get; set; }
+        public int TotalEntreLinea { get; set; }
     }
 
     public class AtaqueLado
     {
         public TipoLado Lado { get; set; }
-        public AtkCounts Totales { get; set; } = new();  // total del lado
+        public AtkCounts Totales { get; set; } = new();
         public decimal PctSobreJugador { get; set; }
 
         public int Total { get; set; }
         public int TotalVarilla { get; set; }
         public int TotalEntreLinea { get; set; }
-        // ✅ NUEVO: % de salidas K1 del lado sobre el K1 SIN 2da del jugador
         public decimal PctK1Sin2daSobreJugador { get; set; }
 
         public Dictionary<TipoAcciones, AtkCounts> PorAccion { get; set; } = new();
         public List<AtaqueAccion> Acciones { get; set; } = new();
-        // <<< NUEVO: % de 2da por lado (Atq2da_lado / total ataques jugador)
         public decimal Pct2daSobreTotal { get; set; }
-
     }
 
     public class AtaqueResumen
@@ -758,9 +829,6 @@ namespace SandStats.Pages.Estadisticas
         public List<AtaqueLado> Lados { get; set; } = new();
     }
 
-    /// <summary>
-    /// Exposición en raíz + compatibilidad con General.
-    /// </summary>
     public class AtaquePlayerReport
     {
         public Jugador Jugador { get; set; } = default!;
@@ -770,10 +838,10 @@ namespace SandStats.Pages.Estadisticas
         public Dictionary<TipoAcciones, AtkCounts> PorAccion { get; set; } = new();
         public Dictionary<string, AtkCounts> Familias { get; set; } = new();
         public List<AtaqueLado> Lados { get; set; } = new();
+        public int VariosCantidad { get; set; }
+        public decimal VariosEfectividad { get; set; }
+        public int Rol { get; set; } = 2;
 
-        public int Rol { get; set; } = 2; // 4 o 2
-                                          // ======== NUEVO: métricas K1/K2 para mostrar en el resumen ========
-                                          // Total K1 mostrado en el cuadro principal
         public int TotalK1 { get; set; }
         public int TotalK1Sin2da { get; set; }
         public int TotalK1De2da { get; set; }
@@ -781,6 +849,13 @@ namespace SandStats.Pages.Estadisticas
         public decimal PctK1 { get; set; }
         public decimal PctNoK1 { get; set; }
         public K2Report? K2 { get; set; }
+
+        public int TotalK2 { get; set; }
+        public decimal EfectividadK2 { get; set; }
+
+        public decimal EfectividadK1Principal { get; set; }
+        public decimal EfectividadK1Sin2da { get; set; }
+        public decimal EfectividadK1De2da { get; set; }
 
         public decimal EfectividadK1 { get; set; }
         public decimal EfectividadAtaque { get; set; }
@@ -804,6 +879,22 @@ namespace SandStats.Pages.Estadisticas
                 Lados = value.Lados ?? new();
             }
         }
+
+        // ====== Distribución específica de 2da (A1/A6/A5) ======
+        public int Total2da { get; set; }
+        public int A1_2da { get; set; }
+        public int A6_2da { get; set; }
+        public int A5_2da { get; set; }
+
+        public string Dist2daInline =>
+            Total2da > 0
+                ? $"(A1 {Pct(A1_2da)} - A6 {Pct(A6_2da)} - A5 {Pct(A5_2da)})"
+                : string.Empty;
+
+        private string Pct(int part) =>
+            Total2da > 0
+                ? Math.Round(100.0 * part / (double)Total2da).ToString("0") + "%"
+                : "0%";
     }
 
     // ==================== ViewModel K2 (único cuadro) ====================
@@ -811,38 +902,42 @@ namespace SandStats.Pages.Estadisticas
     public class K2Counts
     {
         public int DP { get; set; }   // #
-        public int P { get; set; }   // +
-        public int N { get; set; }   // -
+        public int P { get; set; }    // +
+        public int N { get; set; }    // -
         public int DN { get; set; }   // =
 
         public int Total => DP + P + N + DN;
 
-        public decimal Efect => Total > 0 ? (DP + P) / (decimal)Total : 0m; // headline
+        public decimal Efect => Total > 0 ? (DP + P) / (decimal)Total : 0m;
         public decimal PctDP => Total > 0 ? DP / (decimal)Total : 0m;
         public decimal PctP => Total > 0 ? P / (decimal)Total : 0m;
         public decimal PctN => Total > 0 ? N / (decimal)Total : 0m;
         public decimal PctDN => Total > 0 ? DN / (decimal)Total : 0m;
     }
-  
-        public class K2Report
-        {
-            public K2Counts PuntosJugados { get; set; } = new();
-            public K2Counts SaquesFlotado { get; set; } = new();
-            public K2Counts SaquesPotencia { get; set; } = new();
-            public K2Counts BloqueoA1 { get; set; } = new();
-            public K2Counts BloqueoA6 { get; set; } = new();
-            public K2Counts BloqueoA5 { get; set; } = new();
-            // 👇 agregá esta propiedad
-            public Partido? Partido { get; set; }
 
-            // ahora podés calcular SetsJugados
-            public int SetsJugados => Partido?.SetsJugados ?? 0;
-            public decimal EfectHeadline => PuntosJugados.Efect;
-            public int ErroresVarios { get; set; }
-            public int Agregados { get; set; }
-        
+    public class K2Report
+    {
+        public K2Counts PuntosJugados { get; set; } = new();
+        public K2Counts SaquesFlotado { get; set; } = new();
+        public K2Counts SaquesPotencia { get; set; } = new();
+        public K2Counts BloqueoA1 { get; set; } = new();
+        public K2Counts BloqueoA6 { get; set; } = new();
+        public K2Counts BloqueoA5 { get; set; } = new();
 
+        public Partido? Partido { get; set; }
+        public List<Partido>? Partidos { get; set; }
+
+        // ✅ Calcula bien para uno o varios partidos (2–0 ➜ 2; 2–1 ➜ 3; suma en multi)
+        public int SetsJugados =>
+            (Partidos != null && Partidos.Count > 0)
+                ? Partidos.Sum(p => p.SetsGanadosDupla1 + p.SetsGanadosDupla2)
+                : (Partido != null ? (Partido.SetsGanadosDupla1 + Partido.SetsGanadosDupla2) : 0);
+
+        public decimal EfectHeadline => PuntosJugados.Efect;
+        public int ErroresVarios { get; set; }
+        public int Agregados { get; set; }
     }
+
     // ==================== Compuesto por jugador (Recep + Atq + K2) ====================
 
     public class RecepcionPlayerReport
@@ -852,10 +947,7 @@ namespace SandStats.Pages.Estadisticas
         public RecepcionSeccionTipoSaque Flotados { get; set; } = new();
         public RecepcionSeccionTipoSaque Potencia { get; set; } = new();
 
-        // Ataque integrado debajo de Recepción
         public AtaquePlayerReport Ataque { get; set; } = new();
-
-        // ✅ Debe ser K2Report (no K2Counts)
         public K2Report K2 { get; set; } = new();
 
         public static RecepcionPlayerReport Empty(Jugador j) => new()
@@ -867,5 +959,36 @@ namespace SandStats.Pages.Estadisticas
             Ataque = new AtaquePlayerReport { Jugador = j },
             K2 = new K2Report()
         };
+    }
+
+    // Mapa Ataque VM
+    public class MapaAtaqueViewModel
+    {
+        public string Titulo { get; set; } = "";
+        public bool PlayerRight { get; set; }
+        public int TotalAtaques { get; set; }
+        public List<MapaAccionVM> Acciones { get; set; } = new();
+
+        public List<(string Label, decimal Pct)>? Resumen { get; set; }
+        public int ResumenCol { get; set; } = 2;
+        public int ResumenRow { get; set; } = 1;
+        public int TotalFamilia { get; set; }
+        public int Rol { get; set; }
+        public SandStats.Models.TipoLado Lado { get; set; }
+        public int TotalVarilla { get; set; }
+        public int TotalEntreLinea { get; set; }
+    }
+
+    public class MapaAccionVM
+    {
+        public string Nombre { get; set; } = "";
+        public AtkCounts C { get; set; } = new();
+        public int Col { get; set; }
+        public int Row { get; set; }
+        public int TotalVarilla { get; set; }
+        public int TotalEntreLinea { get; set; }
+        public MapaAccionVM() { }
+        public MapaAccionVM(string nombre, AtkCounts counts, int col, int row)
+        { Nombre = nombre; C = counts; Col = col; Row = row; }
     }
 }

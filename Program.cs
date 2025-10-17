@@ -1,22 +1,113 @@
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics; // <-- NUEVO
 using SandStats.Data;
+using SandStats.Security;
+using System.Linq;
+
+// --- SEED: crea roles y un usuario admin si no existen ---
+static async Task SeedAsync(IHost app)
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var cfg = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+    var env = scope.ServiceProvider.GetRequiredService<IHostEnvironment>();
+    var roles = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+    // --- INIT DB: DEV => EnsureCreated / PROD => Migrate  ---------------------
+    if (env.IsDevelopment())
+        await db.Database.EnsureCreatedAsync();   // <-- CAMBIO (antes hacía Migrate siempre)
+    else
+        await db.Database.MigrateAsync();
+    // -------------------------------------------------------------------------
+
+    // Controla si además querés sembrar datos (roles/usuario)
+    var runSeed = env.IsDevelopment() ||
+                  (cfg["RUN_SEED"]?.Equals("true", StringComparison.OrdinalIgnoreCase) ?? false);
+    if (!runSeed) return;
+
+    foreach (var r in new[] { "Admin", "Coach", "Player" })
+        if (!await roles.RoleExistsAsync(r))
+            await roles.CreateAsync(new IdentityRole(r));
+
+    var adminEmail = cfg["SEED_ADMIN_EMAIL"] ?? "admin@sandstats.dev";
+    var adminPass = cfg["SEED_ADMIN_PASSWORD"] ?? "Admin123!";
+
+    var admin = await users.FindByEmailAsync(adminEmail);
+    if (admin == null)
+    {
+        admin = new ApplicationUser { UserName = adminEmail, Email = adminEmail, EmailConfirmed = true };
+        var res = await users.CreateAsync(admin, adminPass);
+        if (!res.Succeeded)
+            throw new Exception("No pude crear el admin: " + string.Join("; ", res.Errors.Select(e => e.Description)));
+        await users.AddToRoleAsync(admin, "Admin");
+    }
+}
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(connectionString));
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+});
+
+builder.Services.AddRazorPages(options =>
+{
+    options.Conventions.AllowAnonymousToPage("/Index"); // Home pública
+    options.Conventions.AllowAnonymousToAreaPage("Identity", "/Account/Login");
+    options.Conventions.AllowAnonymousToAreaPage("Identity", "/Account/Logout");
+    options.Conventions.AllowAnonymousToAreaPage("Identity", "/Account/AccessDenied");
+});
+
+// 🔌 Conexión (nube: Postgres por env var / local: SQLite por appsettings)
+var pgConn = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
+var localConn = builder.Configuration.GetConnectionString("DefaultConnection");
+var conn = pgConn ?? localConn;
+
+builder.Services.AddDbContext<ApplicationDbContext>(opt =>
+{
+    if (!string.IsNullOrWhiteSpace(pgConn))
+        opt.UseNpgsql(conn);   // nube (Render)
+    else
+        opt.UseSqlite(conn);   // local
+
+    // En DEV ignoramos el warning de "pending model changes" para que no explote
+    if (builder.Environment.IsDevelopment())
+        opt.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning)); // <-- NUEVO
+});
+
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
-    .AddEntityFrameworkStores<ApplicationDbContext>();
-builder.Services.AddRazorPages();
+// 🧑‍💻 Identity
+builder.Services
+  .AddDefaultIdentity<ApplicationUser>(o =>
+  {
+      o.SignIn.RequireConfirmedAccount = true;
+      o.User.RequireUniqueEmail = true;
+      o.Password.RequireNonAlphanumeric = false;
+      o.Password.RequireUppercase = false;
+      o.Password.RequireDigit = false;
+      o.Password.RequiredLength = 6;
+  })
+  .AddRoles<IdentityRole>()
+  .AddEntityFrameworkStores<ApplicationDbContext>();
+
+// SignInManager custom (opcional)
+builder.Services.AddScoped<SignInManager<ApplicationUser>, AppSignInManager>();
+builder.Services.ConfigureApplicationCookie(o =>
+{
+    o.LoginPath = "/Identity/Account/Login";
+    o.AccessDeniedPath = "/Identity/Account/AccessDenied";
+    o.SlidingExpiration = true;
+});
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// 🌐 Pipeline HTTP
 if (app.Environment.IsDevelopment())
 {
     app.UseMigrationsEndPoint();
@@ -24,18 +115,17 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseExceptionHandler("/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
-
+app.UseStaticFiles();
 app.UseRouting();
-
+app.UseAuthentication();
 app.UseAuthorization();
+app.MapRazorPages();
 
-app.MapStaticAssets();
-app.MapRazorPages()
-   .WithStaticAssets();
+// 🚀 Inicializar DB y (opcional) sembrar roles/usuario admin
+await SeedAsync(app);
 
 app.Run();

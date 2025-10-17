@@ -14,7 +14,7 @@
     <h2 class="mb-4">Cargar Partido</h2>
 
     <form method="post" id="partidoForm">
-        <validation-summary model-only class="text-danger"></validation-summary>
+        <div asp-validation-summary="All" class="text-danger"></div>
 
         <div class="mb-3">
             <label asp-for="Partido.Torneo" class="form-label"></label>
@@ -45,6 +45,12 @@
             <select asp-for="Partido.Clima" asp-items="Html.GetEnumSelectList<Clima>()" class="form-select"></select>
             <span asp-validation-for="Partido.Clima" class="text-danger"></span>
         </div>
+        <!-- índice de los sets que SIEMPRE están -->
+        <input type="hidden" name="Partido.Sets.index" value="0" />
+        <input type="hidden" name="Partido.Sets.index" value="1" />
+        <!-- acá inyectamos dinámicamente el índice 2 cuando se muestre el set 3 -->
+        <span id="idx-2-anchor"></span>
+
 
         <div class="mb-3">
             <label asp-for="Partido.SetsGanadosDupla1" class="form-label"></label>
@@ -58,25 +64,28 @@
             <span asp-validation-for="Partido.SetsGanadosDupla2" class="text-danger"></span>
         </div>
 
-        <div id="sets-container" class="mb-4">
-            <div class="set-block border rounded p-3 mb-3">
-                <h5 class="mb-3">Set 1</h5>
-                <input name="Partido.Sets[0].PuntosDupla1" placeholder="Puntos Dupla 1" class="form-control mb-2" required />
-                <input name="Partido.Sets[0].PuntosDupla2" placeholder="Puntos Dupla 2" class="form-control" required />
-            </div>
+        @Html.AntiForgeryToken()
 
-            <div class="set-block border rounded p-3 mb-3">
-                <h5 class="mb-3">Set 2</h5>
-                <input name="Partido.Sets[1].PuntosDupla1" placeholder="Puntos Dupla 1" class="form-control mb-2" required />
-                <input name="Partido.Sets[1].PuntosDupla2" placeholder="Puntos Dupla 2" class="form-control" required />
-            </div>
-
-            <div class="set-block border rounded p-3 mb-3" id="set3" style="display:none;">
-                <h5 class="mb-3">Set 3 (Tie-break)</h5>
-                <input name="Partido.Sets[2].PuntosDupla1" placeholder="Puntos Dupla 1" class="form-control mb-2" />
-                <input name="Partido.Sets[2].PuntosDupla2" placeholder="Puntos Dupla 2" class="form-control" />
-            </div>
+        <div class="set-block border rounded p-3 mb-3">
+            <h5 class="mb-3">Set 1</h5>
+            <input asp-for="Partido.Sets[0].PuntosDupla1" class="form-control mb-2" type="number" />
+            <input asp-for="Partido.Sets[0].PuntosDupla2" class="form-control" type="number" />
         </div>
+
+        <div class="set-block border rounded p-3 mb-3">
+            <h5 class="mb-3">Set 2</h5>
+            <input asp-for="Partido.Sets[1].PuntosDupla1" class="form-control mb-2" type="number" />
+            <input asp-for="Partido.Sets[1].PuntosDupla2" class="form-control" type="number" />
+        </div>
+
+        <div class="set-block border rounded p-3 mb-3" id="set3" style="display:none;">
+            <h5 class="mb-3">Set 3 (Tie-break)</h5>
+            <input asp-for="Partido.Sets[2].PuntosDupla1" class="form-control mb-2"
+                   type="number" disabled />
+            <input asp-for="Partido.Sets[2].PuntosDupla2" class="form-control"
+                   type="number" disabled />
+        </div>
+
 
         <div class="text-danger mb-3" id="dupla-error" style="display: none;">
             No podés seleccionar la misma dupla en ambos campos.
@@ -95,26 +104,7 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const partidoId = "@TempData["UltimoPartidoId"]";
-            if (partidoId && partidoId !== "") {
-                const modalElement = document.getElementById('postCargaModal');
-                const modal = new bootstrap.Modal(modalElement, {
-                    backdrop: 'static',
-                    keyboard: false
-                });
-
-                document.getElementById('main-content').classList.add('blur');
-
-                modalElement.addEventListener('hidden.bs.modal', () => {
-                    document.getElementById('main-content').classList.remove('blur');
-                });
-
-                modal.show();
-            }
-        });
-    </script>
+   
 
     <script>
         const partidoId = '@TempData["NuevoPartidoId"]';
@@ -127,36 +117,52 @@
         const dupla1Select = document.getElementById('dupla1-select');
         const dupla2Select = document.getElementById('dupla2-select');
         const errorMsg = document.getElementById('dupla-error');
+        const idxAnchor = document.getElementById('idx-2-anchor');
+
+              function showSet3() {
+          // agregar índice 2
+          if (!document.getElementById('idx-2')) {
+            const h = document.createElement('input');
+            h.type = 'hidden';
+            h.name = 'Partido.Sets.index';
+            h.value = '2';
+            h.id = 'idx-2';
+            idxAnchor.appendChild(h);
+          }
+          // habilitar inputs
+          set3.style.display = 'block';
+          set3.querySelectorAll('input[type="number"]').forEach(i => {
+            i.disabled = false;
+            i.required = true;
+          });
+        }
+
+        function hideSet3() {
+          // quitar índice 2
+          const h = document.getElementById('idx-2');
+          if (h) h.remove();
+          // limpiar y deshabilitar inputs
+          set3.querySelectorAll('input[type="number"]').forEach(i => {
+            i.value = '';
+            i.required = false;
+            i.disabled = true;
+          });
+          set3.style.display = 'none';
+        }
 
         function toggleSet3() {
-            const val1 = parseInt(input1.value) || 0;
-            const val2 = parseInt(input2.value) || 0;
-            const total = val1 + val2;
+          const val1 = parseInt(input1.value) || 0;
+          const val2 = parseInt(input2.value) || 0;
+          const total = val1 + val2;
 
-            if (total === 3 && val1 !== 3 && val2 !== 3) {
-                set3.style.display = 'block';
-                set3.querySelectorAll('input').forEach(input => input.setAttribute('required', 'required'));
-            } else {
-                set3.style.display = 'none';
-                set3.querySelectorAll('input').forEach(input => {
-                    input.value = '';
-                    input.removeAttribute('required');
-                });
-            }
+          // se juega set3 solo si hay 2–1 o 1–2 (total = 3 y nadie llegó a 3)
+          if (total === 3 && val1 !== 3 && val2 !== 3) showSet3();
+          else hideSet3();
         }
 
         input1.addEventListener('input', toggleSet3);
         input2.addEventListener('input', toggleSet3);
-
-        document.getElementById('partidoForm').addEventListener('submit', function (e) {
-            if (dupla1Select.value === dupla2Select.value) {
-                e.preventDefault();
-                errorMsg.style.display = 'block';
-                return false;
-            }
-        });
-
-        dupla1Select.addEventListener('change', () => errorMsg.style.display = 'none');
-        dupla2Select.addEventListener('change', () => errorMsg.style.display = 'none');
+        // correr una vez al cargar
+        toggleSet3();
     </script>
 }

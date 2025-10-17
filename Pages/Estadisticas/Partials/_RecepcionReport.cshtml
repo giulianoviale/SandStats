@@ -5,6 +5,8 @@
     // === Helpers (si ya vienen de _ReporteHelpers, podés quitarlos) ===
     string Pct(decimal d) => (d * 100m).ToString("0") + "%";
     Func<decimal, string> EfClass = e => e >= 0.80m ? "ef-high" : (e >= 0.40m ? "ef-mid" : "ef-low");
+    Func<decimal, string> RecibidaClass = p => 
+    p >= 0.70m ? "ef-high" : (p >= 0.50m ? "ef-mid" : "ef-low");
 
     var g = Model.General;                 // resumen general (suma flot+pot)
     var tot = g.Totales;                   // DP, P, N, E del jugador
@@ -75,25 +77,29 @@
 @:</div>
     };
 
-    // === “Por zonas” sin card (se usa dentro de cada card) ===
-    Action<List<SandStats.Pages.Estadisticas.RecSector>> RenderSectoresSimple = lista =>
-    {
-        var dict = (lista ?? new List<SandStats.Pages.Estadisticas.RecSector>())
-                   .ToDictionary(s => s.Zona, s => s);
+// === “Por zonas” apilado y extendido, sin colapso de márgenes ===
+Action<List<SandStats.Pages.Estadisticas.RecSector>> RenderSectoresSimple = lista =>
+{
+    var dict = (lista ?? new List<SandStats.Pages.Estadisticas.RecSector>())
+               .ToDictionary(s => s.Zona, s => s);
 
-@:<div class="row g-3">
-        foreach (var z in zonasOrden)
-        {
-            dict.TryGetValue(z, out var sec);
-            sec ??= new SandStats.Pages.Estadisticas.RecSector {
-                Zona = z, PorTipo = new Dictionary<TipoRecepcion, SandStats.Pages.Estadisticas.RecCounts>()
-            };
-@:<div class="col-12 col-lg-4">
-@:<div class="border rounded p-2 h-100">
-@:<div class="d-flex justify-content-between align-items-center mb-2">
-@:<div class="fw-semibold">Zona @((int)z)</div>
-@:<div class="text-muted small">Total: <strong>@sec.Total</strong> — <span class="fw-bold text-danger fs-5">@Pct(sec.PctSobreJugador)</span></div>
-@:</div>
+@:<div class="d-grid gap-3"> <!-- controla el espacio entre zonas sin usar margins -->
+    foreach (var z in zonasOrden)
+    {
+        dict.TryGetValue(z, out var sec);
+        sec ??= new SandStats.Pages.Estadisticas.RecSector {
+            Zona = z, PorTipo = new Dictionary<TipoRecepcion, SandStats.Pages.Estadisticas.RecCounts>()
+        };
+
+@:<div> <!-- item sin mb-* para evitar colapso -->
+@:  <div class="border rounded p-2">
+@:    <div class="d-flex justify-content-between align-items-center mb-2">
+@:      <div class="fw-semibold">Zona @((int)z)</div>
+@:      <div class="text-muted small">
+@:        Total: <strong>@sec.Total</strong>
+@:        — <span class="fw-bold text-danger fs-5">@Pct(sec.PctSobreJugador)</span>
+@:      </div>
+@:    </div>
             RenderTablaPorTipoOrdenNuevo(sec.PorTipo);
 @:</div>
 @:</div>
@@ -113,11 +119,10 @@
     <div class="table-responsive mb-3">
       <table class="table table-sm table-bordered align-middle" style="min-width: 520px;">
         <tbody>
-        <tr>
-            <th>% Rec recibida (jugador)</th>
-            <td class="text-end fw-semibold">@Pct(g.PctSobreEquipo)</td>
-          </tr>
           <tr>
+            <th>% Rec recibida (jugador)</th>
+            <td class="text-end fw-semibold @RecibidaClass(g.PctSobreEquipo)">@Pct(g.PctSobreEquipo)</td>
+          </tr>
             <th style="width:60%;">Cantidad pelotas <em>(equipo)</em></th>
             <td class="text-end fw-semibold">@totalEquipo</td>
           </tr>
@@ -127,7 +132,7 @@
           </tr>
           <tr>
             <th>Efectividad Rec Total</th>
-            <td class="text-end fw-semibold @EfClass(tot.Efect)">@Pct(tot.Efect)</td>
+            <td class="text-end fw-semibold ">@Pct(tot.Efect)</td>
           </tr>
           
           <tr><th>Cantidad #</th><td class="text-end">@tot.DP</td></tr>
