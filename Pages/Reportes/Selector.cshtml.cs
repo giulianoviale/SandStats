@@ -7,12 +7,12 @@ using SandStats.Models;
 
 namespace SandStats.Pages.Reportes
 {
-    // ===== ViewModels =====
+    // ===================== ViewModels =====================
     public class FiltroVM
     {
         public int? DuplaId { get; set; }
-        public DateTime? Desde { get; set; }
-        public DateTime? Hasta { get; set; }
+        public DateTime? Desde { get; set; }       // viene como Date (Kind = Unspecified)
+        public DateTime? Hasta { get; set; }       // idem
         public bool IncluirAmistosos { get; set; }
 
         // módulos
@@ -46,7 +46,7 @@ namespace SandStats.Pages.Reportes
         public Clima Clima { get; set; }
     }
 
-    // ===== PageModel =====
+    // ===================== PageModel =====================
     public class SelectorModel : PageModel
     {
         private readonly ApplicationDbContext _context;
@@ -79,36 +79,38 @@ namespace SandStats.Pages.Reportes
                 return Page();
             }
 
+            // base query
             var q = _context.Partidos
                 .AsNoTracking()
                 .Include(p => p.Dupla1).Include(p => p.Dupla2)
                 .Include(p => p.Sets)
                 .Where(p => p.Dupla1Id == Filtro.DuplaId || p.Dupla2Id == Filtro.DuplaId);
 
-            // ===== Filtro de fechas con rango semi-abierto =====
-            // >= desde.Date  y  < hasta.Date.AddDays(1)
+            // ======== Filtro de Fechas (UTC-safe) ========
+            // El date input llega con Kind=Unspecified. Lo forzamos a UTC "00:00"
+            // y usamos rango semi-abierto:  >= desdeUTC  &&  < hastaUTC+1d
             if (Filtro.Desde.HasValue)
             {
-                var d = Filtro.Desde.Value.Date;
-                q = q.Where(p => p.Fecha >= d);
+                var desdeUtc = ToUtcStartOfDay(Filtro.Desde.Value);
+                q = q.Where(p => p.Fecha >= desdeUtc);
             }
             if (Filtro.Hasta.HasValue)
             {
-                var hExcl = Filtro.Hasta.Value.Date.AddDays(1); // exclusivo
-                q = q.Where(p => p.Fecha < hExcl);
+                var hastaExclUtc = ToUtcStartOfDay(Filtro.Hasta.Value).AddDays(1);
+                q = q.Where(p => p.Fecha < hastaExclUtc);
             }
 
-            // clima
+            // Clima
             if (Filtro.Clima.HasValue)
                 q = q.Where(p => p.Clima == Filtro.Clima.Value);
 
-            // “amistosos” (si existe la columna sombra)
+            // “Amistosos” (columna sombra opcional)
             var entidad = _context.Model.FindEntityType(typeof(Partido));
             bool hasEsAmistoso = entidad?.FindProperty("EsAmistoso") != null;
             if (!Filtro.IncluirAmistosos && hasEsAmistoso)
                 q = q.Where(p => !EF.Property<bool>(p, "EsAmistoso"));
 
-            // módulos
+            // Módulos presentes
             if (Filtro.SoloConRecepcion)
                 q = q.Where(p => _context.EstadisticaRecepcion.Any(e => e.PartidoId == p.Id));
             if (Filtro.SoloConAtaque)
@@ -165,29 +167,22 @@ namespace SandStats.Pages.Reportes
             });
         }
 
+        // ===================== Helpers =====================
+
         private async Task CargarDuplasAsync()
         {
+            // Mostramos ALIAS en el selector
             var duplasUi = await _context.Duplas
                 .AsNoTracking()
-                .Include(d => d.Jugador1)
-                .Include(d => d.Jugador2)
-                .Select(d => new
-                {
-                    d.Id,
-                    // En el selector seguimos mostrando “Nombre / Nombre”.
-                    // (Si preferís alias acá también, cambiá por d.Alias)
-                    Nombre = ((d.Jugador1 != null ? d.Jugador1.Nombre : "")
-                               + " / " +
-                              (d.Jugador2 != null ? d.Jugador2.Nombre : ""))
-                })
-                .OrderBy(x => x.Nombre)
+                .Select(d => new { d.Id, d.Alias })
+                .OrderBy(x => x.Alias)
                 .ToListAsync();
 
             Duplas = duplasUi
                 .Select(x => new SelectListItem
                 {
                     Value = x.Id.ToString(),
-                    Text = x.Nombre
+                    Text = x.Alias
                 })
                 .ToList();
         }
@@ -204,6 +199,19 @@ namespace SandStats.Pages.Reportes
                 })
                 .ToList();
             return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Toma un DateTime (generalmente Kind=Unspecified del date input)
+        /// y lo convierte a 00:00 UTC del mismo “día” para comparar en Render.
+        /// </summary>
+        private static DateTime ToUtcStartOfDay(DateTime d)
+        {
+            // Forzamos Unspecified -> Unspecified 00:00, luego asumimos que ese “día”
+            // debe compararse en UTC. Si quisieras usar un huso fijo (AR -03), podés
+            // restar 3 horas antes de ToUniversalTime().
+            var unspecifiedMidnight = new DateTime(d.Year, d.Month, d.Day, 0, 0, 0, DateTimeKind.Unspecified);
+            return DateTime.SpecifyKind(unspecifiedMidnight, DateTimeKind.Utc);
         }
     }
 }
