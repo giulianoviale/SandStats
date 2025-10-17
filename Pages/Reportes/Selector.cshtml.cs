@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+ï»¿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -7,27 +7,18 @@ using SandStats.Models;
 
 namespace SandStats.Pages.Reportes
 {
-    // ===== MOVIDAS A NIVEL DE NAMESPACE =====
     public class FiltroVM
     {
         public int? DuplaId { get; set; }
         public DateTime? Desde { get; set; }
         public DateTime? Hasta { get; set; }
         public bool IncluirAmistosos { get; set; }
-
-        // filtros de módulos
         public bool SoloConRecepcion { get; set; }
         public bool SoloConAtaque { get; set; }
         public bool SoloConK2 { get; set; }
-
-        // presets
         public int? UltimosN { get; set; }
-
-        // scope para ReporteDupla
         public bool IncluirCierre { get; set; }
         public int? SetNumero { get; set; }
-
-        // NUEVO: filtro de clima
         public Clima? Clima { get; set; }
     }
 
@@ -38,15 +29,12 @@ namespace SandStats.Pages.Reportes
         public string Torneo { get; set; } = "-";
         public string Rival { get; set; } = "-";
         public int CantSets { get; set; }
-
         public bool TieneRecepcion { get; set; }
         public bool TieneAtaque { get; set; }
         public bool TieneK2 { get; set; }
-
         public Clima Clima { get; set; }
     }
 
-    // ===== PAGE MODEL =====
     public class SelectorModel : PageModel
     {
         private readonly ApplicationDbContext _context;
@@ -75,9 +63,13 @@ namespace SandStats.Pages.Reportes
             if (!(Filtro.DuplaId > 0))
             {
                 Partidos = new();
-                ModelState.AddModelError(string.Empty, "Seleccioná una dupla.");
+                ModelState.AddModelError(string.Empty, "SeleccionÃ¡ una dupla.");
                 return Page();
             }
+
+            // Normalizo fechas a "solo fecha" para evitar lÃ­os de TZ/cultura en producciÃ³n
+            DateTime? desde = Filtro.Desde?.Date;
+            DateTime? hasta = Filtro.Hasta?.Date;
 
             var q = _context.Partidos
                 .AsNoTracking()
@@ -85,13 +77,13 @@ namespace SandStats.Pages.Reportes
                 .Include(p => p.Sets)
                 .Where(p => p.Dupla1Id == Filtro.DuplaId || p.Dupla2Id == Filtro.DuplaId);
 
-            if (Filtro.Desde.HasValue) q = q.Where(p => p.Fecha >= Filtro.Desde.Value);
-            if (Filtro.Hasta.HasValue) q = q.Where(p => p.Fecha <= Filtro.Hasta.Value);
+            if (desde.HasValue) q = q.Where(p => p.Fecha.Date >= desde.Value);
+            if (hasta.HasValue) q = q.Where(p => p.Fecha.Date <= hasta.Value);
 
             if (Filtro.Clima.HasValue)
                 q = q.Where(p => p.Clima == Filtro.Clima.Value);
 
-            // “amistosos” si existe la columna
+            // excluir amistosos si la columna existe
             var entidad = _context.Model.FindEntityType(typeof(Partido));
             bool hasEsAmistoso = entidad?.FindProperty("EsAmistoso") != null;
             if (!Filtro.IncluirAmistosos && hasEsAmistoso)
@@ -131,14 +123,14 @@ namespace SandStats.Pages.Reportes
         {
             if (!(Filtro.DuplaId > 0))
             {
-                ModelState.AddModelError(string.Empty, "Seleccioná una dupla.");
+                ModelState.AddModelError(string.Empty, "SeleccionÃ¡ una dupla.");
                 BusquedaRealizada = true;
                 return Page();
             }
 
             if (Seleccionados == null || Seleccionados.Count == 0)
             {
-                ModelState.AddModelError(string.Empty, "Elegí al menos un partido.");
+                ModelState.AddModelError(string.Empty, "ElegÃ­ al menos un partido.");
                 BusquedaRealizada = true;
                 return Page();
             }
@@ -155,17 +147,10 @@ namespace SandStats.Pages.Reportes
 
         private async Task CargarDuplasAsync()
         {
+            // âœ… Ahora usamos el ALIAS de la dupla para mostrar en el combo
             var duplasUi = await _context.Duplas
                 .AsNoTracking()
-                .Include(d => d.Jugador1)
-                .Include(d => d.Jugador2)
-                .Select(d => new
-                {
-                    d.Id,
-                    Nombre = ((d.Jugador1 != null ? d.Jugador1.Nombre : "")
-                             + " / " +
-                             (d.Jugador2 != null ? d.Jugador2.Nombre : ""))
-                })
+                .Select(d => new { d.Id, Nombre = d.Alias })
                 .OrderBy(x => x.Nombre)
                 .ToListAsync();
 
@@ -173,7 +158,7 @@ namespace SandStats.Pages.Reportes
                 .Select(x => new SelectListItem
                 {
                     Value = x.Id.ToString(),
-                    Text = x.Nombre
+                    Text = string.IsNullOrWhiteSpace(x.Nombre) ? "(Sin alias)" : x.Nombre
                 })
                 .ToList();
         }

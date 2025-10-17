@@ -84,7 +84,7 @@
 
                 <div class="vr"></div>
 
-                <!-- 🔽 Nuevo: Filtro de Clima -->
+                <!-- 🔽 Filtro de Clima -->
                 <div class="d-flex align-items-center gap-2">
                     <label class="form-label mb-0">Clima</label>
                     <select class="form-select form-select-sm" style="width:150px" asp-for="Filtro.Clima" asp-items="Model.Climas">
@@ -95,7 +95,6 @@
         </div>
     </form>
 
-    <!-- 🔹 Badge resumen si hay clima filtrado -->
     @if (hayResultados && Model.Filtro.Clima.HasValue)
     {
         var climaStr = Model.Filtro.Clima?.ToString();
@@ -107,7 +106,6 @@
         </div>
     }
 
-    <!-- Resultados -->
     @if (hayResultados)
     {
         <form method="post" asp-page-handler="VerReportes" class="card shadow-sm">
@@ -153,24 +151,25 @@
                                     }
                                     else
                                     {
+
                                         <span class="badge text-bg-secondary">Recep</span>
                                     }
-
                                     @if (p.TieneAtaque)
                                     {
                                         <span class="badge text-bg-success">Atq</span>
                                     }
                                     else
                                     {
+
                                         <span class="badge text-bg-secondary">Atq</span>
                                     }
-
                                     @if (p.TieneK2)
                                     {
                                         <span class="badge text-bg-success">K2</span>
                                     }
                                     else
                                     {
+
                                         <span class="badge text-bg-secondary">K2</span>
                                     }
                                 </td>
@@ -183,7 +182,7 @@
                 </table>
             </div>
 
-            <!-- ✅ Hidden inputs corregidos -->
+            <!-- ✅ Hidden inputs -->
             <input type="hidden" name="Filtro.DuplaId" value="@Model.Filtro.DuplaId" />
             <input type="hidden" name="Filtro.IncluirCierre" value="@Model.Filtro.IncluirCierre" />
             <input type="hidden" name="Filtro.SetNumero" value="@(Model.Filtro.SetNumero?.ToString() ?? "")" />
