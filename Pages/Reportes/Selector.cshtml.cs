@@ -15,15 +15,19 @@ namespace SandStats.Pages.Reportes
         public DateTime? Hasta { get; set; }
         public bool IncluirAmistosos { get; set; }
 
+        // módulos
         public bool SoloConRecepcion { get; set; }
         public bool SoloConAtaque { get; set; }
         public bool SoloConK2 { get; set; }
 
+        // presets
         public int? UltimosN { get; set; }
 
+        // scope para ReporteDupla
         public bool IncluirCierre { get; set; }
         public int? SetNumero { get; set; }
 
+        // clima
         public Clima? Clima { get; set; }
     }
 
@@ -75,68 +79,62 @@ namespace SandStats.Pages.Reportes
                 return Page();
             }
 
-            try
+            var q = _context.Partidos
+                .AsNoTracking()
+                .Include(p => p.Dupla1).Include(p => p.Dupla2)
+                .Include(p => p.Sets)
+                .Where(p => p.Dupla1Id == Filtro.DuplaId || p.Dupla2Id == Filtro.DuplaId);
+
+            // ===== Filtro de fechas con rango semi-abierto =====
+            // >= desde.Date  y  < hasta.Date.AddDays(1)
+            if (Filtro.Desde.HasValue)
             {
-                var q = _context.Partidos
-                    .AsNoTracking()
-                    .Include(p => p.Dupla1).Include(p => p.Dupla2)
-                    .Include(p => p.Sets)
-                    .Where(p => p.Dupla1Id == Filtro.DuplaId || p.Dupla2Id == Filtro.DuplaId);
-
-                // ------ Fecha (robusta para EF/Render) ------
-                var desde = Filtro.Desde?.Date;
-                var hastaExcl = Filtro.Hasta?.Date.AddDays(1); // límite superior exclusivo
-
-                if (desde.HasValue)
-                    q = q.Where(p => p.Fecha >= desde.Value);
-
-                if (hastaExcl.HasValue)
-                    q = q.Where(p => p.Fecha < hastaExcl.Value);
-
-                // Clima
-                if (Filtro.Clima.HasValue)
-                    q = q.Where(p => p.Clima == Filtro.Clima.Value);
-
-                // Amistosos (si existe la columna)
-                var entidad = _context.Model.FindEntityType(typeof(Partido));
-                bool hasEsAmistoso = entidad?.FindProperty("EsAmistoso") != null;
-                if (!Filtro.IncluirAmistosos && hasEsAmistoso)
-                    q = q.Where(p => !EF.Property<bool>(p, "EsAmistoso"));
-
-                // Módulos
-                if (Filtro.SoloConRecepcion)
-                    q = q.Where(p => _context.EstadisticaRecepcion.Any(e => e.PartidoId == p.Id));
-                if (Filtro.SoloConAtaque)
-                    q = q.Where(p => _context.EstadisticaAtaque.Any(e => e.PartidoId == p.Id));
-                if (Filtro.SoloConK2)
-                    q = q.Where(p => _context.EstadisticaK2.Any(e => e.PartidoId == p.Id));
-
-                q = q.OrderByDescending(p => p.Fecha);
-
-                if (Filtro.UltimosN.HasValue && Filtro.UltimosN.Value > 0)
-                    q = q.Take(Filtro.UltimosN.Value);
-
-                Partidos = await q
-                    .Select(p => new PartidoVM
-                    {
-                        Id = p.Id,
-                        Fecha = p.Fecha,
-                        Torneo = p.Torneo ?? "-",
-                        Rival = p.Dupla1Id == Filtro.DuplaId ? (p.Dupla2!.Alias) : (p.Dupla1!.Alias),
-                        CantSets = p.Sets.Count,
-                        TieneRecepcion = _context.EstadisticaRecepcion.Any(e => e.PartidoId == p.Id),
-                        TieneAtaque = _context.EstadisticaAtaque.Any(e => e.PartidoId == p.Id),
-                        TieneK2 = _context.EstadisticaK2.Any(e => e.PartidoId == p.Id),
-                        Clima = p.Clima
-                    })
-                    .ToListAsync();
+                var d = Filtro.Desde.Value.Date;
+                q = q.Where(p => p.Fecha >= d);
             }
-            catch (Exception ex)
+            if (Filtro.Hasta.HasValue)
             {
-                Console.Error.WriteLine($"[Selector/Buscar] Error: {ex}");
-                ModelState.AddModelError(string.Empty, "Hubo un error al aplicar los filtros de fecha. Probá nuevamente.");
-                Partidos = new();
+                var hExcl = Filtro.Hasta.Value.Date.AddDays(1); // exclusivo
+                q = q.Where(p => p.Fecha < hExcl);
             }
+
+            // clima
+            if (Filtro.Clima.HasValue)
+                q = q.Where(p => p.Clima == Filtro.Clima.Value);
+
+            // “amistosos” (si existe la columna sombra)
+            var entidad = _context.Model.FindEntityType(typeof(Partido));
+            bool hasEsAmistoso = entidad?.FindProperty("EsAmistoso") != null;
+            if (!Filtro.IncluirAmistosos && hasEsAmistoso)
+                q = q.Where(p => !EF.Property<bool>(p, "EsAmistoso"));
+
+            // módulos
+            if (Filtro.SoloConRecepcion)
+                q = q.Where(p => _context.EstadisticaRecepcion.Any(e => e.PartidoId == p.Id));
+            if (Filtro.SoloConAtaque)
+                q = q.Where(p => _context.EstadisticaAtaque.Any(e => e.PartidoId == p.Id));
+            if (Filtro.SoloConK2)
+                q = q.Where(p => _context.EstadisticaK2.Any(e => e.PartidoId == p.Id));
+
+            q = q.OrderByDescending(p => p.Fecha);
+
+            if (Filtro.UltimosN.HasValue && Filtro.UltimosN.Value > 0)
+                q = q.Take(Filtro.UltimosN.Value);
+
+            Partidos = await q
+                .Select(p => new PartidoVM
+                {
+                    Id = p.Id,
+                    Fecha = p.Fecha,
+                    Torneo = p.Torneo ?? "-",
+                    Rival = p.Dupla1Id == Filtro.DuplaId ? (p.Dupla2!.Alias) : (p.Dupla1!.Alias), // alias del rival
+                    CantSets = p.Sets.Count,
+                    TieneRecepcion = _context.EstadisticaRecepcion.Any(e => e.PartidoId == p.Id),
+                    TieneAtaque = _context.EstadisticaAtaque.Any(e => e.PartidoId == p.Id),
+                    TieneK2 = _context.EstadisticaK2.Any(e => e.PartidoId == p.Id),
+                    Clima = p.Clima
+                })
+                .ToListAsync();
 
             return Page();
         }
@@ -167,22 +165,29 @@ namespace SandStats.Pages.Reportes
             });
         }
 
-        // ===== Helpers =====
-
-        // 🔹 Alias visible en el combo
         private async Task CargarDuplasAsync()
         {
             var duplasUi = await _context.Duplas
                 .AsNoTracking()
-                .Select(d => new { d.Id, d.Alias })
-                .OrderBy(x => x.Alias)
+                .Include(d => d.Jugador1)
+                .Include(d => d.Jugador2)
+                .Select(d => new
+                {
+                    d.Id,
+                    // En el selector seguimos mostrando “Nombre / Nombre”.
+                    // (Si preferís alias acá también, cambiá por d.Alias)
+                    Nombre = ((d.Jugador1 != null ? d.Jugador1.Nombre : "")
+                               + " / " +
+                              (d.Jugador2 != null ? d.Jugador2.Nombre : ""))
+                })
+                .OrderBy(x => x.Nombre)
                 .ToListAsync();
 
             Duplas = duplasUi
                 .Select(x => new SelectListItem
                 {
                     Value = x.Id.ToString(),
-                    Text = string.IsNullOrWhiteSpace(x.Alias) ? $"Dupla {x.Id}" : x.Alias
+                    Text = x.Nombre
                 })
                 .ToList();
         }
