@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc.RazorPages;
+﻿using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using SandStats.Data;
 using SandStats.Models;
@@ -30,9 +30,12 @@ public class IndexModel : PageModel
         Duplas = await _context.Duplas
             .Include(d => d.Jugador1)
             .Include(d => d.Jugador2)
-            .OrderBy(d => d.Id)
+            // 🔹 Ordenar alfabéticamente por Jugador1, luego por Jugador2
+            .OrderBy(d => d.Jugador1.NombreCompleto)
+            .ThenBy(d => d.Jugador2.NombreCompleto)
             .Skip((CurrentPage - 1) * PageSize)
             .Take(PageSize)
             .ToListAsync();
     }
+
 }

@@ -129,9 +129,21 @@
             <text x="8" y="16" font-size="11" fill="#666">@("Efec " + Pct(cts.Efect) + " - Cant " + cant)</text>
             <text x="8" y="28" font-size="10" fill="#666">@($"{cts.DP}#/ {cts.P}+ / {cts.N}− / {cts.E}=")</text>
             <text x="8" y="48" font-size="12" font-weight="700" fill="#333">@a.Nombre</text>
+            @{
+                // Si es “2da”, el denominador es la suma de todas las acciones de 2da en este lado
+                decimal denomLado = denomGlobal;
+                if (is2daBucket)
+                {
+                    denomLado = acciones
+                    .Where(x => BucketFromTitle(x.Nombre) == "2DA")
+                    .Sum(x => x.C?.Total ?? 0);
+                }
+                var pctLocal = denomLado == 0 ? 0 : (decimal)cant / denomLado;
+            }
             <text x="@(cw - 8)" y="48" font-size="14" font-weight="800" fill="#d00000" text-anchor="end">
-                @PctInt(denomGlobal == 0 ? 0 : (decimal)cant / denomGlobal)
+                @PctInt(pctLocal)
             </text>
+
         </g>
     }
 
