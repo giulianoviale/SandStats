@@ -10,12 +10,13 @@
     <table class="table table-striped table-hover text-center align-middle">
         <thead class="table-dark">
             <tr>
-                <th>Fecha</th>
+                <th>Ingresado</th>
+                <th>Fecha Partido</th>
                 <th>Torneo</th>
                 <th>Dupla 1</th>
                 <th>Dupla 2</th>
                 <th>Resultado</th>
-                <th>Notas / Video</th>   @* ← Nueva columna *@
+                <th>Notas / Video</th>
                 <th>Acciones</th>
             </tr>
         </thead>
@@ -23,38 +24,32 @@
             @foreach (var partido in Model.Partidos)
             {
                 <tr>
+                    <td>@partido.CreatedOn.ToShortDateString()</td>
                     <td>@partido.Fecha.ToShortDateString()</td>
                     <td>@partido.Torneo</td>
                     <td>@partido.Dupla1?.Alias</td>
                     <td>@partido.Dupla2?.Alias</td>
                     <td><strong>@partido.Resultado</strong></td>
 
-                    <!-- ICONOS -->
                     <td>
-                        @* Observaciones *@
                         @if (!string.IsNullOrWhiteSpace(partido.Observaciones))
                         {
-                            <i class="bi bi-journal-text text-primary me-2"
-                               title="Tiene observaciones"></i>
+                            <i class="bi bi-journal-text text-primary me-2" title="Tiene observaciones"></i>
                         }
 
-                        @* Video *@
                         @if (!string.IsNullOrWhiteSpace(partido.VideoUrl))
                         {
-                            <a href="@partido.VideoUrl" target="_blank" rel="noopener"
-                               title="Ver video del partido">
+                            <a href="@partido.VideoUrl" target="_blank" rel="noopener" title="Ver video del partido">
                                 <i class="bi bi-camera-video text-danger"></i>
                             </a>
                         }
                     </td>
 
                     <td>
-                        <a asp-page="/Estadisticas/Resumen" asp-route-partidoId="@partido.Id"
-                           class="btn btn-sm btn-primary">
+                        <a asp-page="/Estadisticas/Resumen" asp-route-partidoId="@partido.Id" class="btn btn-sm btn-primary">
                             Ver Resumen
                         </a>
-                        <a asp-page="./Delete" asp-route-id="@partido.Id"
-                           class="btn btn-sm btn-outline-danger">
+                        <a asp-page="./Delete" asp-route-id="@partido.Id" class="btn btn-sm btn-outline-danger">
                             Eliminar
                         </a>
                     </td>

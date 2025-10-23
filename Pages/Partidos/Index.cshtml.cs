@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using SandStats.Data;
@@ -32,7 +32,8 @@ public class IndexModel : PageModel
         Partidos = await _context.Partidos
             .Include(p => p.Dupla1)
             .Include(p => p.Dupla2)
-            .OrderByDescending(p => p.Fecha)
+            .OrderByDescending(p => p.CreatedOn)  // 🔹 muestra los últimos ingresados primero
+            .ThenByDescending(p => p.Fecha)      // 🔹 luego por fecha del partido
             .Skip((PageIndex - 1) * PageSize)
             .Take(PageSize)
             .ToListAsync();

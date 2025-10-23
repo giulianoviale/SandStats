@@ -32,6 +32,9 @@ namespace SandStats.Models
         [Required]
         public DateTime Fecha { get; set; }
 
+        [Display(Name = "Ingresado")]
+        public DateTime CreatedOn { get; set; } = DateTime.Now;
+
         [Required]
         public Clima Clima { get; set; }
 

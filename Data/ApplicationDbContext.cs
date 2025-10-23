@@ -118,6 +118,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .HasForeignKey(p => p.Dupla2Id)
             .OnDelete(DeleteBehavior.Restrict);
 
+        modelBuilder.Entity<Partido>()
+        .Property(p => p.CreatedOn)
+        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
         // --- Estadísticas ↔ Partido: CASCADE (al borrar partido, borrar stats)
         modelBuilder.Entity<EstadisticaAtaque>()
             .HasOne(e => e.Partido)
