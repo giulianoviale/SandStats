@@ -3,42 +3,37 @@ using Microsoft.EntityFrameworkCore;
 using SandStats.Data;
 using SandStats.Models;
 
-namespace SandStats.Pages.Duplas;
-
-public class IndexModel : PageModel
+namespace SandStats.Pages.Duplas
 {
-    private readonly ApplicationDbContext _context;
-
-    public IndexModel(ApplicationDbContext context)
+    public class IndexModel : PageModel
     {
-        _context = context;
+        private readonly ApplicationDbContext _context;
+
+        public IndexModel(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
+        public List<Dupla> Duplas { get; set; } = new();
+        public int CurrentPage { get; set; }
+        public int TotalPages { get; set; }
+
+        private const int PageSize = 10;
+
+        public async Task OnGetAsync(int? pageIndex)
+        {
+            CurrentPage = pageIndex ?? 1;
+
+            int totalRecords = await _context.Duplas.CountAsync();
+            TotalPages = (int)Math.Ceiling(totalRecords / (double)PageSize);
+
+            Duplas = await _context.Duplas
+                .Include(d => d.Jugador1)
+                .Include(d => d.Jugador2)
+                .OrderBy(d => d.Alias) // 🔹 ahora se ordena alfabéticamente por el alias
+                .Skip((CurrentPage - 1) * PageSize)
+                .Take(PageSize)
+                .ToListAsync();
+        }
     }
-
-    public List<Dupla> Duplas { get; set; } = new();
-    public int CurrentPage { get; set; }
-    public int TotalPages { get; set; }
-
-    private const int PageSize = 10;
-
-    public async Task OnGetAsync(int? pageIndex)
-    {
-        CurrentPage = pageIndex ?? 1;
-
-        int totalRecords = await _context.Duplas.CountAsync();
-        TotalPages = (int)Math.Ceiling(totalRecords / (double)PageSize);
-
-        Duplas = await _context.Duplas
-    .Include(d => d.Jugador1)
-    .Include(d => d.Jugador2)
-    .Skip((CurrentPage - 1) * PageSize)
-    .Take(PageSize)
-    .ToListAsync();
-
-        Duplas = Duplas
-            .OrderBy(d => d.Jugador1?.NombreCompleto)
-            .ThenBy(d => d.Jugador2?.NombreCompleto)
-            .ToList();
-
-    }
-
 }
