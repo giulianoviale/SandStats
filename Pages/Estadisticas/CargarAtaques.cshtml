@@ -173,9 +173,13 @@
 
     @foreach (var lado in Enum.GetValues<TipoLado>())
     {
-        var acciones = Model.AccionesPorLado[lado];
+        var acciones = Model.AccionesPorLado[lado]
+        .Where(a => a != TipoAcciones.Varios) // 👈 elimina “Varios” solo en la vista
+        .ToList();
+
         var accionesEspeciales = acciones.Where(a => EsSinVE(a)).ToList();
         var accionesNormales = acciones.Where(a => !EsSinVE(a)).ToList();
+
 
         <h5 class="lado-title">@LadoTit(lado)</h5>
 
