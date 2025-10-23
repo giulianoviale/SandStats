@@ -28,14 +28,17 @@ public class IndexModel : PageModel
         TotalPages = (int)Math.Ceiling(totalRecords / (double)PageSize);
 
         Duplas = await _context.Duplas
-            .Include(d => d.Jugador1)
-            .Include(d => d.Jugador2)
-            // 🔹 Ordenar alfabéticamente por Jugador1, luego por Jugador2
-            .OrderBy(d => d.Jugador1.NombreCompleto)
-            .ThenBy(d => d.Jugador2.NombreCompleto)
-            .Skip((CurrentPage - 1) * PageSize)
-            .Take(PageSize)
-            .ToListAsync();
+    .Include(d => d.Jugador1)
+    .Include(d => d.Jugador2)
+    .Skip((CurrentPage - 1) * PageSize)
+    .Take(PageSize)
+    .ToListAsync();
+
+        Duplas = Duplas
+            .OrderBy(d => d.Jugador1?.NombreCompleto)
+            .ThenBy(d => d.Jugador2?.NombreCompleto)
+            .ToList();
+
     }
 
 }
