@@ -1,12 +1,12 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics; // <-- NUEVO
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using SandStats.Data;
 using SandStats.Security;
 using System.Linq;
 
-// --- SEED: crea roles y un usuario admin si no existen ---
+// --- Seed roles y usuario admin ---
 static async Task SeedAsync(IHost app)
 {
     using var scope = app.Services.CreateScope();
@@ -16,14 +16,11 @@ static async Task SeedAsync(IHost app)
     var roles = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
-    // --- INIT DB: DEV => EnsureCreated / PROD => Migrate  ---------------------
     if (env.IsDevelopment())
-        await db.Database.EnsureCreatedAsync();   // <-- CAMBIO (antes hacía Migrate siempre)
+        await db.Database.EnsureCreatedAsync();
     else
         await db.Database.MigrateAsync();
-    // -------------------------------------------------------------------------
 
-    // Controla si además querés sembrar datos (roles/usuario)
     var runSeed = env.IsDevelopment() ||
                   (cfg["RUN_SEED"]?.Equals("true", StringComparison.OrdinalIgnoreCase) ?? false);
     if (!runSeed) return;
@@ -34,7 +31,6 @@ static async Task SeedAsync(IHost app)
 
     var adminEmail = cfg["SEED_ADMIN_EMAIL"] ?? "admin@sandstats.dev";
     var adminPass = cfg["SEED_ADMIN_PASSWORD"] ?? "Admin123!";
-
     var admin = await users.FindByEmailAsync(adminEmail);
     if (admin == null)
     {
@@ -48,6 +44,7 @@ static async Task SeedAsync(IHost app)
 
 var builder = WebApplication.CreateBuilder(args);
 
+// --- Configuración de autorización ---
 builder.Services.AddAuthorization(options =>
 {
     options.FallbackPolicy = new AuthorizationPolicyBuilder()
@@ -57,32 +54,22 @@ builder.Services.AddAuthorization(options =>
 
 builder.Services.AddRazorPages(options =>
 {
-    options.Conventions.AllowAnonymousToPage("/Index"); // Home pública
+    options.Conventions.AllowAnonymousToPage("/Index");
     options.Conventions.AllowAnonymousToAreaPage("Identity", "/Account/Login");
     options.Conventions.AllowAnonymousToAreaPage("Identity", "/Account/Logout");
     options.Conventions.AllowAnonymousToAreaPage("Identity", "/Account/AccessDenied");
 });
 
-// 🔌 Conexión (nube: Postgres por env var / local: SQLite por appsettings)
-var pgConn = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
-var localConn = builder.Configuration.GetConnectionString("DefaultConnection");
-var conn = pgConn ?? localConn;
+var conn = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
 
 builder.Services.AddDbContext<ApplicationDbContext>(opt =>
 {
-    if (!string.IsNullOrWhiteSpace(pgConn))
-        opt.UseNpgsql(conn);   // nube (Render)
-    else
-        opt.UseSqlite(conn);   // local
-
-    // En DEV ignoramos el warning de "pending model changes" para que no explote
-    if (builder.Environment.IsDevelopment())
-        opt.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning)); // <-- NUEVO
+    opt.UseNpgsql(conn);
 });
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-// 🧑‍💻 Identity
+// --- Identity ---
 builder.Services
   .AddDefaultIdentity<ApplicationUser>(o =>
   {
@@ -96,7 +83,6 @@ builder.Services
   .AddRoles<IdentityRole>()
   .AddEntityFrameworkStores<ApplicationDbContext>();
 
-// SignInManager custom (opcional)
 builder.Services.AddScoped<SignInManager<ApplicationUser>, AppSignInManager>();
 builder.Services.ConfigureApplicationCookie(o =>
 {
@@ -107,7 +93,7 @@ builder.Services.ConfigureApplicationCookie(o =>
 
 var app = builder.Build();
 
-// 🌐 Pipeline HTTP
+// --- Pipeline HTTP ---
 if (app.Environment.IsDevelopment())
 {
     app.UseMigrationsEndPoint();
@@ -125,7 +111,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapRazorPages();
 
-// 🚀 Inicializar DB y (opcional) sembrar roles/usuario admin
+// --- Inicialización y seed ---
 await SeedAsync(app);
-
 app.Run();
