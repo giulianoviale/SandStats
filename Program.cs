@@ -18,7 +18,8 @@ static async Task SeedAsync(IHost app)
     var roles = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
-    // ✅ Solo migra si hay migraciones pendientes
+    // --- 🔒 Bloque original (comentado)
+    /*
     if (env.IsDevelopment())
     {
         await db.Database.EnsureCreatedAsync();
@@ -31,7 +32,35 @@ static async Task SeedAsync(IHost app)
             await db.Database.MigrateAsync();
         }
     }
+    */
 
+    // --- ✅ Nuevo bloque seguro de migraciones (maneja errores y evita caídas en producción)
+    try
+    {
+        if (env.IsDevelopment())
+        {
+            await db.Database.EnsureCreatedAsync();
+        }
+        else
+        {
+            var pending = (await db.Database.GetPendingMigrationsAsync()).Any();
+            if (pending)
+            {
+                Console.WriteLine($"[INFO] Aplicando {pending} migraciones pendientes...");
+                await db.Database.MigrateAsync();
+            }
+            else
+            {
+                Console.WriteLine("[INFO] No hay migraciones pendientes, base sincronizada.");
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[WARN] Migraciones omitidas: {ex.Message}");
+    }
+
+    // --- Seed roles y admin ---
     var runSeed = env.IsDevelopment() ||
                   (cfg["RUN_SEED"]?.Equals("true", StringComparison.OrdinalIgnoreCase) ?? false);
     if (!runSeed) return;
