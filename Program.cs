@@ -7,6 +7,8 @@ using SandStats.Security;
 using System.Linq;
 
 // --- Seed roles y usuario admin ---
+// trigger redeploy for Render
+
 static async Task SeedAsync(IHost app)
 {
     using var scope = app.Services.CreateScope();
