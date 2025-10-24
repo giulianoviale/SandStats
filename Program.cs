@@ -18,10 +18,19 @@ static async Task SeedAsync(IHost app)
     var roles = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
+    // ✅ Solo migra si hay migraciones pendientes
     if (env.IsDevelopment())
+    {
         await db.Database.EnsureCreatedAsync();
+    }
     else
-        await db.Database.MigrateAsync();
+    {
+        var pending = (await db.Database.GetPendingMigrationsAsync()).Any();
+        if (pending)
+        {
+            await db.Database.MigrateAsync();
+        }
+    }
 
     var runSeed = env.IsDevelopment() ||
                   (cfg["RUN_SEED"]?.Equals("true", StringComparison.OrdinalIgnoreCase) ?? false);
