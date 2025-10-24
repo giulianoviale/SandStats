@@ -310,9 +310,9 @@ namespace SandStats.Pages.Estadisticas
         // ================= ATAQUE =================
 
         private async Task<AtaquePlayerReport> ConstruirReporteAtaque(
-            Jugador jugador,
-            IQueryable<EstadisticaAtaque> qJugador,
-            int totalEquipo)
+    Jugador jugador,
+    IQueryable<EstadisticaAtaque> qJugador,
+    int totalEquipo)
         {
             var countsAll = await ContarResultadosAtk(qJugador);
             var totalJugador = countsAll.Total;
@@ -327,7 +327,8 @@ namespace SandStats.Pages.Estadisticas
             int a5_2da = getTotal(TipoAcciones.Atq2daA5);
             int total2da = a1_2da + a6_2da + a5_2da;
 
-            var familias = AgruparFamilias(porAccion);
+            // ✅ Nuevo agrupamiento coherente con las canchitas
+            var familias = AgruparFamiliasPorRol(porAccion, jugador.RolPrincipal == RolJugador.Rol4 ? 4 : 2);
 
             var totalK1Sin2daJugador = porAccion
                 .Where(kv => kv.Key != TipoAcciones.PorAtras
@@ -407,6 +408,7 @@ namespace SandStats.Pages.Estadisticas
             };
         }
 
+
         private static bool EsK1(TipoAcciones a)
         {
             var s = a.ToString();
@@ -473,7 +475,77 @@ namespace SandStats.Pages.Estadisticas
             return dict;
         }
 
-        private static Dictionary<string, AtkCounts> AgruparFamilias(Dictionary<TipoAcciones, AtkCounts> porAccion)
+       // ✅ NUEVA versión con lógica por rol
+private static Dictionary<string, AtkCounts> AgruparFamiliasPorRol(
+    Dictionary<TipoAcciones, AtkCounts> porAccion,
+    int rolJugador)
+        {
+            var result = new Dictionary<string, AtkCounts>
+            {
+                ["Ataque Diagonal"] = new AtkCounts(),
+                ["Ataque Línea"] = new AtkCounts(),
+                ["Toque Diagonal"] = new AtkCounts(),
+                ["Toque Línea"] = new AtkCounts(),
+                ["Atq2da"] = new AtkCounts(),
+                ["Varios"] = new AtkCounts(),
+                ["PorAtras"] = new AtkCounts()
+            };
+
+            foreach (var kv in porAccion)
+            {
+                var nombre = kv.Key.ToString();
+
+                string fam;
+                if (nombre.StartsWith("Atq2da", StringComparison.OrdinalIgnoreCase))
+                {
+                    fam = "Atq2da";
+                }
+                else if (nombre.StartsWith("Atq", StringComparison.OrdinalIgnoreCase))
+                {
+                    // 🧭 Clasificación dinámica según rol
+                    bool esA1 = nombre.Contains("A1");
+                    bool esA5 = nombre.Contains("A5");
+                    bool esA6 = nombre.Contains("A6");
+
+                    if (rolJugador == 4)
+                        fam = (esA1 ? "Ataque Línea" : (esA5 || esA6 ? "Ataque Diagonal" : "Ataque Línea"));
+                    else if (rolJugador == 2)
+                        fam = (esA5 ? "Ataque Línea" : (esA1 || esA6 ? "Ataque Diagonal" : "Ataque Línea"));
+                    else
+                        fam = "Ataque Línea"; // por default
+                }
+                else if (nombre.StartsWith("Tl", StringComparison.OrdinalIgnoreCase))
+                {
+                    fam = "Toque Línea";
+                }
+                else if (nombre.StartsWith("Td", StringComparison.OrdinalIgnoreCase))
+                {
+                    fam = "Toque Diagonal";
+                }
+                else if (nombre.Equals("Varios", StringComparison.OrdinalIgnoreCase))
+                {
+                    fam = "Varios";
+                }
+                else if (nombre.Equals("PorAtras", StringComparison.OrdinalIgnoreCase))
+                {
+                    fam = "PorAtras";
+                }
+                else
+                {
+                    fam = "Varios";
+                }
+
+                var dst = result[fam];
+                dst.DP += kv.Value.DP;
+                dst.P += kv.Value.P;
+                dst.N += kv.Value.N;
+                dst.E += kv.Value.E;
+            }
+
+            return result.Where(x => x.Value.Total > 0)
+                         .ToDictionary(x => x.Key, x => x.Value);
+        }
+        static Dictionary<string, AtkCounts>AgruparFamilias(Dictionary<TipoAcciones, AtkCounts> porAccion)
         {
             var result = new Dictionary<string, AtkCounts>
             {
