@@ -108,10 +108,7 @@ namespace SandStats.Data
                 .HasForeignKey(p => p.Dupla2Id)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Campo CreatedOn por defecto
-            modelBuilder.Entity<Partido>()
-                .Property(p => p.CreatedOn)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+           
 
             // Relaciones de estadísticas
             modelBuilder.Entity<EstadisticaAtaque>()

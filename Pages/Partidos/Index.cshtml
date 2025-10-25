@@ -24,7 +24,6 @@
             @foreach (var partido in Model.Partidos)
             {
                 <tr>
-                    <td>@partido.CreatedOn.ToShortDateString()</td>
                     <td>@partido.Fecha.ToShortDateString()</td>
                     <td>@partido.Torneo</td>
                     <td>@partido.Dupla1?.Alias</td>

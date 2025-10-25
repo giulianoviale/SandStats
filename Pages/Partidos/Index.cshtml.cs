@@ -32,7 +32,7 @@ public class IndexModel : PageModel
         Partidos = await _context.Partidos
             .Include(p => p.Dupla1)
             .Include(p => p.Dupla2)
-            .OrderByDescending(p => p.CreatedOn)  // 🔹 muestra los últimos ingresados primero
+            .OrderByDescending(p => p.Fecha)  // 🔹 muestra los últimos ingresados primero
             .ThenByDescending(p => p.Fecha)      // 🔹 luego por fecha del partido
             .Skip((PageIndex - 1) * PageSize)
             .Take(PageSize)

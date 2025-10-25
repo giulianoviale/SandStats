@@ -1,13 +1,12 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
 namespace SandStats.Migrations
 {
     /// <inheritdoc />
-    public partial class InitPostgresClean : Migration
+    public partial class Init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -16,10 +15,10 @@ namespace SandStats.Migrations
                 name: "AspNetRoles",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "text", nullable: false),
-                    Name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    NormalizedName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    ConcurrencyStamp = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<string>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
+                    NormalizedName = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
+                    ConcurrencyStamp = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -30,28 +29,28 @@ namespace SandStats.Migrations
                 name: "AspNetUsers",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "text", nullable: false),
-                    IsActive = table.Column<bool>(type: "boolean", nullable: false),
-                    MustResetPassword = table.Column<bool>(type: "boolean", nullable: false),
-                    FullName = table.Column<string>(type: "text", nullable: true),
-                    JugadorId = table.Column<int>(type: "integer", nullable: true),
-                    TenantId = table.Column<Guid>(type: "uuid", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    LastLoginAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    NormalizedUserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    NormalizedEmail = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    EmailConfirmed = table.Column<bool>(type: "boolean", nullable: false),
-                    PasswordHash = table.Column<string>(type: "text", nullable: true),
-                    SecurityStamp = table.Column<string>(type: "text", nullable: true),
-                    ConcurrencyStamp = table.Column<string>(type: "text", nullable: true),
-                    PhoneNumber = table.Column<string>(type: "text", nullable: true),
-                    PhoneNumberConfirmed = table.Column<bool>(type: "boolean", nullable: false),
-                    TwoFactorEnabled = table.Column<bool>(type: "boolean", nullable: false),
-                    LockoutEnd = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    LockoutEnabled = table.Column<bool>(type: "boolean", nullable: false),
-                    AccessFailedCount = table.Column<int>(type: "integer", nullable: false)
+                    Id = table.Column<string>(type: "TEXT", nullable: false),
+                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false),
+                    MustResetPassword = table.Column<bool>(type: "INTEGER", nullable: false),
+                    FullName = table.Column<string>(type: "TEXT", nullable: true),
+                    JugadorId = table.Column<int>(type: "INTEGER", nullable: true),
+                    TenantId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    LastLoginAt = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    UserName = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
+                    NormalizedUserName = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
+                    Email = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
+                    NormalizedEmail = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
+                    EmailConfirmed = table.Column<bool>(type: "INTEGER", nullable: false),
+                    PasswordHash = table.Column<string>(type: "TEXT", nullable: true),
+                    SecurityStamp = table.Column<string>(type: "TEXT", nullable: true),
+                    ConcurrencyStamp = table.Column<string>(type: "TEXT", nullable: true),
+                    PhoneNumber = table.Column<string>(type: "TEXT", nullable: true),
+                    PhoneNumberConfirmed = table.Column<bool>(type: "INTEGER", nullable: false),
+                    TwoFactorEnabled = table.Column<bool>(type: "INTEGER", nullable: false),
+                    LockoutEnd = table.Column<DateTimeOffset>(type: "TEXT", nullable: true),
+                    LockoutEnabled = table.Column<bool>(type: "INTEGER", nullable: false),
+                    AccessFailedCount = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -62,11 +61,11 @@ namespace SandStats.Migrations
                 name: "AspNetRoleClaims",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    RoleId = table.Column<string>(type: "text", nullable: false),
-                    ClaimType = table.Column<string>(type: "text", nullable: true),
-                    ClaimValue = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    RoleId = table.Column<string>(type: "TEXT", nullable: false),
+                    ClaimType = table.Column<string>(type: "TEXT", nullable: true),
+                    ClaimValue = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -83,11 +82,11 @@ namespace SandStats.Migrations
                 name: "AspNetUserClaims",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    UserId = table.Column<string>(type: "text", nullable: false),
-                    ClaimType = table.Column<string>(type: "text", nullable: true),
-                    ClaimValue = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    UserId = table.Column<string>(type: "TEXT", nullable: false),
+                    ClaimType = table.Column<string>(type: "TEXT", nullable: true),
+                    ClaimValue = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -104,10 +103,10 @@ namespace SandStats.Migrations
                 name: "AspNetUserLogins",
                 columns: table => new
                 {
-                    LoginProvider = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
-                    ProviderKey = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
-                    ProviderDisplayName = table.Column<string>(type: "text", nullable: true),
-                    UserId = table.Column<string>(type: "text", nullable: false)
+                    LoginProvider = table.Column<string>(type: "TEXT", nullable: false),
+                    ProviderKey = table.Column<string>(type: "TEXT", nullable: false),
+                    ProviderDisplayName = table.Column<string>(type: "TEXT", nullable: true),
+                    UserId = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -124,8 +123,8 @@ namespace SandStats.Migrations
                 name: "AspNetUserRoles",
                 columns: table => new
                 {
-                    UserId = table.Column<string>(type: "text", nullable: false),
-                    RoleId = table.Column<string>(type: "text", nullable: false)
+                    UserId = table.Column<string>(type: "TEXT", nullable: false),
+                    RoleId = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -148,10 +147,10 @@ namespace SandStats.Migrations
                 name: "AspNetUserTokens",
                 columns: table => new
                 {
-                    UserId = table.Column<string>(type: "text", nullable: false),
-                    LoginProvider = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
-                    Name = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
-                    Value = table.Column<string>(type: "text", nullable: true)
+                    UserId = table.Column<string>(type: "TEXT", nullable: false),
+                    LoginProvider = table.Column<string>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: false),
+                    Value = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -168,11 +167,11 @@ namespace SandStats.Migrations
                 name: "Duplas",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Jugador1Id = table.Column<int>(type: "integer", nullable: false),
-                    Jugador2Id = table.Column<int>(type: "integer", nullable: false),
-                    Alias = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Jugador1Id = table.Column<int>(type: "INTEGER", nullable: false),
+                    Jugador2Id = table.Column<int>(type: "INTEGER", nullable: false),
+                    Alias = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -183,20 +182,20 @@ namespace SandStats.Migrations
                 name: "Jugadores",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Nombre = table.Column<string>(type: "text", nullable: false),
-                    Apellido = table.Column<string>(type: "text", nullable: false),
-                    Apodo = table.Column<string>(type: "text", nullable: true),
-                    RolPrincipal = table.Column<int>(type: "integer", nullable: false),
-                    Nacionalidad = table.Column<string>(type: "text", nullable: true),
-                    FechaNacimiento = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    Altura = table.Column<int>(type: "integer", nullable: true),
-                    Peso = table.Column<int>(type: "integer", nullable: true),
-                    ManoHabil = table.Column<string>(type: "text", nullable: true),
-                    ImagenPerfilPath = table.Column<string>(type: "text", nullable: true),
-                    DuplaId = table.Column<int>(type: "integer", nullable: true),
-                    Posicion = table.Column<int>(type: "integer", nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Nombre = table.Column<string>(type: "TEXT", nullable: false),
+                    Apellido = table.Column<string>(type: "TEXT", nullable: false),
+                    Apodo = table.Column<string>(type: "TEXT", nullable: true),
+                    RolPrincipal = table.Column<int>(type: "INTEGER", nullable: false),
+                    Nacionalidad = table.Column<string>(type: "TEXT", nullable: true),
+                    FechaNacimiento = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    Altura = table.Column<int>(type: "INTEGER", nullable: true),
+                    Peso = table.Column<int>(type: "INTEGER", nullable: true),
+                    ManoHabil = table.Column<string>(type: "TEXT", nullable: true),
+                    ImagenPerfilPath = table.Column<string>(type: "TEXT", nullable: true),
+                    DuplaId = table.Column<int>(type: "INTEGER", nullable: true),
+                    Posicion = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -213,18 +212,17 @@ namespace SandStats.Migrations
                 name: "Partidos",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Torneo = table.Column<string>(type: "text", nullable: false),
-                    Dupla1Id = table.Column<int>(type: "integer", nullable: false),
-                    Dupla2Id = table.Column<int>(type: "integer", nullable: false),
-                    Fecha = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
-                    Clima = table.Column<int>(type: "integer", nullable: false),
-                    SetsGanadosDupla1 = table.Column<int>(type: "integer", nullable: false),
-                    SetsGanadosDupla2 = table.Column<int>(type: "integer", nullable: false),
-                    Observaciones = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
-                    VideoUrl = table.Column<string>(type: "character varying(2048)", maxLength: 2048, nullable: true)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Torneo = table.Column<string>(type: "TEXT", nullable: false),
+                    Dupla1Id = table.Column<int>(type: "INTEGER", nullable: false),
+                    Dupla2Id = table.Column<int>(type: "INTEGER", nullable: false),
+                    Fecha = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    Clima = table.Column<int>(type: "INTEGER", nullable: false),
+                    SetsGanadosDupla1 = table.Column<int>(type: "INTEGER", nullable: false),
+                    SetsGanadosDupla2 = table.Column<int>(type: "INTEGER", nullable: false),
+                    Observaciones = table.Column<string>(type: "TEXT", maxLength: 1000, nullable: true),
+                    VideoUrl = table.Column<string>(type: "TEXT", maxLength: 2048, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -247,18 +245,18 @@ namespace SandStats.Migrations
                 name: "EstadisticaAtaque",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    PartidoId = table.Column<int>(type: "integer", nullable: false),
-                    JugadorId = table.Column<int>(type: "integer", nullable: false),
-                    Lado = table.Column<int>(type: "integer", nullable: false),
-                    Accion = table.Column<int>(type: "integer", nullable: false),
-                    Resultado = table.Column<int>(type: "integer", nullable: false),
-                    Cantidad = table.Column<int>(type: "integer", nullable: false),
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    PartidoId = table.Column<int>(type: "INTEGER", nullable: false),
+                    JugadorId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Lado = table.Column<int>(type: "INTEGER", nullable: false),
+                    Accion = table.Column<int>(type: "INTEGER", nullable: false),
+                    Resultado = table.Column<int>(type: "INTEGER", nullable: false),
+                    Cantidad = table.Column<int>(type: "INTEGER", nullable: false),
                     FechaCarga = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    Scope = table.Column<int>(type: "integer", nullable: false),
-                    DesdePunto = table.Column<int>(type: "integer", nullable: true),
-                    SetNumero = table.Column<int>(type: "integer", nullable: true)
+                    Scope = table.Column<int>(type: "INTEGER", nullable: false),
+                    DesdePunto = table.Column<int>(type: "INTEGER", nullable: true),
+                    SetNumero = table.Column<int>(type: "INTEGER", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -281,23 +279,23 @@ namespace SandStats.Migrations
                 name: "EstadisticaK2",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    PartidoId = table.Column<int>(type: "integer", nullable: false),
-                    JugadorId = table.Column<int>(type: "integer", nullable: false),
-                    Fuente = table.Column<int>(type: "integer", nullable: false),
-                    Resultado = table.Column<int>(type: "integer", nullable: false),
-                    Cantidad = table.Column<int>(type: "integer", nullable: false),
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    PartidoId = table.Column<int>(type: "INTEGER", nullable: false),
+                    JugadorId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Fuente = table.Column<int>(type: "INTEGER", nullable: false),
+                    Resultado = table.Column<int>(type: "INTEGER", nullable: false),
+                    Cantidad = table.Column<int>(type: "INTEGER", nullable: false),
                     FechaCarga = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    Scope = table.Column<int>(type: "integer", nullable: false),
-                    DesdePunto = table.Column<int>(type: "integer", nullable: true),
-                    Agregados = table.Column<int>(type: "integer", nullable: true),
-                    ErroresVarios = table.Column<int>(type: "integer", nullable: true),
-                    SetsJugados = table.Column<int>(type: "integer", nullable: true),
-                    SetNumero = table.Column<int>(type: "integer", nullable: true),
-                    BloqueadoAtqa1 = table.Column<int>(type: "integer", nullable: true),
-                    BloqueadoAtqa6 = table.Column<int>(type: "integer", nullable: true),
-                    BloqueadoAtqa5 = table.Column<int>(type: "integer", nullable: true)
+                    Scope = table.Column<int>(type: "INTEGER", nullable: false),
+                    DesdePunto = table.Column<int>(type: "INTEGER", nullable: true),
+                    Agregados = table.Column<int>(type: "INTEGER", nullable: true),
+                    ErroresVarios = table.Column<int>(type: "INTEGER", nullable: true),
+                    SetsJugados = table.Column<int>(type: "INTEGER", nullable: true),
+                    SetNumero = table.Column<int>(type: "INTEGER", nullable: true),
+                    BloqueadoAtqa1 = table.Column<int>(type: "INTEGER", nullable: true),
+                    BloqueadoAtqa6 = table.Column<int>(type: "INTEGER", nullable: true),
+                    BloqueadoAtqa5 = table.Column<int>(type: "INTEGER", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -320,18 +318,18 @@ namespace SandStats.Migrations
                 name: "EstadisticaRecepcion",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    PartidoId = table.Column<int>(type: "integer", nullable: false),
-                    JugadorId = table.Column<int>(type: "integer", nullable: false),
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    PartidoId = table.Column<int>(type: "INTEGER", nullable: false),
+                    JugadorId = table.Column<int>(type: "INTEGER", nullable: false),
                     FechaCarga = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ZonaRecepcion = table.Column<int>(type: "integer", nullable: false),
-                    TipoRecepcion = table.Column<int>(type: "integer", nullable: false),
-                    TipoSaque = table.Column<int>(type: "integer", nullable: false),
-                    ResultadoRecepcion = table.Column<int>(type: "integer", nullable: false),
-                    Scope = table.Column<int>(type: "integer", nullable: false),
-                    DesdePunto = table.Column<int>(type: "integer", nullable: true),
-                    SetNumero = table.Column<int>(type: "integer", nullable: true)
+                    ZonaRecepcion = table.Column<int>(type: "INTEGER", nullable: false),
+                    TipoRecepcion = table.Column<int>(type: "INTEGER", nullable: false),
+                    TipoSaque = table.Column<int>(type: "INTEGER", nullable: false),
+                    ResultadoRecepcion = table.Column<int>(type: "INTEGER", nullable: false),
+                    Scope = table.Column<int>(type: "INTEGER", nullable: false),
+                    DesdePunto = table.Column<int>(type: "INTEGER", nullable: true),
+                    SetNumero = table.Column<int>(type: "INTEGER", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -354,13 +352,13 @@ namespace SandStats.Migrations
                 name: "Sets",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    PartidoId = table.Column<int>(type: "integer", nullable: false),
-                    NumeroSet = table.Column<int>(type: "integer", nullable: false),
-                    PuntosDupla1 = table.Column<int>(type: "integer", nullable: false),
-                    PuntosDupla2 = table.Column<int>(type: "integer", nullable: false),
-                    GanadorDuplaId = table.Column<int>(type: "integer", nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    PartidoId = table.Column<int>(type: "INTEGER", nullable: false),
+                    NumeroSet = table.Column<int>(type: "INTEGER", nullable: false),
+                    PuntosDupla1 = table.Column<int>(type: "INTEGER", nullable: false),
+                    PuntosDupla2 = table.Column<int>(type: "INTEGER", nullable: false),
+                    GanadorDuplaId = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -383,13 +381,13 @@ namespace SandStats.Migrations
                 name: "VideoLinksJugadorPartido",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    PartidoId = table.Column<int>(type: "integer", nullable: false),
-                    JugadorId = table.Column<int>(type: "integer", nullable: false),
-                    LinkK1 = table.Column<string>(type: "text", nullable: true),
-                    LinkK2 = table.Column<string>(type: "text", nullable: true),
-                    LinkSaque = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    PartidoId = table.Column<int>(type: "INTEGER", nullable: false),
+                    JugadorId = table.Column<int>(type: "INTEGER", nullable: false),
+                    LinkK1 = table.Column<string>(type: "TEXT", nullable: true),
+                    LinkK2 = table.Column<string>(type: "TEXT", nullable: true),
+                    LinkSaque = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
