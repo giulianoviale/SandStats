@@ -37,15 +37,30 @@
         return null;
     }
 
+    // ==== Lógica corregida según canchitas ====
     static readonly int[] Zonas_TL_por4 = new[] { 1, 9, 2 };
     static readonly int[] Zonas_TL_por2 = new[] { 5, 7, 4 };
-    static readonly int[] Zonas_TD_por4 = new[] { 6, 5, 7, 8, 4, 3 };
+
+    static readonly int[] Zonas_TD_por4 = new[] { 5, 6, 7, 8, 4, 3 };
     static readonly int[] Zonas_TD_por2 = new[] { 1, 6, 8, 9, 2, 3 };
-    static readonly int[] Zonas_AL_por4 = new[] { 1, 9, 2 };
-    static readonly int[] Zonas_AL_por2 = new[] { 5, 7, 4 };
-    static readonly int[] Zonas_AD_por4 = new[] { 6, 5, 7, 8, 4, 3 };
-    static readonly int[] Zonas_AD_por2 = new[] { 6, 1, 9, 8, 2, 3 };
+
+    // Atques Línea / Diagonal (según rol)
+    static readonly int[] Zonas_AL_por4 = new[] { 1, 9, 2 }; // Línea = 1, 2, 9
+    static readonly int[] Zonas_AD_por4 = new[] { 5, 6, 7, 8, 4, 3 }; // Diagonal = resto
+
+    static readonly int[] Zonas_AL_por2 = new[] { 5, 7, 4 }; // Línea (inversa)
+    static readonly int[] Zonas_AD_por2 = new[] { 1, 6, 8, 9, 2, 3 }; // Diagonal (inversa)
+
+    // Ataques de 2da
     static readonly int[] Zonas_2DA = new[] { 1, 6, 5 };
+    int PorCorrigido(int por, TipoLado lado)
+    {
+        // Si el lado es Medio y el rol es 2, usar zonas de rol 4 (invertidas visualmente)
+        if (lado == TipoLado.Medio && por == 2)
+            return 4;
+        return por;
+    }
+
 
     bool ZonaValida(string bucket, int por, int zona) => bucket switch
     {
@@ -70,6 +85,17 @@
         4 => (2, 2),
         _ => (0, 0)
     };
+
+    int RolParaLado(TipoLado lado, int rol)
+    {
+        // Si el lado es "Medio", invertimos la referencia de rol visual.
+        // Así el medio refleja correctamente las zonas opuestas.
+        if (lado == TipoLado.Medio)
+            return rol == 4 ? 2 : 4;
+
+        return rol;
+    }
+
 
     List<MapaAccionVM> BuildAccionesPara(
     string bucket, int por, TipoLado ladoActual,
@@ -261,7 +287,7 @@
 
     var totalLadoSin2da = filasNormales.Sum(x => x.C.Total);
 
-    var (totTL, totTD, totAL, totAD, tot2da) = TotalesPorBucket(por, data.Lado, accionesDelLado);
+    var (totTL, totTD, totAL, totAD, tot2da) = TotalesPorBucket(PorCorrigido(porVisual, data.Lado), data.Lado, accionesDelLado);
     var accTL = BuildAccionesPara("TL", porVisual, data.Lado, accionesDelLado);
     var accTD = BuildAccionesPara("TD", porVisual, data.Lado, accionesDelLado);
     var accAL = BuildAccionesPara("AL", porVisual, data.Lado, accionesDelLado);
@@ -323,8 +349,17 @@
                         double pct2daGlobal = totalK1Principal > 0 ? 100.0 * totalK1De2da / totalK1Principal : 0.0;
 
                         var vmPct = new PctResumenVM { TotalAcciones = totalSin2da };
-                        vmPct.Items.Add(new PctResumenItem { Label = "Ataque Diagonal (por lado)", Pct = P(totAD) });
-                        vmPct.Items.Add(new PctResumenItem { Label = "Ataque Línea (por lado)", Pct = P(totAL) });
+                        if (Model.Rol == 4)
+                        {
+                            vmPct.Items.Add(new PctResumenItem { Label = "Ataque Línea (por lado)", Pct = P(totAL) });
+                            vmPct.Items.Add(new PctResumenItem { Label = "Ataque Diagonal (por lado)", Pct = P(totAD) });
+                        }
+                        else
+                        {
+                            vmPct.Items.Add(new PctResumenItem { Label = "Ataque Línea (por lado)", Pct = P(totAD) });
+                            vmPct.Items.Add(new PctResumenItem { Label = "Ataque Diagonal (por lado)", Pct = P(totAL) });
+                        }
+
                         vmPct.Items.Add(new PctResumenItem { Label = "Toque Diagonal (por lado)", Pct = P(totTD) });
                         vmPct.Items.Add(new PctResumenItem { Label = "Toque Línea (por lado)", Pct = P(totTL) });
 

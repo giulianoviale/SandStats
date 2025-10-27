@@ -101,6 +101,14 @@ namespace SandStats.Pages.Estadisticas
             RepJ1.Ataque.Rol = 4; // jugador de rol por 4
             RepJ2.Ataque.Rol = 2; // jugador de rol por 2
 
+            RepJ1.Ataque.General.Familias.Clear();
+            RepJ1.Ataque.General.Familias = CalcularDistribucionDesdeLados(RepJ1.Ataque.Lados, RepJ1.Ataque.Rol)
+                .ToDictionary(x => x.Label, x => new AtkCounts { DP = (int)Math.Round(x.Pct) });
+
+            RepJ2.Ataque.General.Familias.Clear();
+            RepJ2.Ataque.General.Familias = CalcularDistribucionDesdeLados(RepJ2.Ataque.Lados, RepJ2.Ataque.Rol)
+                .ToDictionary(x => x.Label, x => new AtkCounts { DP = (int)Math.Round(x.Pct) });
+
             // --- ejemplo para J1 ---
             var mapaJ1 = new MapaAtaqueViewModel
             {
@@ -475,10 +483,10 @@ namespace SandStats.Pages.Estadisticas
             return dict;
         }
 
-       // ✅ NUEVA versión con lógica por rol
-private static Dictionary<string, AtkCounts> AgruparFamiliasPorRol(
-    Dictionary<TipoAcciones, AtkCounts> porAccion,
-    int rolJugador)
+        // ✅ Versión corregida: ahora usa mismo criterio que las canchitas
+        private static Dictionary<string, AtkCounts> AgruparFamiliasPorRol(
+            Dictionary<TipoAcciones, AtkCounts> porAccion,
+            int rolJugador)
         {
             var result = new Dictionary<string, AtkCounts>
             {
@@ -496,24 +504,36 @@ private static Dictionary<string, AtkCounts> AgruparFamiliasPorRol(
                 var nombre = kv.Key.ToString();
 
                 string fam;
+
+                // 1️⃣ Ataques de 2da → grupo propio
                 if (nombre.StartsWith("Atq2da", StringComparison.OrdinalIgnoreCase))
                 {
                     fam = "Atq2da";
                 }
+                // 2️⃣ Ataques normales
                 else if (nombre.StartsWith("Atq", StringComparison.OrdinalIgnoreCase))
                 {
-                    // 🧭 Clasificación dinámica según rol
-                    bool esA1 = nombre.Contains("A1");
-                    bool esA5 = nombre.Contains("A5");
-                    bool esA6 = nombre.Contains("A6");
+                    // Detectamos hacia dónde va el ataque según rol (como las canchitas)
+                    bool hacia1 = nombre.Contains("A1");
+                    bool hacia5 = nombre.Contains("A5");
+                    bool hacia6 = nombre.Contains("A6");
 
                     if (rolJugador == 4)
-                        fam = (esA1 ? "Ataque Línea" : (esA5 || esA6 ? "Ataque Diagonal" : "Ataque Línea"));
+                    {
+                        // Rol4 ataca línea hacia 1, diagonal hacia 5/6
+                        fam = (hacia1 ? "Ataque Línea" : (hacia5 || hacia6 ? "Ataque Diagonal" : "Ataque Línea"));
+                    }
                     else if (rolJugador == 2)
-                        fam = (esA5 ? "Ataque Línea" : (esA1 || esA6 ? "Ataque Diagonal" : "Ataque Línea"));
+                    {
+                        // Rol2 ataca línea hacia 5, diagonal hacia 1/6
+                        fam = (hacia5 ? "Ataque Línea" : (hacia1 || hacia6 ? "Ataque Diagonal" : "Ataque Línea"));
+                    }
                     else
-                        fam = "Ataque Línea"; // por default
+                    {
+                        fam = "Ataque Línea";
+                    }
                 }
+                // 3️⃣ Toques
                 else if (nombre.StartsWith("Tl", StringComparison.OrdinalIgnoreCase))
                 {
                     fam = "Toque Línea";
@@ -522,6 +542,7 @@ private static Dictionary<string, AtkCounts> AgruparFamiliasPorRol(
                 {
                     fam = "Toque Diagonal";
                 }
+                // 4️⃣ Restos
                 else if (nombre.Equals("Varios", StringComparison.OrdinalIgnoreCase))
                 {
                     fam = "Varios";
@@ -535,6 +556,7 @@ private static Dictionary<string, AtkCounts> AgruparFamiliasPorRol(
                     fam = "Varios";
                 }
 
+                // Sumamos resultados
                 var dst = result[fam];
                 dst.DP += kv.Value.DP;
                 dst.P += kv.Value.P;
@@ -542,9 +564,12 @@ private static Dictionary<string, AtkCounts> AgruparFamiliasPorRol(
                 dst.E += kv.Value.E;
             }
 
-            return result.Where(x => x.Value.Total > 0)
-                         .ToDictionary(x => x.Key, x => x.Value);
+            // Eliminamos los grupos sin datos y devolvemos
+            return result
+                .Where(x => x.Value.Total > 0)
+                .ToDictionary(x => x.Key, x => x.Value);
         }
+
         static Dictionary<string, AtkCounts>AgruparFamilias(Dictionary<TipoAcciones, AtkCounts> porAccion)
         {
             var result = new Dictionary<string, AtkCounts>
@@ -778,6 +803,96 @@ private static Dictionary<string, AtkCounts> AgruparFamiliasPorRol(
 
             return acciones;
         }
+        private static List<(string Label, decimal Pct)> CalcularDistribucionDesdeLados(
+     List<AtaqueLado> lados,
+     int rolJugador)
+        {
+            if (lados == null || lados.Count == 0)
+                return new List<(string, decimal)>();
+
+            int total = lados.Sum(l => l.Total);
+            if (total == 0) return new List<(string, decimal)>();
+
+            int diag = 0, linea = 0, td = 0, tl = 0, seg = 0;
+
+            foreach (var lado in lados)
+            {
+                foreach (var acc in lado.Acciones)
+                {
+                    var nombre = acc.Accion.ToString().ToLowerInvariant();
+
+                    if (nombre.StartsWith("atq2da")) { seg += acc.C.Total; continue; }
+                    if (nombre.StartsWith("td")) { td += acc.C.Total; continue; }
+                    if (nombre.StartsWith("tl")) { tl += acc.C.Total; continue; }
+                    if (!nombre.StartsWith("atq")) continue;
+
+                    bool hacia1 = nombre.Contains("a1");
+                    bool hacia5 = nombre.Contains("a5");
+                    bool hacia6 = nombre.Contains("a6");
+
+                    switch (lado.Lado)
+                    {
+                        case TipoLado.Bueno:
+                            if (rolJugador == 4)
+                            {
+                                if (hacia1) linea += acc.C.Total;
+                                else if (hacia5 || hacia6) diag += acc.C.Total;
+                            }
+                            else if (rolJugador == 2)
+                            {
+                                if (hacia5) linea += acc.C.Total;
+                                else if (hacia1 || hacia6) diag += acc.C.Total;
+                            }
+                            break;
+
+                        case TipoLado.Atras:
+                            if (rolJugador == 4)
+                            {
+                                if (hacia5) linea += acc.C.Total;
+                                else if (hacia1 || hacia6) diag += acc.C.Total;
+                            }
+                            else if (rolJugador == 2)
+                            {
+                                if (hacia1) linea += acc.C.Total;
+                                else if (hacia5 || hacia6) diag += acc.C.Total;
+                            }
+                            break;
+
+                        case TipoLado.Medio:
+                            // ✅ Nueva lógica confirmada con Giulo:
+                            if (rolJugador == 4)
+                            {
+                                if (hacia1 || nombre.Contains("a2") || nombre.Contains("a9"))
+                                    linea += acc.C.Total; // Línea
+                                else if (hacia5 || hacia6 || nombre.Contains("a7"))
+                                    diag += acc.C.Total;  // Diagonal
+                            }
+                            else if (rolJugador == 2)
+                            {
+                                if (hacia1 || nombre.Contains("a2") || nombre.Contains("a9"))
+                                    diag += acc.C.Total;  // Diagonal
+                                else if (hacia5 || hacia6 || nombre.Contains("a7"))
+                                    linea += acc.C.Total; // Línea
+                            }
+                            break;
+                    }
+                }
+            }
+
+            decimal Pct(int x) => total == 0 ? 0 : (decimal)x / total * 100m;
+
+            return new()
+    {
+        ("Ataque Diagonal (por lado)", Pct(diag)),
+        ("Ataque Línea (por lado)", Pct(linea)),
+        ("Toque Diagonal (por lado)", Pct(td)),
+        ("Toque Línea (por lado)", Pct(tl)),
+        ("2da (Cant: " + seg + " / total K1(" + total + "))", Pct(seg))
+    };
+        }
+
+
+
 
         private int MapRowFromLado(TipoLado lado) => lado switch
         {
