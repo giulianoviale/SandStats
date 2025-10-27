@@ -31,8 +31,14 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
-builder.Services.AddRazorPages();
-
+builder.Services.AddRazorPages(options =>
+{
+    options.Conventions.AuthorizeFolder("/"); // protege todas las páginas
+    options.Conventions.AllowAnonymousToFolder("/Identity"); // deja libre el login/register
+    options.Conventions.AllowAnonymousToPage("/Index"); // opcional, si querés que el home sea público
+});
+//faltaba esta linea para que funcione el logueo
+builder.Services.AddAuthorization();
 var app = builder.Build();
 
 // === Pipeline ===
