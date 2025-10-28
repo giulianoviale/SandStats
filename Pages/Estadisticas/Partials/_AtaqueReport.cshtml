@@ -645,7 +645,20 @@
                                         <td>@Pct(c.PctE)</td>
                                         <td>@c.Total</td>
                                     </tr>
-                                }
+                            }
+                            <!-- ✅ NUEVA FILA DE TOTAL -->
+                            <tr class="fw-semibold table-secondary">
+                                <td class="text-start">Total</td>
+                                <td>100%</td>
+                                <td class="text-end fw-semibold">
+                                    @Pct((decimal)filas2da.Sum(x => x.C.DP + x.C.P) / Math.Max(1, filas2da.Sum(x => x.C.Total)))
+                                </td>
+                                <td>@Pct((decimal)filas2da.Sum(x => x.C.DP) / Math.Max(1, filas2da.Sum(x => x.C.Total)))</td>
+                                <td>@Pct((decimal)filas2da.Sum(x => x.C.P) / Math.Max(1, filas2da.Sum(x => x.C.Total)))</td>
+                                <td>@Pct((decimal)filas2da.Sum(x => x.C.N) / Math.Max(1, filas2da.Sum(x => x.C.Total)))</td>
+                                <td>@Pct((decimal)filas2da.Sum(x => x.C.E) / Math.Max(1, filas2da.Sum(x => x.C.Total)))</td>
+                                <td>@filas2da.Sum(x => x.C.Total)</td>
+                            </tr>
                             </tbody>
                         </table>
                     </div>
