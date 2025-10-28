@@ -247,44 +247,100 @@
     }
 }
 <!--k1/k2 valores base-->
+<!-- === Resumen de Ataque (Reconstrucción Automática) === -->
 @{
-    var fam = Model.Familias ?? new Dictionary<string, SandStats.Pages.Estadisticas.AtkCounts>();
+    // ======== RECONSTRUCCIÓN AUTOMÁTICA DE FAMILIAS ========
+    var fam = Model.Familias;
+
+    if (fam == null || fam.Count == 0)
+    {
+        fam = new Dictionary<string, SandStats.Pages.Estadisticas.AtkCounts>();
+
+        var todas = Model.Lados?
+            .SelectMany(l => l.Acciones ?? new List<SandStats.Pages.Estadisticas.AtaqueAccion>())
+            ?? Enumerable.Empty<SandStats.Pages.Estadisticas.AtaqueAccion>();
+
+        SandStats.Pages.Estadisticas.AtkCounts Sumar(string prefijo)
+        {
+            var items = todas
+                .Where(a => a.Accion.ToString().StartsWith(prefijo, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            // Si no hay elementos, devolvemos un AtkCounts vacío (sin tocar propiedades de solo lectura)
+            if (items.Count == 0)
+                return new SandStats.Pages.Estadisticas.AtkCounts();
+
+            // Calculamos los totales sumando los valores numéricos
+            int dp = items.Sum(x => x.C?.DP ?? 0);
+            int p = items.Sum(x => x.C?.P ?? 0);
+            int n = items.Sum(x => x.C?.N ?? 0);
+            int e = items.Sum(x => x.C?.E ?? 0);
+
+            // Creamos un nuevo objeto del tipo AtkCounts usando reflexión para forzar los valores calculados
+            var temp = new SandStats.Pages.Estadisticas.AtkCounts();
+            typeof(SandStats.Pages.Estadisticas.AtkCounts)
+                .GetField("<DP>k__BackingField", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                ?.SetValue(temp, dp);
+            typeof(SandStats.Pages.Estadisticas.AtkCounts)
+                .GetField("<P>k__BackingField", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                ?.SetValue(temp, p);
+            typeof(SandStats.Pages.Estadisticas.AtkCounts)
+                .GetField("<N>k__BackingField", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                ?.SetValue(temp, n);
+            typeof(SandStats.Pages.Estadisticas.AtkCounts)
+                .GetField("<E>k__BackingField", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                ?.SetValue(temp, e);
+
+            return temp;
+        }
+
+
+        fam["Atq"] = Sumar("Atq");
+        fam["Tl"] = Sumar("Tl");
+        fam["Td"] = Sumar("Td");
+        fam["Atq2da"] = Sumar("Atq2da");
+        fam["Varios"] = Sumar("Varios");
+    }
+
+    // helper de acceso seguro (queda igual que antes)
     SandStats.Pages.Estadisticas.AtkCounts F(string k) =>
         fam.TryGetValue(k, out var v) ? v : new SandStats.Pages.Estadisticas.AtkCounts();
 
-    // ✅ nombres ajustados al formato real de las familias
-    var k1Atq = F("AtqLinea");
-    var k1Tl = F("ToqueLinea");
-    var k1Td = F("ToqueDiago");
+    var keys = string.Join(", ", fam.Keys);
+
+
+    // === Variables base ===
+    var k1Atq = F("Atq");
+    var k1Tl = F("Tl");
+    var k1Td = F("Td");
     var k12da = F("Atq2da");
     var k1Varios = F("Varios");
 
+    int totalK1Principal = k1Atq.Total + k1Tl.Total + k1Td.Total + k1Varios.Total + k12da.Total;
+    int totalK1De2da = k12da.Total;
+    int totalK1Sin2da = Math.Max(0, totalK1Principal - totalK1De2da);
 
-    // ✅ CORREGIDO: cálculo total y sin 2da
-    var totalK1Principal = k1Atq.Total + k1Tl.Total + k1Td.Total + k1Varios.Total + k12da.Total;
-    var totalK1De2da = k12da.Total;
-    var totalK1Sin2da = Math.Max(0, totalK1Principal - totalK1De2da);
+    decimal SafeDiv(int a, int b) => b == 0 ? 0m : (decimal)a / b;
 
-    // Efectividades
-    var dpP_K1Principal = (k1Atq.DP + k1Atq.P) + (k1Tl.DP + k1Tl.P) + (k1Td.DP + k1Td.P) +
-                          (k1Varios.DP + k1Varios.P) + (k12da.DP + k12da.P);
+    decimal efectK1Principal = SafeDiv(
+        (k1Atq.DP + k1Atq.P + k1Tl.DP + k1Tl.P + k1Td.DP + k1Td.P + k1Varios.DP + k1Varios.P + k12da.DP + k12da.P),
+        totalK1Principal);
 
-    var dpP_sin2da = (k1Atq.DP + k1Atq.P) + (k1Tl.DP + k1Tl.P) +
-                     (k1Td.DP + k1Td.P) + (k1Varios.DP + k1Varios.P);
+    decimal efectK1Sin2da = SafeDiv(
+        (k1Atq.DP + k1Atq.P + k1Tl.DP + k1Tl.P + k1Td.DP + k1Td.P + k1Varios.DP + k1Varios.P),
+        totalK1Sin2da);
 
-    var efectK1Principal = totalK1Principal == 0 ? 0m : (decimal)dpP_K1Principal / totalK1Principal;
-    var efectK1Sin2da = totalK1Sin2da == 0 ? 0m : (decimal)dpP_sin2da / totalK1Sin2da;
-    var efectK1De2da = totalK1De2da == 0 ? 0m : (decimal)(k12da.DP + k12da.P) / totalK1De2da;
+    decimal efectK1De2da = SafeDiv(
+        (k12da.DP + k12da.P),
+        totalK1De2da);
 
-    // K2
-    int totalK2Real = (Model.K2?.PuntosJugados.Total > 0)
-        ? Model.K2.PuntosJugados.Total
-        : Model.TotalK2;
-
-    decimal efectK2Real = (Model.K2?.PuntosJugados.Total > 0)
-        ? Model.K2.PuntosJugados.Efect
-        : Model.EfectividadK2;
+    int totalK2Real = (Model.K2?.PuntosJugados.Total > 0) ? Model.K2.PuntosJugados.Total : Model.TotalK2;
+    decimal efectK2Real = (Model.K2?.PuntosJugados.Total > 0) ? Model.K2.PuntosJugados.Efect : Model.EfectividadK2;
 }
+
+<p class="text-muted small">Claves detectadas: @keys</p>
+
+
 
 <div class="card bg-light mb-3">
     <div class="card-header fw-semibold">Ataque — Resumen</div>
@@ -341,14 +397,18 @@
 
     var totLado = data.Totales;
     var totalLado = totLado.Total;
-
+    
+    // === Porcentaje del lado sobre el total K1 (incluye 2da)
+    var pctLadoK1 = (totalK1Principal == 0)
+        ? 0m
+        : (decimal)totalLado / totalK1Principal;
     // === Totales de 2da ===
     var total2daLado = (data.Acciones ?? new List<SandStats.Pages.Estadisticas.AtaqueAccion>())
         .Where(a => a.Accion.ToString().StartsWith("Atq2da", StringComparison.OrdinalIgnoreCase))
         .Sum(a => a.C.Total);
 
     var totalLadoK1Sin2da = Math.Max(0, totalLado - total2daLado);
-    var pctLadoK1 = totalLadoK1Sin2da == 0 ? 0m : (decimal)totalLadoK1Sin2da / totalLadoK1Sin2da;
+    var pctLadoLocal = totalLadoK1Sin2da == 0 ? 0m : (decimal)totalLado / totalK1Principal;
 
     var acciones = data.Acciones ?? new List<SandStats.Pages.Estadisticas.AtaqueAccion>();
 
@@ -412,17 +472,24 @@
         Lado = data.Lado,
         TotalFamilia = total2daLado
     };
+    
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="fw-semibold">Lado @data.Lado (Rol @Model.Rol) — POR @Model.Rol</div>
 
-    <div class="card mb-3">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <div class="fw-semibold">Lado @data.Lado (Rol @Model.Rol)</div>
-            <span class="me-2 text-muted small">
+        <div class="text-end">
+            <span class="me-3 text-muted small">
                 Varilla: @Pct(totalLado == 0 ? 0 : (decimal)data.TotalVarilla / totalLado)
                 (T @data.TotalVarilla)
+                &nbsp;|&nbsp;
                 Entre línea: @Pct(totalLado == 0 ? 0 : (decimal)data.TotalEntreLinea / totalLado)
                 (T @data.TotalEntreLinea)
             </span>
+
+            <span class="fw-semibold text-muted small">Total (lado)</span>
+            <span class="fw-bold text-danger fs-5">@Pct(pctLadoLocal)</span>
+            <span class="ms-1 text-muted small">(@totalLado)</span>
         </div>
+    </div>
 
         <div class="container-fluid px-0 mb-3">
             <div class="row g-3">
@@ -456,12 +523,12 @@
                         if (total2daLado > 0)
                         {
                             double pct2da = (totalK1Sin2da + total2daLado) > 0
-                            ? 100.0 * total2daLado / (totalK1Sin2da + total2daLado)
+                            ? 100.0 * total2daLado / (totalK1Principal)
                             : 0.0;
 
                             vmPct.Items.Add(new PctResumenItem
                             {
-                                Label = $"2da (Cant: {total2daLado} / total K1({totalK1Sin2da}))",
+                                Label = $"2da (Cant: {total2daLado} / total K1({totalK1Principal}))",
                                 Pct = Math.Round(pct2da, 0)
                             });
                         }
@@ -585,6 +652,6 @@
                 </div>
             }
         </div>
-    </div>
+    
    
 }
