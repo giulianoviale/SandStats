@@ -427,7 +427,7 @@
 @section Scripts {
     <script>
         (function () {
-            // ===== Observaciones + Video general =====
+            // ======== 📝 Observaciones + Video general ========
             const form = document.getElementById('obsForm');
             if (form) {
                 const textarea = document.getElementById('Observaciones');
@@ -441,7 +441,11 @@
                 const updateCount = () => { count.textContent = (textarea.value || '').length; };
                 updateCount();
 
-                let t; const debounce = (fn, d) => (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), d); };
+                let t;
+                const debounce = (fn, d) => (...args) => {
+                    clearTimeout(t);
+                    t = setTimeout(() => fn(...args), d);
+                };
 
                 async function save() {
                     statusEl.textContent = 'Guardando…';
@@ -452,44 +456,90 @@
                         body.set('videoUrl', videoInput.value ?? '');
                         body.set('__RequestVerificationToken', tokenInput?.value || '');
 
-                        const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
+                        const res = await fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                                'RequestVerificationToken': tokenInput?.value || '' // 👈 NECESARIO
+                            },
+                            body
+                        });
+
                         const data = await res.json();
-                        statusEl.textContent = data?.ok ? 'Guardado' : 'Error';
-                        if (data?.ok && data.savedAt) savedAtEl.textContent = 'Guardado ' + data.savedAt;
-                    } catch { statusEl.textContent = 'Error'; }
+                        if (data?.ok) {
+                            statusEl.textContent = '✅ Guardado';
+                            statusEl.className = 'text-success small';
+                            if (data.savedAt) savedAtEl.textContent = 'Guardado ' + data.savedAt;
+                        } else {
+                            statusEl.textContent = '⚠️ Error';
+                            statusEl.className = 'text-danger small';
+                        }
+                    } catch {
+                        statusEl.textContent = '❌ Error';
+                        statusEl.className = 'text-danger small';
+                    }
                 }
+
                 const saveDebounced = debounce(save, 800);
                 textarea.addEventListener('input', () => { updateCount(); saveDebounced(); });
                 videoInput.addEventListener('input', saveDebounced);
                 form.addEventListener('submit', ev => { ev.preventDefault(); save(); });
             }
 
-            // ===== Links por jugador (autosave) =====
+            // ======== 🎬 Links por jugador ========
             document.querySelectorAll('form.links-form').forEach(frm => {
                 const statusEl = frm.querySelector('.links-status');
                 const token = frm.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
                 const url = frm.getAttribute('action');
 
-                let t; const debounce = (fn, d) => (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), d); };
+                let t;
+                const debounce = (fn, d) => (...args) => {
+                    clearTimeout(t);
+                    t = setTimeout(() => fn(...args), d);
+                };
 
                 async function saveLinks() {
                     statusEl.textContent = 'Guardando…';
+                    statusEl.className = 'links-status text-muted';
                     try {
                         const fd = new FormData(frm);
-                        fd.append('__RequestVerificationToken', token);
-                        const res = await fetch(url, { method: 'POST', body: new URLSearchParams(fd) });
+
+                        const res = await fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                                'RequestVerificationToken': token // 👈 FIX ANTIFORGERY
+                            },
+                            body: new URLSearchParams(fd)
+                        });
+
                         const data = await res.json();
-                        statusEl.textContent = data?.ok ? 'Guardado' : 'Error';
-                    } catch { statusEl.textContent = 'Error'; }
+                        if (data?.ok) {
+                            statusEl.textContent = '✅ Guardado';
+                            statusEl.className = 'links-status text-success';
+                        } else {
+                            statusEl.textContent = '⚠️ Error';
+                            statusEl.className = 'links-status text-danger';
+                        }
+                    } catch (err) {
+                        console.error('Error guardando links:', err);
+                        statusEl.textContent = '❌ Error';
+                        statusEl.className = 'links-status text-danger';
+                    }
                 }
+
                 const saveDebounced = debounce(saveLinks, 700);
 
                 frm.querySelectorAll('input[type="url"]').forEach(inp => {
                     inp.addEventListener('input', saveDebounced);
                 });
 
-                frm.addEventListener('submit', ev => { ev.preventDefault(); saveLinks(); });
+                frm.addEventListener('submit', ev => {
+                    ev.preventDefault();
+                    saveLinks();
+                });
             });
         })();
     </script>
 }
+
