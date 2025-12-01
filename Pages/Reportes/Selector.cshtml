@@ -145,33 +145,38 @@
                                 <td>@p.CantSets</td>
                                 <td><span class="badge bg-light text-dark">@p.Clima</span></td>
                                 <td>
-                                    @if (p.TieneRecepcion)
-                                    {
-                                        <span class="badge text-bg-success">Recep</span>
-                                    }
-                                    else
-                                    {
+                                    @{
+                                        // RECEPCIÓN
+                                        string recClass;
+                                        if (!p.RecepAlguno)
+                                            recClass = "badge text-bg-secondary";
+                                        else if (p.RecepAmbos)
+                                            recClass = "badge text-bg-success";
+                                        else
+                                            recClass = "badge text-bg-warning text-dark";
 
-                                        <span class="badge text-bg-secondary">Recep</span>
-                                    }
-                                    @if (p.TieneAtaque)
-                                    {
-                                        <span class="badge text-bg-success">Atq</span>
-                                    }
-                                    else
-                                    {
+                                        // ATAQUE
+                                        string atqClass;
+                                        if (!p.AtqAlguno)
+                                            atqClass = "badge text-bg-secondary";
+                                        else if (p.AtqAmbos)
+                                            atqClass = "badge text-bg-success";
+                                        else
+                                            atqClass = "badge text-bg-warning text-dark";
 
-                                        <span class="badge text-bg-secondary">Atq</span>
+                                        // K2
+                                        string k2Class;
+                                        if (!p.K2Alguno)
+                                            k2Class = "badge text-bg-secondary";
+                                        else if (p.K2Ambos)
+                                            k2Class = "badge text-bg-success";
+                                        else
+                                            k2Class = "badge text-bg-warning text-dark";
                                     }
-                                    @if (p.TieneK2)
-                                    {
-                                        <span class="badge text-bg-success">K2</span>
-                                    }
-                                    else
-                                    {
 
-                                        <span class="badge text-bg-secondary">K2</span>
-                                    }
+                                    <span class="@recClass me-1">Recep</span>
+                                    <span class="@atqClass  me-1">Atq</span>
+                                    <span class="@k2Class">K2</span>
                                 </td>
                                 <td>
                                     <a class="btn btn-link btn-sm p-0" asp-page="/Estadisticas/Resumen" asp-route-partidoId="@p.Id">Ver</a>

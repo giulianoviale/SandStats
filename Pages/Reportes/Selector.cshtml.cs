@@ -38,12 +38,30 @@ namespace SandStats.Pages.Reportes
         public string Torneo { get; set; } = "-";
         public string Rival { get; set; } = "-";
         public int CantSets { get; set; }
-
-        public bool TieneRecepcion { get; set; }
-        public bool TieneAtaque { get; set; }
-        public bool TieneK2 { get; set; }
-
         public Clima Clima { get; set; }
+
+        // ===== Estados por jugador de la dupla seleccionada =====
+        public bool RecepJ1 { get; set; }
+        public bool RecepJ2 { get; set; }
+        public bool AtqJ1 { get; set; }
+        public bool AtqJ2 { get; set; }
+        public bool K2J1 { get; set; }
+        public bool K2J2 { get; set; }
+
+        // ===== Helpers de agregación (para la vista) =====
+        public bool RecepAmbos => RecepJ1 && RecepJ2;
+        public bool RecepAlguno => RecepJ1 || RecepJ2;
+
+        public bool AtqAmbos => AtqJ1 && AtqJ2;
+        public bool AtqAlguno => AtqJ1 || AtqJ2;
+
+        public bool K2Ambos => K2J1 && K2J2;
+        public bool K2Alguno => K2J1 || K2J2;
+
+        // Compatibilidad con nombres viejos (si algo más los usa)
+        public bool TieneRecepcion => RecepAlguno;
+        public bool TieneAtaque => AtqAlguno;
+        public bool TieneK2 => K2Alguno;
     }
 
     // ===================== PageModel =====================
@@ -79,7 +97,22 @@ namespace SandStats.Pages.Reportes
                 return Page();
             }
 
-            // base query
+            // ================= Cargamos la dupla seleccionada =================
+            var dupla = await _context.Duplas
+                .AsNoTracking()
+                .FirstOrDefaultAsync(d => d.Id == Filtro.DuplaId.Value);
+
+            if (dupla == null)
+            {
+                Partidos = new();
+                ModelState.AddModelError(string.Empty, "Dupla no encontrada.");
+                return Page();
+            }
+
+            int j1Id = dupla.Jugador1Id;
+            int j2Id = dupla.Jugador2Id;
+
+            // ================= Base query de partidos =================
             var q = _context.Partidos
                 .AsNoTracking()
                 .Include(p => p.Dupla1).Include(p => p.Dupla2)
@@ -87,8 +120,6 @@ namespace SandStats.Pages.Reportes
                 .Where(p => p.Dupla1Id == Filtro.DuplaId || p.Dupla2Id == Filtro.DuplaId);
 
             // ======== Filtro de Fechas (UTC-safe) ========
-            // El date input llega con Kind=Unspecified. Lo forzamos a UTC "00:00"
-            // y usamos rango semi-abierto:  >= desdeUTC  &&  < hastaUTC+1d
             if (Filtro.Desde.HasValue)
             {
                 var desdeUtc = ToUtcStartOfDay(Filtro.Desde.Value);
@@ -110,33 +141,99 @@ namespace SandStats.Pages.Reportes
             if (!Filtro.IncluirAmistosos && hasEsAmistoso)
                 q = q.Where(p => !EF.Property<bool>(p, "EsAmistoso"));
 
-            // Módulos presentes
+            // ========= Filtros "Solo con ..." POR DUPLA =========
             if (Filtro.SoloConRecepcion)
-                q = q.Where(p => _context.EstadisticaRecepcion.Any(e => e.PartidoId == p.Id));
-            if (Filtro.SoloConAtaque)
-                q = q.Where(p => _context.EstadisticaAtaque.Any(e => e.PartidoId == p.Id));
-            if (Filtro.SoloConK2)
-                q = q.Where(p => _context.EstadisticaK2.Any(e => e.PartidoId == p.Id));
+            {
+                q = q.Where(p =>
+                    _context.EstadisticaRecepcion.Any(e =>
+                        e.PartidoId == p.Id &&
+                        (e.JugadorId == j1Id || e.JugadorId == j2Id) &&
+                        e.Scope == ScopeEstadistica.PartidoCompleto &&
+                        e.SetNumero == null));
+            }
 
+            if (Filtro.SoloConAtaque)
+            {
+                q = q.Where(p =>
+                    _context.EstadisticaAtaque.Any(e =>
+                        e.PartidoId == p.Id &&
+                        (e.JugadorId == j1Id || e.JugadorId == j2Id) &&
+                        e.Scope == ScopeEstadistica.PartidoCompleto &&
+                        e.SetNumero == null));
+            }
+
+            if (Filtro.SoloConK2)
+            {
+                q = q.Where(p =>
+                    _context.EstadisticaK2.Any(e =>
+                        e.PartidoId == p.Id &&
+                        (e.JugadorId == j1Id || e.JugadorId == j2Id)));
+            }
+
+            // Orden + límite
             q = q.OrderByDescending(p => p.Fecha);
 
             if (Filtro.UltimosN.HasValue && Filtro.UltimosN.Value > 0)
                 q = q.Take(Filtro.UltimosN.Value);
 
-            Partidos = await q
+            // ================= Ejecutamos query de partidos =================
+            var partidosDb = await q.ToListAsync();
+
+            if (partidosDb.Count == 0)
+            {
+                Partidos = new();
+                return Page();
+            }
+
+            var partidoIds = partidosDb.Select(p => p.Id).ToList();
+
+            // ================= Stats por jugador de la dupla =================
+            var estRecep = await _context.EstadisticaRecepcion
+                .AsNoTracking()
+                .Where(e =>
+                    partidoIds.Contains(e.PartidoId) &&
+                    (e.JugadorId == j1Id || e.JugadorId == j2Id) &&
+                    e.Scope == ScopeEstadistica.PartidoCompleto &&
+                    e.SetNumero == null)
+                .ToListAsync();
+
+            var estAtaque = await _context.EstadisticaAtaque
+                .AsNoTracking()
+                .Where(e =>
+                    partidoIds.Contains(e.PartidoId) &&
+                    (e.JugadorId == j1Id || e.JugadorId == j2Id) &&
+                    e.Scope == ScopeEstadistica.PartidoCompleto &&
+                    e.SetNumero == null)
+                .ToListAsync();
+
+            var estK2 = await _context.EstadisticaK2
+                .AsNoTracking()
+                .Where(e =>
+                    partidoIds.Contains(e.PartidoId) &&
+                    (e.JugadorId == j1Id || e.JugadorId == j2Id))
+                .ToListAsync();
+
+            // ================= Armamos los VM =================
+            Partidos = partidosDb
                 .Select(p => new PartidoVM
                 {
                     Id = p.Id,
                     Fecha = p.Fecha,
                     Torneo = p.Torneo ?? "-",
-                    Rival = p.Dupla1Id == Filtro.DuplaId ? (p.Dupla2!.Alias) : (p.Dupla1!.Alias), // alias del rival
+                    Rival = p.Dupla1Id == Filtro.DuplaId ? (p.Dupla2!.Alias) : (p.Dupla1!.Alias),
                     CantSets = p.Sets.Count,
-                    TieneRecepcion = _context.EstadisticaRecepcion.Any(e => e.PartidoId == p.Id),
-                    TieneAtaque = _context.EstadisticaAtaque.Any(e => e.PartidoId == p.Id),
-                    TieneK2 = _context.EstadisticaK2.Any(e => e.PartidoId == p.Id),
-                    Clima = p.Clima
+                    Clima = p.Clima,
+
+                    RecepJ1 = estRecep.Any(e => e.PartidoId == p.Id && e.JugadorId == j1Id),
+                    RecepJ2 = estRecep.Any(e => e.PartidoId == p.Id && e.JugadorId == j2Id),
+
+                    AtqJ1 = estAtaque.Any(e => e.PartidoId == p.Id && e.JugadorId == j1Id),
+                    AtqJ2 = estAtaque.Any(e => e.PartidoId == p.Id && e.JugadorId == j2Id),
+
+                    K2J1 = estK2.Any(e => e.PartidoId == p.Id && e.JugadorId == j1Id),
+                    K2J2 = estK2.Any(e => e.PartidoId == p.Id && e.JugadorId == j2Id)
                 })
-                .ToListAsync();
+                .ToList();
 
             return Page();
         }
@@ -207,9 +304,6 @@ namespace SandStats.Pages.Reportes
         /// </summary>
         private static DateTime ToUtcStartOfDay(DateTime d)
         {
-            // Forzamos Unspecified -> Unspecified 00:00, luego asumimos que ese “día”
-            // debe compararse en UTC. Si quisieras usar un huso fijo (AR -03), podés
-            // restar 3 horas antes de ToUniversalTime().
             var unspecifiedMidnight = new DateTime(d.Year, d.Month, d.Day, 0, 0, 0, DateTimeKind.Unspecified);
             return DateTime.SpecifyKind(unspecifiedMidnight, DateTimeKind.Utc);
         }
