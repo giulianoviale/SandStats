@@ -256,53 +256,109 @@ namespace SandStats.Pages.Estadisticas
 
             bool esRol4 = j.RolPrincipal == RolJugador.Rol4;
 
-            // Base común (Atq1..Atq9 + especiales)
-            var baseAtq = new List<TipoAcciones>
+            // ===== Base de acciones normales (con V/E) =====
+            var baseNormales = new List<TipoAcciones>
+    {
+        TipoAcciones.Atq1, TipoAcciones.Atq2, TipoAcciones.Atq3,
+        TipoAcciones.Atq4, TipoAcciones.Atq5, TipoAcciones.Atq6,
+        TipoAcciones.Atq7, TipoAcciones.Atq8, TipoAcciones.Atq9
+    };
+
+            // ===== Acciones ESPECIALES (sin V/E) =====
+            var especiales = new[]
             {
-                TipoAcciones.Atq1, TipoAcciones.Atq2, TipoAcciones.Atq3,
-                TipoAcciones.Atq4, TipoAcciones.Atq5, TipoAcciones.Atq6,
-                TipoAcciones.Atq7, TipoAcciones.Atq8, TipoAcciones.Atq9,
-                // especiales (se muestran en tabla aparte)
-                TipoAcciones.Atq2daA1, TipoAcciones.Atq2daA6, TipoAcciones.Atq2daA5,
-                TipoAcciones.Varios, TipoAcciones.PorAtras
-            };
+        TipoAcciones.Atq2daA1, TipoAcciones.Atq2daA6, TipoAcciones.Atq2daA5,
+        TipoAcciones.Varios,   TipoAcciones.PorAtras
+    };
 
-            // TL/TD por lado para Rol4
-            var tlBueno_R4 = new[] { TipoAcciones.Tl1, TipoAcciones.Tl2, TipoAcciones.Tl9 };
-            var tdBueno_R4 = new[] { TipoAcciones.Td3, TipoAcciones.Td4, TipoAcciones.Td5, TipoAcciones.Td6, TipoAcciones.Td7, TipoAcciones.Td8 };
+            // ==========================
+            //  TOQUES POR LADO / ROL
+            //  (MISMO MAPEADO QUE CargarAtaques)
+            // ==========================
 
-            var tlAtras_R4 = new[] { TipoAcciones.Tl4, TipoAcciones.Tl5, TipoAcciones.Tl7 };
-            var tdAtras_R4 = new[] { TipoAcciones.Td1, TipoAcciones.Td2, TipoAcciones.Td3, TipoAcciones.Td6, TipoAcciones.Td8, TipoAcciones.Td9 };
+            // --- Rol 4: lado bueno / atrás ---
+            var tlBueno_R4 = new[] { TipoAcciones.Tl1, TipoAcciones.Tl9, TipoAcciones.Tl2 }; // 1-9-2
+            var tdBueno_R4 = new[]
+            {
+        TipoAcciones.Td3, TipoAcciones.Td4, TipoAcciones.Td5,
+        TipoAcciones.Td6, TipoAcciones.Td7, TipoAcciones.Td8
+    };
 
-            // Para Rol2 se invierte
-            var tlBueno_R2 = tlAtras_R4; var tdBueno_R2 = tdAtras_R4;
-            var tlAtras_R2 = tlBueno_R4; var tdAtras_R2 = tdBueno_R4;
+            var tlAtras_R4 = new[] { TipoAcciones.Tl5, TipoAcciones.Tl7, TipoAcciones.Tl4 }; // 5-7-4
+            var tdAtras_R4 = new[]
+            {
+        TipoAcciones.Td1, TipoAcciones.Td2, TipoAcciones.Td3,
+        TipoAcciones.Td6, TipoAcciones.Td8, TipoAcciones.Td9
+    };
 
-            var tlMedio = new[] { TipoAcciones.Tl3, TipoAcciones.Tl6, TipoAcciones.Tl8 };
-            var tdMedio = new[] { TipoAcciones.Td1, TipoAcciones.Td2, TipoAcciones.Td4, TipoAcciones.Td5, TipoAcciones.Td7, TipoAcciones.Td9 };
+            // --- Rol 2: se invierte Bueno <-> Atrás ---
+            var tlBueno_R2 = tlAtras_R4;
+            var tdBueno_R2 = tdAtras_R4;
 
+            var tlAtras_R2 = tlBueno_R4;
+            var tdAtras_R2 = tdBueno_R4;
+
+            // --- LADO MEDIO parametrizado por rol ---
+            // Rol 4: TL = 1,9,2 ; TD = 3,4,5,6,7,8
+            var tlMedio_R4 = new[]
+            {
+        TipoAcciones.Tl1, TipoAcciones.Tl9, TipoAcciones.Tl2
+    };
+            var tdMedio_R4 = new[]
+            {
+        TipoAcciones.Td3, TipoAcciones.Td4, TipoAcciones.Td5,
+        TipoAcciones.Td6, TipoAcciones.Td7, TipoAcciones.Td8
+    };
+
+            // Rol 2: TL = 5,7,4 ; TD = 1,2,3,6,8,9
+            var tlMedio_R2 = new[]
+            {
+        TipoAcciones.Tl5, TipoAcciones.Tl7, TipoAcciones.Tl4
+    };
+            var tdMedio_R2 = new[]
+            {
+        TipoAcciones.Td1, TipoAcciones.Td2, TipoAcciones.Td3,
+        TipoAcciones.Td6, TipoAcciones.Td8, TipoAcciones.Td9
+    };
+
+            // ==========================
+            //   Construcción por lado
+            // ==========================
             foreach (TipoLado lado in Enum.GetValues(typeof(TipoLado)))
             {
-                var acciones = new List<TipoAcciones>(baseAtq);
+                // Empezamos por las normales (Atq1..Atq9)
+                var acciones = new List<TipoAcciones>(baseNormales);
 
                 if (lado == TipoLado.Bueno)
                 {
-                    if (esRol4) acciones.AddRange(tlBueno_R4.Concat(tdBueno_R4));
-                    else acciones.AddRange(tlBueno_R2.Concat(tdBueno_R2));
+                    if (esRol4)
+                        acciones.AddRange(tlBueno_R4.Concat(tdBueno_R4));
+                    else
+                        acciones.AddRange(tlBueno_R2.Concat(tdBueno_R2));
                 }
                 else if (lado == TipoLado.Medio)
                 {
-                    acciones.AddRange(tlMedio.Concat(tdMedio));
+                    if (esRol4)
+                        acciones.AddRange(tlMedio_R4.Concat(tdMedio_R4));
+                    else
+                        acciones.AddRange(tlMedio_R2.Concat(tdMedio_R2));
                 }
                 else // Atrás
                 {
-                    if (esRol4) acciones.AddRange(tlAtras_R4.Concat(tdAtras_R4));
-                    else acciones.AddRange(tlAtras_R2.Concat(tdAtras_R2));
+                    if (esRol4)
+                        acciones.AddRange(tlAtras_R4.Concat(tdAtras_R4));
+                    else
+                        acciones.AddRange(tlAtras_R2.Concat(tdAtras_R2));
                 }
+
+                // SIEMPRE al final las ESPECIALES (sin V/E)
+                acciones.AddRange(especiales);
 
                 res[lado] = acciones;
             }
+
             return res;
         }
+
     }
 }

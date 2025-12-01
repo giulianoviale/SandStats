@@ -21,11 +21,10 @@
 
 @functions {
     // ======================================
-    // 🔹 NUEVO: Definición completa de zonas
+    // 🔹 Zonas por rol (Ataques)
     // ======================================
 
-    // ==== Zonas por rol ====
-    // 🔹 Rol 4 (lado izquierdo)
+    // Rol 4 (lado izquierdo)
     static readonly int[] Zonas_AL_R4_Bueno = { 1, 9, 2 };
     static readonly int[] Zonas_AD_R4_Bueno = { 4, 7, 5, 3, 8, 6 };
     static readonly int[] Zonas_AL_R4_Medio = { 1, 9, 2 };
@@ -33,7 +32,7 @@
     static readonly int[] Zonas_AL_R4_Atras = { 4, 7, 5 };
     static readonly int[] Zonas_AD_R4_Atras = { 1, 9, 2, 3, 8, 6 };
 
-    // 🔹 Rol 2 (lado derecho)
+    // Rol 2 (lado derecho)
     static readonly int[] Zonas_AL_R2_Bueno = { 4, 7, 5 };
     static readonly int[] Zonas_AD_R2_Bueno = { 1, 9, 2, 3, 8, 6 };
     static readonly int[] Zonas_AL_R2_Medio = { 4, 7, 5 };
@@ -41,7 +40,7 @@
     static readonly int[] Zonas_AL_R2_Atras = { 1, 9, 2 };
     static readonly int[] Zonas_AD_R2_Atras = { 4, 7, 5, 3, 8, 6 };
 
-    // 🔹 Toques (no se modifican)
+    // 🔹 Toques (familia base)
     static readonly int[] Zonas_TL_por4 = { 1, 9, 2 };
     static readonly int[] Zonas_TL_por2 = { 5, 7, 4 };
     static readonly int[] Zonas_TD_por4 = { 5, 6, 7, 8, 4, 3 };
@@ -49,32 +48,31 @@
     static readonly int[] Zonas_2DA = { 1, 6, 5 };
 
     // ======================================
-    // ======================================
     // 🔹 TOQUES (TL / TD) — zonas por rol y lado
     // ======================================
 
     // Rol 4 (lado izquierdo)
-    static readonly int[] Zonas_TL_R4_Bueno = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-    static readonly int[] Zonas_TL_R4_Medio = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-    static readonly int[] Zonas_TL_R4_Atras = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    static readonly int[] Zonas_TL_R4_Bueno = { 1, 9, 2 };
+    static readonly int[] Zonas_TL_R4_Medio = { 1, 9, 2 };
+    static readonly int[] Zonas_TL_R4_Atras = { 5, 7, 4 };
 
-    static readonly int[] Zonas_TD_R4_Bueno = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-    static readonly int[] Zonas_TD_R4_Medio = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-    static readonly int[] Zonas_TD_R4_Atras = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    static readonly int[] Zonas_TD_R4_Bueno = { 3, 4, 5, 6, 7, 8 };
+    static readonly int[] Zonas_TD_R4_Medio = { 3, 4, 5, 6, 7, 8 };
+    static readonly int[] Zonas_TD_R4_Atras = { 1, 2, 3, 6, 8, 9 };
 
     // Rol 2 (lado derecho)
-    static readonly int[] Zonas_TL_R2_Bueno = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-    static readonly int[] Zonas_TL_R2_Medio = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-    static readonly int[] Zonas_TL_R2_Atras = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    static readonly int[] Zonas_TL_R2_Bueno = { 5, 7, 4 };
+    static readonly int[] Zonas_TL_R2_Medio = { 5, 7, 4 };
+    static readonly int[] Zonas_TL_R2_Atras = { 1, 9, 2 };
 
-    static readonly int[] Zonas_TD_R2_Bueno = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-    static readonly int[] Zonas_TD_R2_Medio = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-    static readonly int[] Zonas_TD_R2_Atras = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-
+    static readonly int[] Zonas_TD_R2_Bueno = { 1, 2, 3, 6, 8, 9 };
+    static readonly int[] Zonas_TD_R2_Medio = { 1, 2, 3, 6, 8, 9 };
+    static readonly int[] Zonas_TD_R2_Atras = { 3, 4, 5, 6, 7, 8 };
 
     // ======================================
-    // 🔹 NUEVO: Funciones utilitarias
+    // Utilitarios (EsPrefijo, ZonaFromNombre, CellOfZona) -> dejalos como ya los tenías
     // ======================================
+
     bool EsPrefijo(string nombre, string prefijo)
         => nombre?.StartsWith(prefijo, StringComparison.OrdinalIgnoreCase) == true;
 
@@ -107,16 +105,10 @@
     };
 
     // ======================================
-    // ✅ CORREGIDO: Validación por rol/lado
-    // ======================================
-    // ======================================
-    // ✅ FUNCIÓN FINAL: ZonaValida
+    // ✅ ZonaValida según rol/lado/bucket
     // ======================================
     bool ZonaValida(string bucket, int rol, TipoLado lado, int zona)
     {
-        // ==========================
-        // 🔹 Toques (TL / TD)
-        // ==========================
         if (bucket == "TL")
         {
             return (rol, lado) switch
@@ -124,6 +116,7 @@
                 (4, TipoLado.Bueno) => Zonas_TL_R4_Bueno.Contains(zona),
                 (4, TipoLado.Medio) => Zonas_TL_R4_Medio.Contains(zona),
                 (4, TipoLado.Atras) => Zonas_TL_R4_Atras.Contains(zona),
+
                 (2, TipoLado.Bueno) => Zonas_TL_R2_Bueno.Contains(zona),
                 (2, TipoLado.Medio) => Zonas_TL_R2_Medio.Contains(zona),
                 (2, TipoLado.Atras) => Zonas_TL_R2_Atras.Contains(zona),
@@ -138,6 +131,7 @@
                 (4, TipoLado.Bueno) => Zonas_TD_R4_Bueno.Contains(zona),
                 (4, TipoLado.Medio) => Zonas_TD_R4_Medio.Contains(zona),
                 (4, TipoLado.Atras) => Zonas_TD_R4_Atras.Contains(zona),
+
                 (2, TipoLado.Bueno) => Zonas_TD_R2_Bueno.Contains(zona),
                 (2, TipoLado.Medio) => Zonas_TD_R2_Medio.Contains(zona),
                 (2, TipoLado.Atras) => Zonas_TD_R2_Atras.Contains(zona),
@@ -145,9 +139,6 @@
             };
         }
 
-        // ==========================
-        // 🔹 Ataques (AL / AD)
-        // ==========================
         if (bucket == "AL")
         {
             return (rol, lado) switch
@@ -155,6 +146,7 @@
                 (4, TipoLado.Bueno) => Zonas_AL_R4_Bueno.Contains(zona),
                 (4, TipoLado.Medio) => Zonas_AL_R4_Medio.Contains(zona),
                 (4, TipoLado.Atras) => Zonas_AL_R4_Atras.Contains(zona),
+
                 (2, TipoLado.Bueno) => Zonas_AL_R2_Bueno.Contains(zona),
                 (2, TipoLado.Medio) => Zonas_AL_R2_Medio.Contains(zona),
                 (2, TipoLado.Atras) => Zonas_AL_R2_Atras.Contains(zona),
@@ -169,6 +161,7 @@
                 (4, TipoLado.Bueno) => Zonas_AD_R4_Bueno.Contains(zona),
                 (4, TipoLado.Medio) => Zonas_AD_R4_Medio.Contains(zona),
                 (4, TipoLado.Atras) => Zonas_AD_R4_Atras.Contains(zona),
+
                 (2, TipoLado.Bueno) => Zonas_AD_R2_Bueno.Contains(zona),
                 (2, TipoLado.Medio) => Zonas_AD_R2_Medio.Contains(zona),
                 (2, TipoLado.Atras) => Zonas_AD_R2_Atras.Contains(zona),
@@ -176,18 +169,14 @@
             };
         }
 
-        // ==========================
-        // 🔹 Ataques de 2da
-        // ==========================
         if (bucket == "2DA")
             return Zonas_2DA.Contains(zona);
 
         return false;
     }
 
-
     // ======================================
-    // ✅ CORREGIDO: Cálculo Totales por bucket
+    // ✅ TotalesPorBucket
     // ======================================
     (int TL, int TD, int AL, int AD, int D2) TotalesPorBucket(
         int rol, TipoLado lado, IEnumerable<AtaqueAccion> acciones)
@@ -215,7 +204,7 @@
     }
 
     // ======================================
-    // ✅ CORREGIDO: BuildAccionesPara
+    // ✅ BuildAccionesPara
     // ======================================
     List<MapaAccionVM> BuildAccionesPara(
         string bucket, int rol, TipoLado lado, IEnumerable<AtaqueAccion> acciones)
@@ -231,13 +220,12 @@
             {
                 "TL" => EsPrefijo(nombre, "Tl") && ZonaValida("TL", rol, lado, zona.Value),
                 "TD" => EsPrefijo(nombre, "Td") && ZonaValida("TD", rol, lado, zona.Value),
-                "AL" => EsPrefijo(nombre, "Atq") && !EsPrefijo(nombre, "Atq2da") &&
-                         ZonaValida("AL", rol, lado, zona.Value),
-                "AD" => EsPrefijo(nombre, "Atq") && !EsPrefijo(nombre, "Atq2da") &&
-                         ZonaValida("AD", rol, lado, zona.Value),
+                "AL" => EsPrefijo(nombre, "Atq") && !EsPrefijo(nombre, "Atq2da") && ZonaValida("AL", rol, lado, zona.Value),
+                "AD" => EsPrefijo(nombre, "Atq") && !EsPrefijo(nombre, "Atq2da") && ZonaValida("AD", rol, lado, zona.Value),
                 "2DA" => EsPrefijo(nombre, "Atq2da") && ZonaValida("2DA", rol, lado, zona.Value),
                 _ => false
             };
+
             if (!match) continue;
 
             var (c, r) = CellOfZona(zona.Value);
@@ -246,6 +234,7 @@
         return list;
     }
 }
+
 <!--k1/k2 valores base-->
 <!-- === Resumen de Ataque (Reconstrucción Automática) === -->
 @{

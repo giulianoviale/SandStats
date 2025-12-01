@@ -4,38 +4,40 @@ using Microsoft.EntityFrameworkCore;
 using SandStats.Data;
 using SandStats.Models;
 
-namespace SandStats.Pages.Jugadores;
-
-public class IndexModel : PageModel
+namespace SandStats.Pages.Jugadores
 {
-    private readonly ApplicationDbContext _context;
-
-    public IndexModel(ApplicationDbContext context)
+    public class IndexModel : PageModel
     {
-        _context = context;
-    }
+        private readonly ApplicationDbContext _context;
 
-    public List<Jugador> Jugadores { get; set; } = new();
+        public IndexModel(ApplicationDbContext context)
+        {
+            _context = context;
+        }
 
-    [BindProperty(SupportsGet = true)]
-    public int PageIndex { get; set; } = 1;
+        public IList<Jugador> Jugadores { get; set; } = new List<Jugador>();
 
-    public int PageSize { get; set; } = 10;
-    public int TotalPages { get; set; }
-    public int CurrentPage => PageIndex;
+        [BindProperty(SupportsGet = true)]
+        public string? Search { get; set; }
 
-    public async Task<IActionResult> OnGetAsync()
-    {
-        var total = await _context.Jugadores.CountAsync();
-        TotalPages = (int)Math.Ceiling(total / (double)PageSize);
+        public async Task OnGetAsync()
+        {
+            var q = _context.Jugadores.AsNoTracking();
 
-        Jugadores = await _context.Jugadores
-            .OrderBy(j => j.Apellido)
-            .ThenBy(j => j.Nombre)
-            .Skip((PageIndex - 1) * PageSize)
-            .Take(PageSize)
-            .ToListAsync();
+            if (!string.IsNullOrWhiteSpace(Search))
+            {
+                var term = Search.Trim();
 
-        return Page();
+                q = q.Where(j =>
+                    j.Nombre.Contains(term) ||
+                    j.Apellido.Contains(term) ||
+                    (j.Nombre + " " + j.Apellido).Contains(term));
+            }
+
+            Jugadores = await q
+                .OrderBy(j => j.Apellido)
+                .ThenBy(j => j.Nombre)
+                .ToListAsync();
+        }
     }
 }

@@ -1,48 +1,57 @@
-﻿@page "{pageIndex:int?}"
+﻿@page
 @model SandStats.Pages.Jugadores.IndexModel
+@using SandStats.Models
+
 @{
-    ViewData["Title"] = "Listado de Jugadores";
+    ViewData["Title"] = "Jugadores";
 }
 
-<div class="container mt-4">
-    <h2 class="mb-4">Listado de Jugadores</h2>
+<div class="container my-4">
+    <h2 class="fw-bold mb-3">Listado de Jugadores</h2>
 
-    <a asp-page="Create" class="btn btn-primary mb-3">➕ NUEVO JUGADOR</a>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <a class="btn btn-primary" asp-page="./Create">+ Nuevo jugador</a>
 
-    <table class="table table-striped table-hover text-center align-middle">
-        <thead class="table-dark">
-            <tr>
-                <th>Nombre</th>
-                <th>Apellido</th>
-                <th>Rol</th>
-                <th>Posicion</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var jugador in Model.Jugadores)
-            {
+        <form method="get" class="d-flex gap-2">
+            <input type="text"
+                   name="Search"
+                   value="@Model.Search"
+                   class="form-control"
+                   placeholder="Buscar por nombre o apellido..." />
+            <button type="submit" class="btn btn-outline-secondary">Buscar</button>
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle">
+            <thead class="table-dark">
                 <tr>
-                    <td>@jugador.Nombre</td>
-                    <td>@jugador.Apellido</td>
-                    <td>@jugador.RolPrincipal</td>
-                    <td>@jugador.Posicion</td>
-                    <td>
-                        <a asp-page="Edit" asp-route-id="@jugador.Id" class="btn btn-sm btn-warning">✏️ EDITAR</a>
-                    </td>
+                    <th>Nombre</th>
+                    <th>Apellido</th>
+                    <th>Rol</th>
+                    <th>Posición</th>
+                    <th style="width:180px;">Acciones</th>
                 </tr>
-            }
-        </tbody>
-    </table>
-
-    <nav aria-label="Paginación de jugadores">
-        <ul class="pagination justify-content-center">
-            @for (int i = 1; i <= Model.TotalPages; i++)
-            {
-                <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
-                    <a class="page-link" asp-route-pageIndex="@i">@i</a>
-                </li>
-            }
-        </ul>
-    </nav>
+            </thead>
+            <tbody>
+                @foreach (var j in Model.Jugadores)
+                {
+                    <tr>
+                        <td>@j.Nombre</td>
+                        <td>@j.Apellido</td>
+                        <td>@j.RolPrincipal</td>
+                        <td>@j.Posicion</td>
+                        <td>
+                            <a asp-page="./Edit" asp-route-id="@j.Id" class="btn btn-warning btn-sm">
+                                ✏️ Editar
+                            </a>
+                            <a asp-page="./Links" asp-route-id="@j.Id" class="btn btn-outline-info btn-sm ms-1">
+                                🔗 Links
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 </div>

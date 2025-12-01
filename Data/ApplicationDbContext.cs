@@ -67,6 +67,8 @@ namespace SandStats.Data
         public DbSet<EstadisticaRecepcion> EstadisticaRecepcion { get; set; }
         public DbSet<EstadisticaK2> EstadisticaK2 { get; set; }
         public DbSet<VideoLinksJugadorPartido> VideoLinksJugadorPartido { get; set; } = default!;
+        public DbSet<JugadorLinks> JugadorLinks { get; set; } = default!;
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
