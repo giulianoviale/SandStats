@@ -68,61 +68,102 @@ namespace SandStats.Pages.Estadisticas
                 SetNumero = null;
             }
 
-            // === Armar acciones por lado (respetando el rol) ===
+            // ============================================
+            // === Armar acciones por lado (respetando rol)
+            // ============================================
             AccionesPorLado = new();
 
             bool esRol4 = JugadorSeleccionado.RolPrincipal == RolJugador.Rol4;
 
             // Acciones "normales" (SI tienen Varilla/Entre línea)
             var baseNormales = new List<TipoAcciones>
-{
-    TipoAcciones.Atq1, TipoAcciones.Atq2, TipoAcciones.Atq3,
-    TipoAcciones.Atq4, TipoAcciones.Atq5, TipoAcciones.Atq6,
-    TipoAcciones.Atq7, TipoAcciones.Atq8, TipoAcciones.Atq9
-};
+            {
+                TipoAcciones.Atq1, TipoAcciones.Atq2, TipoAcciones.Atq3,
+                TipoAcciones.Atq4, TipoAcciones.Atq5, TipoAcciones.Atq6,
+                TipoAcciones.Atq7, TipoAcciones.Atq8, TipoAcciones.Atq9
+            };
 
             // Acciones ESPECIALES (SIN V/E)
             var especiales = new[]
             {
-    TipoAcciones.Atq2daA1, TipoAcciones.Atq2daA6, TipoAcciones.Atq2daA5,
-    TipoAcciones.Varios,   TipoAcciones.PorAtras
-};
+                TipoAcciones.Atq2daA1, TipoAcciones.Atq2daA6, TipoAcciones.Atq2daA5,
+                TipoAcciones.Varios,   TipoAcciones.PorAtras
+            };
 
-            // Sets TL/TD por lado “bueno/atrás” para Rol4
-            var tlBueno_Rol4 = new[] { TipoAcciones.Tl1, TipoAcciones.Tl2, TipoAcciones.Tl9 };
-            var tdBueno_Rol4 = new[] { TipoAcciones.Td3, TipoAcciones.Td4, TipoAcciones.Td5, TipoAcciones.Td6, TipoAcciones.Td7, TipoAcciones.Td8 };
+            // ==========================
+            //  TOQUES POR LADO / ROL
+            // ==========================
 
-            var tlAtras_Rol4 = new[] { TipoAcciones.Tl4, TipoAcciones.Tl5, TipoAcciones.Tl7 };
-            var tdAtras_Rol4 = new[] { TipoAcciones.Td1, TipoAcciones.Td2, TipoAcciones.Td3, TipoAcciones.Td6, TipoAcciones.Td8, TipoAcciones.Td9 };
+            // --- Rol 4: lado bueno / atrás ---
+            var tlBueno_Rol4 = new[] { TipoAcciones.Tl1, TipoAcciones.Tl9, TipoAcciones.Tl2 }; // 1-9-2
+            var tdBueno_Rol4 = new[]
+            {
+                TipoAcciones.Td3, TipoAcciones.Td4, TipoAcciones.Td5,
+                TipoAcciones.Td6, TipoAcciones.Td7, TipoAcciones.Td8
+            };
 
-            // Para Rol2 se invierte Bueno <-> Atrás
+            var tlAtras_Rol4 = new[] { TipoAcciones.Tl5, TipoAcciones.Tl7, TipoAcciones.Tl4 }; // 5-7-4
+            var tdAtras_Rol4 = new[]
+            {
+                TipoAcciones.Td1, TipoAcciones.Td2, TipoAcciones.Td3,
+                TipoAcciones.Td6, TipoAcciones.Td8, TipoAcciones.Td9
+            };
+
+            // --- Rol 2: se invierte Bueno <-> Atrás ---
             var tlBueno_Rol2 = tlAtras_Rol4;
             var tdBueno_Rol2 = tdAtras_Rol4;
+
             var tlAtras_Rol2 = tlBueno_Rol4;
             var tdAtras_Rol2 = tdBueno_Rol4;
 
-            // Lado medio (igual para ambos roles)
-            var tlMedio = new[] { TipoAcciones.Tl3, TipoAcciones.Tl6, TipoAcciones.Tl8 };
-            var tdMedio = new[] { TipoAcciones.Td1, TipoAcciones.Td2, TipoAcciones.Td4, TipoAcciones.Td5, TipoAcciones.Td7, TipoAcciones.Td9 };
+            // --- LADO MEDIO parametrizado por rol ---
+            // Rol 4: TL = 1,9,2 ; TD = 3,4,5,6,7,8
+            var tlMedio_Rol4 = new[]
+            {
+                TipoAcciones.Tl1, TipoAcciones.Tl9, TipoAcciones.Tl2
+            };
+            var tdMedio_Rol4 = new[]
+            {
+                TipoAcciones.Td3, TipoAcciones.Td4, TipoAcciones.Td5,
+                TipoAcciones.Td6, TipoAcciones.Td7, TipoAcciones.Td8
+            };
+
+            // Rol 2: TL = 5,7,4 ; TD = 1,2,3,6,8,9
+            var tlMedio_Rol2 = new[]
+            {
+                TipoAcciones.Tl5, TipoAcciones.Tl7, TipoAcciones.Tl4
+            };
+            var tdMedio_Rol2 = new[]
+            {
+                TipoAcciones.Td1, TipoAcciones.Td2, TipoAcciones.Td3,
+                TipoAcciones.Td6, TipoAcciones.Td8, TipoAcciones.Td9
+            };
 
             foreach (TipoLado lado in Enum.GetValues(typeof(TipoLado)))
             {
-                // Empezamos por las normales
+                // Empezamos por las normales (Atq1..Atq9)
                 var acciones = new List<TipoAcciones>(baseNormales);
 
                 if (lado == TipoLado.Bueno)
                 {
-                    if (esRol4) acciones.AddRange(tlBueno_Rol4.Concat(tdBueno_Rol4));
-                    else acciones.AddRange(tlBueno_Rol2.Concat(tdBueno_Rol2));
+                    if (esRol4)
+                        acciones.AddRange(tlBueno_Rol4.Concat(tdBueno_Rol4));
+                    else
+                        acciones.AddRange(tlBueno_Rol2.Concat(tdBueno_Rol2));
                 }
                 else if (lado == TipoLado.Medio)
                 {
-                    acciones.AddRange(tlMedio.Concat(tdMedio));
+                    if (esRol4)
+                        acciones.AddRange(tlMedio_Rol4.Concat(tdMedio_Rol4));
+                    else
+                        acciones.AddRange(tlMedio_Rol2.Concat(tdMedio_Rol2));
                 }
                 else // Atrás
                 {
-                    if (esRol4) acciones.AddRange(tlAtras_Rol4.Concat(tdAtras_Rol4));
-                    else acciones.AddRange(tlAtras_Rol2.Concat(tdAtras_Rol2));
+                    if (esRol4)
+                        acciones.AddRange(tlAtras_Rol4.Concat(tdAtras_Rol4));
+                    else
+                        acciones.AddRange(tlAtras_Rol2.Concat(tdAtras_Rol2));
                 }
 
                 // SIEMPRE al final las ESPECIALES (sin V/E)
@@ -131,15 +172,11 @@ namespace SandStats.Pages.Estadisticas
                 AccionesPorLado[lado] = acciones;
             }
 
-
-
-
             return Page();
         }
 
         public async Task<IActionResult> OnPostAsync()
         {
-            // 🚫 No leer Request.Form para ids: usar binding
             var jugadorId = JugadorId;
             var partidoId = PartidoId;
 
@@ -158,27 +195,21 @@ namespace SandStats.Pages.Estadisticas
             // Para Lado Medio: si viene sin sufijo, agrego 'V'; si viene con V/E, fuerzo 'V'
             string NormalizarResultado(TipoLado lado, string resultadoStr)
             {
-                // Limpieza básica
                 var r = (resultadoStr ?? string.Empty).Trim();
 
-                // Si no es Medio, respetamos tal cual (V/E)
                 if (lado != TipoLado.Medio) return r;
 
-                // Forzar a variante V en Medio
-                // Casos esperados en tus enums: DoblePositivoV, PositivoV, NegativoV, DobleNegativoV
-                // Mapeo: si ya termina en V/E => reemplazo por V; si no tiene sufijo => agrego V
                 if (r.EndsWith("V", StringComparison.OrdinalIgnoreCase))
                     return r; // ya está en V
 
                 if (r.EndsWith("E", StringComparison.OrdinalIgnoreCase))
                     return r[..^1] + "V"; // cambia E -> V
 
-                // sin sufijo: agrego V
                 return r + "V";
             }
 
             // --------- Impactos NORMALES (con/sin V/E según lado) ----------
-            foreach (var key in Request.F​​orm.Keys)
+            foreach (var key in Request.Form.Keys)
             {
                 if (!key.StartsWith("Impactos[", StringComparison.Ordinal)) continue;
 
@@ -186,7 +217,7 @@ namespace SandStats.Pages.Estadisticas
                 var m = Regex.Match(key, @"^Impactos\[(.+?)\]\[(.+?)\]\[(.+?)\]$");
                 if (!m.Success) continue;
 
-                if (!int.TryParse(Request.F​​orm[key], out var cantidad) || cantidad <= 0)
+                if (!int.TryParse(Request.Form[key], out var cantidad) || cantidad <= 0)
                     continue;
 
                 try
@@ -194,7 +225,6 @@ namespace SandStats.Pages.Estadisticas
                     var lado = Enum.Parse<TipoLado>(m.Groups[1].Value, true);
                     var accion = Enum.Parse<TipoAcciones>(m.Groups[2].Value, true);
 
-                    // normalizo el resultado en función del lado
                     var resultadoNombre = NormalizarResultado(lado, m.Groups[3].Value);
                     if (!Enum.TryParse<ResultadoAtaque>(resultadoNombre, true, out var resultado))
                         continue;
@@ -219,7 +249,7 @@ namespace SandStats.Pages.Estadisticas
             }
 
             // --------- Impactos ESPECIALES (sin V/E) ----------
-            foreach (var key in Request.F​​orm.Keys)
+            foreach (var key in Request.Form.Keys)
             {
                 if (!key.StartsWith("ImpactosEspeciales[", StringComparison.Ordinal)) continue;
 
@@ -227,7 +257,7 @@ namespace SandStats.Pages.Estadisticas
                 var m = Regex.Match(key, @"^ImpactosEspeciales\[(.+?)\]\[(.+?)\]\[(.+?)\]$");
                 if (!m.Success) continue;
 
-                if (!int.TryParse(Request.F​​orm[key], out var cantidad) || cantidad <= 0)
+                if (!int.TryParse(Request.Form[key], out var cantidad) || cantidad <= 0)
                     continue;
 
                 try
@@ -235,7 +265,6 @@ namespace SandStats.Pages.Estadisticas
                     var lado = Enum.Parse<TipoLado>(m.Groups[1].Value, true);
                     var accion = Enum.Parse<TipoAcciones>(m.Groups[2].Value, true);
 
-                    // En especiales ya usás la variante simple (clave con ...V), pero igual normalizo por si acaso
                     var resultadoNombre = NormalizarResultado(lado, m.Groups[3].Value);
                     if (!Enum.TryParse<ResultadoAtaque>(resultadoNombre, true, out var resultado))
                         continue;
@@ -263,7 +292,5 @@ namespace SandStats.Pages.Estadisticas
             TempData["Mensaje"] = "Estadísticas de ataque guardadas correctamente.";
             return RedirectToPage("/Estadisticas/Resumen", new { partidoId });
         }
-
-
     }
 }

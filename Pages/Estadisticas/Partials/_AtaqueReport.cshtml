@@ -21,11 +21,10 @@
 
 @functions {
     // ======================================
-    // 🔹 NUEVO: Definición completa de zonas
+    // 🔹 Zonas por rol (Ataques)
     // ======================================
 
-    // ==== Zonas por rol ====
-    // 🔹 Rol 4 (lado izquierdo)
+    // Rol 4 (lado izquierdo)
     static readonly int[] Zonas_AL_R4_Bueno = { 1, 9, 2 };
     static readonly int[] Zonas_AD_R4_Bueno = { 4, 7, 5, 3, 8, 6 };
     static readonly int[] Zonas_AL_R4_Medio = { 1, 9, 2 };
@@ -33,7 +32,7 @@
     static readonly int[] Zonas_AL_R4_Atras = { 4, 7, 5 };
     static readonly int[] Zonas_AD_R4_Atras = { 1, 9, 2, 3, 8, 6 };
 
-    // 🔹 Rol 2 (lado derecho)
+    // Rol 2 (lado derecho)
     static readonly int[] Zonas_AL_R2_Bueno = { 4, 7, 5 };
     static readonly int[] Zonas_AD_R2_Bueno = { 1, 9, 2, 3, 8, 6 };
     static readonly int[] Zonas_AL_R2_Medio = { 4, 7, 5 };
@@ -41,7 +40,7 @@
     static readonly int[] Zonas_AL_R2_Atras = { 1, 9, 2 };
     static readonly int[] Zonas_AD_R2_Atras = { 4, 7, 5, 3, 8, 6 };
 
-    // 🔹 Toques (no se modifican)
+    // 🔹 Toques (familia base)
     static readonly int[] Zonas_TL_por4 = { 1, 9, 2 };
     static readonly int[] Zonas_TL_por2 = { 5, 7, 4 };
     static readonly int[] Zonas_TD_por4 = { 5, 6, 7, 8, 4, 3 };
@@ -49,32 +48,31 @@
     static readonly int[] Zonas_2DA = { 1, 6, 5 };
 
     // ======================================
-    // ======================================
     // 🔹 TOQUES (TL / TD) — zonas por rol y lado
     // ======================================
 
     // Rol 4 (lado izquierdo)
-    static readonly int[] Zonas_TL_R4_Bueno = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-    static readonly int[] Zonas_TL_R4_Medio = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-    static readonly int[] Zonas_TL_R4_Atras = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    static readonly int[] Zonas_TL_R4_Bueno = { 1, 9, 2 };
+    static readonly int[] Zonas_TL_R4_Medio = { 1, 9, 2 };
+    static readonly int[] Zonas_TL_R4_Atras = { 5, 7, 4 };
 
-    static readonly int[] Zonas_TD_R4_Bueno = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-    static readonly int[] Zonas_TD_R4_Medio = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-    static readonly int[] Zonas_TD_R4_Atras = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    static readonly int[] Zonas_TD_R4_Bueno = { 3, 4, 5, 6, 7, 8 };
+    static readonly int[] Zonas_TD_R4_Medio = { 3, 4, 5, 6, 7, 8 };
+    static readonly int[] Zonas_TD_R4_Atras = { 1, 2, 3, 6, 8, 9 };
 
     // Rol 2 (lado derecho)
-    static readonly int[] Zonas_TL_R2_Bueno = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-    static readonly int[] Zonas_TL_R2_Medio = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-    static readonly int[] Zonas_TL_R2_Atras = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    static readonly int[] Zonas_TL_R2_Bueno = { 5, 7, 4 };
+    static readonly int[] Zonas_TL_R2_Medio = { 5, 7, 4 };
+    static readonly int[] Zonas_TL_R2_Atras = { 1, 9, 2 };
 
-    static readonly int[] Zonas_TD_R2_Bueno = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-    static readonly int[] Zonas_TD_R2_Medio = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-    static readonly int[] Zonas_TD_R2_Atras = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-
+    static readonly int[] Zonas_TD_R2_Bueno = { 1, 2, 3, 6, 8, 9 };
+    static readonly int[] Zonas_TD_R2_Medio = { 1, 2, 3, 6, 8, 9 };
+    static readonly int[] Zonas_TD_R2_Atras = { 3, 4, 5, 6, 7, 8 };
 
     // ======================================
-    // 🔹 NUEVO: Funciones utilitarias
+    // Utilitarios (EsPrefijo, ZonaFromNombre, CellOfZona) -> dejalos como ya los tenías
     // ======================================
+
     bool EsPrefijo(string nombre, string prefijo)
         => nombre?.StartsWith(prefijo, StringComparison.OrdinalIgnoreCase) == true;
 
@@ -107,16 +105,10 @@
     };
 
     // ======================================
-    // ✅ CORREGIDO: Validación por rol/lado
-    // ======================================
-    // ======================================
-    // ✅ FUNCIÓN FINAL: ZonaValida
+    // ✅ ZonaValida según rol/lado/bucket
     // ======================================
     bool ZonaValida(string bucket, int rol, TipoLado lado, int zona)
     {
-        // ==========================
-        // 🔹 Toques (TL / TD)
-        // ==========================
         if (bucket == "TL")
         {
             return (rol, lado) switch
@@ -124,6 +116,7 @@
                 (4, TipoLado.Bueno) => Zonas_TL_R4_Bueno.Contains(zona),
                 (4, TipoLado.Medio) => Zonas_TL_R4_Medio.Contains(zona),
                 (4, TipoLado.Atras) => Zonas_TL_R4_Atras.Contains(zona),
+
                 (2, TipoLado.Bueno) => Zonas_TL_R2_Bueno.Contains(zona),
                 (2, TipoLado.Medio) => Zonas_TL_R2_Medio.Contains(zona),
                 (2, TipoLado.Atras) => Zonas_TL_R2_Atras.Contains(zona),
@@ -138,6 +131,7 @@
                 (4, TipoLado.Bueno) => Zonas_TD_R4_Bueno.Contains(zona),
                 (4, TipoLado.Medio) => Zonas_TD_R4_Medio.Contains(zona),
                 (4, TipoLado.Atras) => Zonas_TD_R4_Atras.Contains(zona),
+
                 (2, TipoLado.Bueno) => Zonas_TD_R2_Bueno.Contains(zona),
                 (2, TipoLado.Medio) => Zonas_TD_R2_Medio.Contains(zona),
                 (2, TipoLado.Atras) => Zonas_TD_R2_Atras.Contains(zona),
@@ -145,9 +139,6 @@
             };
         }
 
-        // ==========================
-        // 🔹 Ataques (AL / AD)
-        // ==========================
         if (bucket == "AL")
         {
             return (rol, lado) switch
@@ -155,6 +146,7 @@
                 (4, TipoLado.Bueno) => Zonas_AL_R4_Bueno.Contains(zona),
                 (4, TipoLado.Medio) => Zonas_AL_R4_Medio.Contains(zona),
                 (4, TipoLado.Atras) => Zonas_AL_R4_Atras.Contains(zona),
+
                 (2, TipoLado.Bueno) => Zonas_AL_R2_Bueno.Contains(zona),
                 (2, TipoLado.Medio) => Zonas_AL_R2_Medio.Contains(zona),
                 (2, TipoLado.Atras) => Zonas_AL_R2_Atras.Contains(zona),
@@ -169,6 +161,7 @@
                 (4, TipoLado.Bueno) => Zonas_AD_R4_Bueno.Contains(zona),
                 (4, TipoLado.Medio) => Zonas_AD_R4_Medio.Contains(zona),
                 (4, TipoLado.Atras) => Zonas_AD_R4_Atras.Contains(zona),
+
                 (2, TipoLado.Bueno) => Zonas_AD_R2_Bueno.Contains(zona),
                 (2, TipoLado.Medio) => Zonas_AD_R2_Medio.Contains(zona),
                 (2, TipoLado.Atras) => Zonas_AD_R2_Atras.Contains(zona),
@@ -176,18 +169,14 @@
             };
         }
 
-        // ==========================
-        // 🔹 Ataques de 2da
-        // ==========================
         if (bucket == "2DA")
             return Zonas_2DA.Contains(zona);
 
         return false;
     }
 
-
     // ======================================
-    // ✅ CORREGIDO: Cálculo Totales por bucket
+    // ✅ TotalesPorBucket
     // ======================================
     (int TL, int TD, int AL, int AD, int D2) TotalesPorBucket(
         int rol, TipoLado lado, IEnumerable<AtaqueAccion> acciones)
@@ -215,7 +204,7 @@
     }
 
     // ======================================
-    // ✅ CORREGIDO: BuildAccionesPara
+    // ✅ BuildAccionesPara
     // ======================================
     List<MapaAccionVM> BuildAccionesPara(
         string bucket, int rol, TipoLado lado, IEnumerable<AtaqueAccion> acciones)
@@ -231,13 +220,12 @@
             {
                 "TL" => EsPrefijo(nombre, "Tl") && ZonaValida("TL", rol, lado, zona.Value),
                 "TD" => EsPrefijo(nombre, "Td") && ZonaValida("TD", rol, lado, zona.Value),
-                "AL" => EsPrefijo(nombre, "Atq") && !EsPrefijo(nombre, "Atq2da") &&
-                         ZonaValida("AL", rol, lado, zona.Value),
-                "AD" => EsPrefijo(nombre, "Atq") && !EsPrefijo(nombre, "Atq2da") &&
-                         ZonaValida("AD", rol, lado, zona.Value),
+                "AL" => EsPrefijo(nombre, "Atq") && !EsPrefijo(nombre, "Atq2da") && ZonaValida("AL", rol, lado, zona.Value),
+                "AD" => EsPrefijo(nombre, "Atq") && !EsPrefijo(nombre, "Atq2da") && ZonaValida("AD", rol, lado, zona.Value),
                 "2DA" => EsPrefijo(nombre, "Atq2da") && ZonaValida("2DA", rol, lado, zona.Value),
                 _ => false
             };
+
             if (!match) continue;
 
             var (c, r) = CellOfZona(zona.Value);
@@ -246,6 +234,7 @@
         return list;
     }
 }
+
 <!--k1/k2 valores base-->
 <!-- === Resumen de Ataque (Reconstrucción Automática) === -->
 @{
@@ -397,7 +386,7 @@
 
     var totLado = data.Totales;
     var totalLado = totLado.Total;
-    
+
     // === Porcentaje del lado sobre el total K1 (incluye 2da)
     var pctLadoK1 = (totalK1Principal == 0)
         ? 0m
@@ -420,6 +409,15 @@
     var accAD = BuildAccionesPara("AD", Model.Rol, data.Lado, acciones);
     var acc2DA = BuildAccionesPara("2DA", Model.Rol, data.Lado, acciones);
 
+    // === % de distribución por tipo de acción (por lado) ===
+    int totalSin2da = totAL + totAD + totTD + totTL;
+    double PLocal(int v) => totalSin2da > 0 ? 100.0 * v / totalSin2da : 0.0;
+
+    var pctAL = Math.Round(PLocal(totAL), 0);  // Ataque línea
+    var pctAD = Math.Round(PLocal(totAD), 0);  // Ataque diagonal
+    var pctTD = Math.Round(PLocal(totTD), 0);  // Toque diagonal
+    var pctTL = Math.Round(PLocal(totTL), 0);  // Toque línea
+
     // === Leyenda para ataques de 2da ===
     var titulo2da = "Ataques de 2da";
     if (Model.Total2da > 0 && !string.IsNullOrWhiteSpace(Model.Dist2daInline))
@@ -428,7 +426,7 @@
     // === ViewModels para parciales ===
     var vmAL = new SandStats.Pages.Estadisticas.MapaAtaqueViewModel
     {
-        Titulo = "Atq línea",
+        Titulo = $"Atq línea {pctAL:0}%",
         PlayerRight = (Model.Rol == 2),
         TotalAtaques = totalLadoK1Sin2da,
         Acciones = accAL,
@@ -437,7 +435,7 @@
     };
     var vmAD = new SandStats.Pages.Estadisticas.MapaAtaqueViewModel
     {
-        Titulo = "Atq Diago",
+        Titulo = $"Atq Diago {pctAD:0}%",
         PlayerRight = (Model.Rol == 2),
         TotalAtaques = totalLadoK1Sin2da,
         Acciones = accAD,
@@ -446,7 +444,7 @@
     };
     var vmTD = new SandStats.Pages.Estadisticas.MapaAtaqueViewModel
     {
-        Titulo = "Toque Diago",
+        Titulo = $"Toque Diago {pctTD:0}%",
         PlayerRight = (Model.Rol == 2),
         TotalAtaques = totalLadoK1Sin2da,
         Acciones = accTD,
@@ -455,7 +453,7 @@
     };
     var vmTL = new SandStats.Pages.Estadisticas.MapaAtaqueViewModel
     {
-        Titulo = "Toques Línea",
+        Titulo = $"Toques Línea {pctTL:0}%",
         PlayerRight = (Model.Rol == 2),
         TotalAtaques = totalLadoK1Sin2da,
         Acciones = accTL,
@@ -472,7 +470,7 @@
         Lado = data.Lado,
         TotalFamilia = total2daLado
     };
-    
+
     <div class="card-header d-flex justify-content-between align-items-center">
         <div class="fw-semibold">Lado @data.Lado (Rol @Model.Rol) — POR @Model.Rol</div>
 
@@ -491,160 +489,191 @@
         </div>
     </div>
 
-        <div class="container-fluid px-0 mb-3">
-            <div class="row g-3">
-                <div class="col-md-4">@await Html.PartialAsync("Partials/_MapaAccionSVGPartial", vmAL)</div>
-                <div class="col-md-4">@await Html.PartialAsync("Partials/_MapaAccionSVGPartial", vmAD)</div>
-                <div class="col-md-4">@await Html.PartialAsync("Partials/_MapaAccionSVGPartial", vmTD)</div>
+    <div class="container-fluid px-0 mb-3">
+        <div class="row g-3">
+            <div class="col-md-4">@await Html.PartialAsync("Partials/_MapaAccionSVGPartial", vmAL)</div>
+            <div class="col-md-4">@await Html.PartialAsync("Partials/_MapaAccionSVGPartial", vmAD)</div>
+            <div class="col-md-4">@await Html.PartialAsync("Partials/_MapaAccionSVGPartial", vmTD)</div>
 
-                <div class="col-md-4">@await Html.PartialAsync("Partials/_MapaAccionSVGPartial", vmTL)</div>
-                <div class="col-md-4">@await Html.PartialAsync("Partials/_MapaAccionSVGPartial", vm2DA)</div>
+            <div class="col-md-4">@await Html.PartialAsync("Partials/_MapaAccionSVGPartial", vmTL)</div>
+            <div class="col-md-4">@await Html.PartialAsync("Partials/_MapaAccionSVGPartial", vm2DA)</div>
 
-                <!-- ✅ Cuadro violeta - Distribución de acciones -->
-                <!-- ✅ Cuadro violeta - Distribución de acciones -->
-                <div class="col-md-4">
-                    @{
-                        // ✅ Totales sin incluir pelotas de 2da
-                        int totalSin2da = totAL + totAD + totTD + totTL;
+            <!-- ✅ Cuadro violeta - Distribución de acciones -->
+            <div class="col-md-4">
+                @{
+                    // ViewModel del resumen usando los mismos % que en los títulos
+                    var vmPct = new PctResumenVM { TotalAcciones = totalSin2da };
 
-                        // Si no hay acciones, evitamos dividir por cero
-                        double P(int v) => totalSin2da > 0 ? 100.0 * v / totalSin2da : 0.0;
+                    vmPct.Items.Add(new PctResumenItem
+                    {
+                        Label = "Ataque Línea (por lado)",
+                        Pct = pctAL
+                    });
+                    vmPct.Items.Add(new PctResumenItem
+                    {
+                        Label = "Ataque Diagonal (por lado)",
+                        Pct = pctAD
+                    });
+                    vmPct.Items.Add(new PctResumenItem
+                    {
+                        Label = "Toque Diagonal (por lado)",
+                        Pct = pctTD
+                    });
+                    vmPct.Items.Add(new PctResumenItem
+                    {
+                        Label = "Toque Línea (por lado)",
+                        Pct = pctTL
+                    });
 
-                        // ViewModel del resumen
-                        var vmPct = new PctResumenVM { TotalAcciones = totalSin2da };
+                    // === Pelotas de 2da (fuera del cálculo de % de lado) ===
+                    if (total2daLado > 0)
+                    {
+                        double pct2da = (totalK1Sin2da + total2daLado) > 0
+                        ? 100.0 * total2daLado / (totalK1Principal)
+                        : 0.0;
 
-                        // === Carga de ítems ===
-                        vmPct.Items.Add(new PctResumenItem { Label = "Ataque Línea (por lado)", Pct = Math.Round(P(totAL), 0) });
-                        vmPct.Items.Add(new PctResumenItem { Label = "Ataque Diagonal (por lado)", Pct = Math.Round(P(totAD), 0) });
-                        vmPct.Items.Add(new PctResumenItem { Label = "Toque Diagonal (por lado)", Pct = Math.Round(P(totTD), 0) });
-                        vmPct.Items.Add(new PctResumenItem { Label = "Toque Línea (por lado)", Pct = Math.Round(P(totTL), 0) });
-
-                        // === Pelotas de 2da (fuera del cálculo de % de lado) ===
-                        if (total2daLado > 0)
+                        vmPct.Items.Add(new PctResumenItem
                         {
-                            double pct2da = (totalK1Sin2da + total2daLado) > 0
-                            ? 100.0 * total2daLado / (totalK1Principal)
-                            : 0.0;
-
-                            vmPct.Items.Add(new PctResumenItem
-                            {
-                                Label = $"2da (Cant: {total2daLado} / total K1({totalK1Principal}))",
-                                Pct = Math.Round(pct2da, 0)
-                            });
-                        }
+                            Label = $"2da (Cant: {total2daLado} / total K1({totalK1Principal}))",
+                            Pct = Math.Round(pct2da, 0)
+                        });
                     }
+                }
 
-                    @await Html.PartialAsync(
-                    "Estadisticas/Partials/_CuadroResumenPct",
-                                vmPct,
-                                new ViewDataDictionary(ViewData) { ["Titulo"] = "Distribución de acciones" })
-            </div>
-
+                @await Html.PartialAsync(
+                "Estadisticas/Partials/_CuadroResumenPct",
+                        vmPct,
+                        new ViewDataDictionary(ViewData) { ["Titulo"] = "Distribución de acciones" })
         </div>
+
     </div>
+</div>
 
-    <!-- ✅ Tabla de acciones normales -->
-    <div class="card-body">
-        @{
-                var filasNormales = acciones.Where(a => !a.Accion.ToString().StartsWith("Atq2da")).ToList();
-                var totalLadoSin2da = filasNormales.Sum(x => x.C.Total);
+<!-- ✅ Tabla de acciones normales -->
+<div class="card-body">
+    @{
+            var filasNormales = acciones.Where(a => !a.Accion.ToString().StartsWith("Atq2da")).ToList();
+            var totalLadoSin2da = filasNormales.Sum(x => x.C.Total);
 
-                var filas = filasNormales
-                .Select(a => new
-                {
-                    a.Accion,
-                    a.C,
-                    PctT = totalLadoSin2da == 0 ? 0m : (decimal)a.C.Total / totalLadoSin2da,
-                    TotalVarilla = (data.Lado == SandStats.Models.TipoLado.Medio) ? (int?)null : a.TotalVarilla,
-                    TotalEntreLinea = (data.Lado == SandStats.Models.TipoLado.Medio) ? (int?)null : a.TotalEntreLinea
-                })
-                .OrderByDescending(x => x.PctT)
-                .ToList();
-            }
-
-            <div class="table-responsive">
-                <table class="table table-sm table-bordered align-middle text-center mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="text-start">Acción</th>
-                            <th>%T <span class="text-muted small">(por lado)</span></th>
-                            <th>Efect</th>
-                            <th>%#</th>
-                            <th>%+</th>
-                            <th>%-</th>
-                            <th>%=</th>
-                            <th>TOTAL</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var f in filas)
-                        {
-                            var c = f.C;
-                            <tr class="@Semaforo(c.Efect)">
-                                <td class="text-start">@f.Accion</td>
-                                <td>@Pct(Math.Round(f.PctT, 2))</td>
-                                <td class="text-end fw-semibold @Semaforo(c.Efect)">@Pct(c.Efect)</td>
-                                <td>@Pct(c.PctDP)</td>
-                                <td>@Pct(c.PctP)</td>
-                                <td>@Pct(c.PctN)</td>
-                                <td>@Pct(c.PctE)</td>
-                                <td>@c.Total</td>
-                            </tr>
-                        }
-                        <tr class="fw-semibold table-secondary">
-                            <td class="text-start">Total</td>
-                            <td>100%</td>
-                            <td class="text-end fw-semibold">@Pct((decimal)filas.Sum(x => x.C.DP + x.C.P) / Math.Max(1, filas.Sum(x => x.C.Total)))</td>
-                            <td>@Pct((decimal)filas.Sum(x => x.C.DP) / Math.Max(1, filas.Sum(x => x.C.Total)))</td>
-                            <td>@Pct((decimal)filas.Sum(x => x.C.P) / Math.Max(1, filas.Sum(x => x.C.Total)))</td>
-                            <td>@Pct((decimal)filas.Sum(x => x.C.N) / Math.Max(1, filas.Sum(x => x.C.Total)))</td>
-                            <td>@Pct((decimal)filas.Sum(x => x.C.E) / Math.Max(1, filas.Sum(x => x.C.Total)))</td>
-                            <td>@filas.Sum(x => x.C.Total)</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- ✅ Tabla 2da -->
-            @if (total2daLado > 0)
+            var filas = filasNormales
+            .Select(a => new
             {
-                var filas2da = acciones.Where(a => a.Accion.ToString().StartsWith("Atq2da")).ToList();
-                var total2da = filas2da.Sum(x => x.C.Total);
-                var filas2daOrden = filas2da
-                .Select(a => new { a.Accion, a.C, PctK1 = total2da == 0 ? 0m : (decimal)a.C.Total / total2da })
-                .OrderByDescending(x => x.PctK1)
-                .ToList();
+                a.Accion,
+                a.C,
+                PctT = totalLadoSin2da == 0 ? 0m : (decimal)a.C.Total / totalLadoSin2da,
+                TotalVarilla = (data.Lado == SandStats.Models.TipoLado.Medio) ? (int?)null : a.TotalVarilla,
+                TotalEntreLinea = (data.Lado == SandStats.Models.TipoLado.Medio) ? (int?)null : a.TotalEntreLinea
+            })
+            .OrderByDescending(x => x.PctT)
+            .ToList();
+        }
 
-                <div class="mt-3">
-                    <div class="fw-semibold small mb-1">Acciones especiales — 2da (por este lado)</div>
-                    <div class="table-responsive">
-                        <table class="table table-sm table-bordered align-middle text-center mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th class="text-start">Acción</th>
-                                    <th>%T <span class="text-muted small">(por lado)</span></th>
-                                    <th>Efect</th>
-                                    <th>%#</th>
-                                    <th>%+</th>
-                                    <th>%-</th>
-                                    <th>%=</th>
-                                    <th>TOTAL</th>
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered align-middle text-center mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="text-start">Acción</th>
+                        <th>%T <span class="text-muted small">(por lado)</span></th>
+                        <th>Efect</th>
+                        <th>%V</th>  
+                        <th>%E</th>   
+                        <th>%#</th>
+                        <th>%+</th>
+                        <th>%-</th>
+                        <th>%=</th>
+                        <th>TOTAL</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var f in filas)
+                    {
+                        var c = f.C;
+                        var totalAccion = c.Total;
+
+                        // Protección contra null
+                        int v = f.TotalVarilla ?? 0;
+                        int e = f.TotalEntreLinea ?? 0;
+
+                        // Fracciones (0–1)
+                        decimal fracVarilla = totalAccion == 0 ? 0m : (decimal)v / totalAccion;
+                        decimal fracEntreLinea = totalAccion == 0 ? 0m : (decimal)e / totalAccion;
+
+
+                        <tr class="@Semaforo(c.Efect)">
+                            <td class="text-start">@f.Accion</td>
+
+                            @* %T (por lado) — dejá lo que ya tenías, pongo un ejemplo genérico *@
+                            <td>@Pct(Math.Round(f.PctT, 2))</td>
+
+                            @* Efectividad global (# + +) *@
+                            <td class="text-end fw-semibold @Semaforo(c.Efect)">
+                                @Pct(c.Efect)
+                            </td>
+
+                            @* NUEVO: % por Varilla *@
+                            <td>
+                                @Pct(fracVarilla)
+                            </td>
+
+                            @* NUEVO: % Entre línea *@
+                            <td>
+                                @Pct(fracEntreLinea)
+                            </td>
+
+                            @* columnas ya existentes por símbolo *@
+                            <td>@Pct(c.PctDP)</td>
+                            <td>@Pct(c.PctP)</td>
+                            <td>@Pct(c.PctN)</td>
+                            <td>@Pct(c.PctE)</td>
+
+                            <td>@c.Total</td>
+                        </tr>
+                    }
+                </tbody>
+
+            </table>
+        </div>
+
+        <!-- ✅ Tabla 2da -->
+        @if (total2daLado > 0)
+        {
+            var filas2da = acciones.Where(a => a.Accion.ToString().StartsWith("Atq2da")).ToList();
+            var total2da = filas2da.Sum(x => x.C.Total);
+            var filas2daOrden = filas2da
+            .Select(a => new { a.Accion, a.C, PctK1 = total2da == 0 ? 0m : (decimal)a.C.Total / total2da })
+            .OrderByDescending(x => x.PctK1)
+            .ToList();
+
+            <div class="mt-3">
+                <div class="fw-semibold small mb-1">Acciones especiales — 2da (por este lado)</div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered align-middle text-center mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="text-start">Acción</th>
+                                <th>%T <span class="text-muted small">(por lado)</span></th>
+                                <th>Efect</th>
+                                <th>%#</th>
+                                <th>%+</th>
+                                <th>%-</th>
+                                <th>%=</th>
+                                <th>TOTAL</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var f in filas2daOrden)
+                            {
+                                var c = f.C;
+                                <tr class="@Semaforo(c.Efect)">
+                                    <td class="text-start">@f.Accion</td>
+                                    <td>@Pct(Math.Round(f.PctK1, 2))</td>
+                                    <td class="text-end fw-semibold @Semaforo(c.Efect)">@Pct(c.Efect)</td>
+                                    <td>@Pct(c.PctDP)</td>
+                                    <td>@Pct(c.PctP)</td>
+                                    <td>@Pct(c.PctN)</td>
+                                    <td>@Pct(c.PctE)</td>
+                                    <td>@c.Total</td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var f in filas2daOrden)
-                                {
-                                    var c = f.C;
-                                    <tr class="@Semaforo(c.Efect)">
-                                        <td class="text-start">@f.Accion</td>
-                                        <td>@Pct(Math.Round(f.PctK1, 2))</td>
-                                        <td class="text-end fw-semibold @Semaforo(c.Efect)">@Pct(c.Efect)</td>
-                                        <td>@Pct(c.PctDP)</td>
-                                        <td>@Pct(c.PctP)</td>
-                                        <td>@Pct(c.PctN)</td>
-                                        <td>@Pct(c.PctE)</td>
-                                        <td>@c.Total</td>
-                                    </tr>
                             }
                             <!-- ✅ NUEVA FILA DE TOTAL -->
                             <tr class="fw-semibold table-secondary">
@@ -659,12 +688,10 @@
                                 <td>@Pct((decimal)filas2da.Sum(x => x.C.E) / Math.Max(1, filas2da.Sum(x => x.C.Total)))</td>
                                 <td>@filas2da.Sum(x => x.C.Total)</td>
                             </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                        </tbody>
+                    </table>
                 </div>
-            }
-        </div>
-    
-   
+            </div>
+        }
+    </div>
 }

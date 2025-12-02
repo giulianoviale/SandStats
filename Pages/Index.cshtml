@@ -1,12 +1,74 @@
 ﻿@page
 @model IndexModel
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "Inicio";
 }
 
-<div class="py-5 text-center">
-    <img src="~/img/sandstats-logo.svg" alt="SandStats" height="48" class="mb-2">
-    <h1 class="display-6 fw-bold">Insights de beach volley, al instante</h1>
-    <p class="lead text-muted">Cargá, editá y analizá partidos con un flujo simple y consistente.</p>
+<div class="container-fluid p-0">
+    <!-- Hero con fondo configurable -->
+    <div class="hero-home d-flex flex-column justify-content-center align-items-center text-center">
+        <div class="hero-overlay"></div>
+
+        <div class="hero-content position-relative">
+            <img src="~/img/logo-mark.svg" alt="SandStats" class="mb-3" style="height: 48px;" />
+
+            <h1 class="fw-bold mb-3">
+                Insights de beach volley, al instante
+            </h1>
+
+            <p class="lead mb-0">
+                Cargá, editá y analizá partidos con un flujo simple y consistente.
+            </p>
+        </div>
+    </div>
 </div>
 
+
+
+    <div class="container my-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Cambiar foto de fondo</h5>
+                <form method="post" enctype="multipart/form-data" asp-page-handler="UploadBackground">
+                    <div class="mb-3">
+                        <input type="file" name="BackgroundImage" class="form-control" accept="image/*" />
+                        <small class="text-muted">
+                            Formatos recomendados: JPG o PNG. Tamaño máximo ~3 MB.
+                        </small>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        Subir nueva imagen
+                    </button>
+                    @if (!string.IsNullOrEmpty(Model.Message))
+                    {
+                        <span class="ms-3 text-success">@Model.Message</span>
+                    }
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+@section Styles {
+    <style>
+        .hero-home {
+            min-height: calc(100vh - 80px); /* ajustá según alto del navbar */
+            background-image: url('/img/home-bg.jpg?v=@Model.CacheBuster');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            position: relative;
+            color: #fff;
+        }
+
+        .hero-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.35); /* oscurece un poco la foto */
+        }
+
+        .hero-content {
+            max-width: 720px;
+        }
+    </style>
+}
