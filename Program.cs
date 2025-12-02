@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;   // 👈 IMPORTANTE
 using SandStats.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,7 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 var env = builder.Environment;
 var conn = builder.Configuration.GetConnectionString("DefaultConnection");
 
-// Detect PostgreSQL on Render (DATABASE_URL)
+// Detect PostgreSQL on Render
 if (env.IsProduction())
 {
     var dbUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
@@ -20,17 +19,10 @@ if (env.IsProduction())
 // === Register DbContext ===
 builder.Services.AddDbContext<ApplicationDbContext>(opt =>
 {
-    // Elegir proveedor según la connection string
     if (conn.Contains("Host="))
         opt.UseNpgsql(conn);
     else
         opt.UseSqlite(conn);
-
-    // 👇 ESTA ES LA CLAVE:
-    // Ignorar el warning de "pending model changes"
-    // que aparece cuando el modelo corre con otro proveedor (SQLite vs PostgreSQL)
-    opt.ConfigureWarnings(w =>
-        w.Ignore(RelationalEventId.PendingModelChangesWarning));
 });
 
 // === Identity ===
@@ -43,19 +35,11 @@ builder.Services.AddRazorPages(options =>
 {
     options.Conventions.AuthorizeFolder("/"); // protege todas las páginas
     options.Conventions.AllowAnonymousToFolder("/Identity"); // deja libre el login/register
-    options.Conventions.AllowAnonymousToPage("/Index"); // home público (si querés)
+    options.Conventions.AllowAnonymousToPage("/Index"); // opcional, si querés que el home sea público
 });
-
+//faltaba esta linea para que funcione el logueo
 builder.Services.AddAuthorization();
-
 var app = builder.Build();
-
-// === APLICAR MIGRACIONES AUTOMÁTICAMENTE AL ARRANCAR ===
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    db.Database.Migrate();   // ahora ya no va a tirar la excepción por PendingModelChanges
-}
 
 // === Pipeline ===
 if (!app.Environment.IsDevelopment())
