@@ -41,6 +41,13 @@ builder.Services.AddRazorPages(options =>
 builder.Services.AddAuthorization();
 var app = builder.Build();
 
+// APLICAR MIGRACIONES AUTOMÁTICAMENTE AL ARRANCAR
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    db.Database.Migrate();
+}
+
 // === Pipeline ===
 if (!app.Environment.IsDevelopment())
 {

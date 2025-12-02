@@ -27,11 +27,15 @@ namespace SandStats.Pages.Jugadores
             if (!string.IsNullOrWhiteSpace(Search))
             {
                 var term = Search.Trim();
+                var termLower = term.ToLower();
 
                 q = q.Where(j =>
-                    j.Nombre.Contains(term) ||
-                    j.Apellido.Contains(term) ||
-                    (j.Nombre + " " + j.Apellido).Contains(term));
+                    (j.Nombre ?? string.Empty).ToLower().Contains(termLower) ||
+                    (j.Apellido ?? string.Empty).ToLower().Contains(termLower) ||
+                    ((j.Nombre ?? string.Empty) + " " + (j.Apellido ?? string.Empty))
+                        .ToLower()
+                        .Contains(termLower)
+                );
             }
 
             Jugadores = await q

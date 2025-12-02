@@ -18,7 +18,7 @@ namespace SandStats.Models
 
         [MaxLength(2048)]
         public string? LinkK2 { get; set; }
-
+        
         [MaxLength(2048)]
         public string? LinkSaque { get; set; }
 
