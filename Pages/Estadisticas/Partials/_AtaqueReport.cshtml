@@ -575,6 +575,8 @@
                         <th class="text-start">Acción</th>
                         <th>%T <span class="text-muted small">(por lado)</span></th>
                         <th>Efect</th>
+                        <th>%V</th>  
+                        <th>%E</th>   
                         <th>%#</th>
                         <th>%+</th>
                         <th>%-</th>
@@ -586,28 +588,49 @@
                     @foreach (var f in filas)
                     {
                         var c = f.C;
+                        var totalAccion = c.Total;
+
+                        // Protección contra null
+                        int v = f.TotalVarilla ?? 0;
+                        int e = f.TotalEntreLinea ?? 0;
+
+                        // Fracciones (0–1)
+                        decimal fracVarilla = totalAccion == 0 ? 0m : (decimal)v / totalAccion;
+                        decimal fracEntreLinea = totalAccion == 0 ? 0m : (decimal)e / totalAccion;
+
+
                         <tr class="@Semaforo(c.Efect)">
                             <td class="text-start">@f.Accion</td>
+
+                            @* %T (por lado) — dejá lo que ya tenías, pongo un ejemplo genérico *@
                             <td>@Pct(Math.Round(f.PctT, 2))</td>
-                            <td class="text-end fw-semibold @Semaforo(c.Efect)">@Pct(c.Efect)</td>
+
+                            @* Efectividad global (# + +) *@
+                            <td class="text-end fw-semibold @Semaforo(c.Efect)">
+                                @Pct(c.Efect)
+                            </td>
+
+                            @* NUEVO: % por Varilla *@
+                            <td>
+                                @Pct(fracVarilla)
+                            </td>
+
+                            @* NUEVO: % Entre línea *@
+                            <td>
+                                @Pct(fracEntreLinea)
+                            </td>
+
+                            @* columnas ya existentes por símbolo *@
                             <td>@Pct(c.PctDP)</td>
                             <td>@Pct(c.PctP)</td>
                             <td>@Pct(c.PctN)</td>
                             <td>@Pct(c.PctE)</td>
+
                             <td>@c.Total</td>
                         </tr>
                     }
-                    <tr class="fw-semibold table-secondary">
-                        <td class="text-start">Total</td>
-                        <td>100%</td>
-                        <td class="text-end fw-semibold">@Pct((decimal)filas.Sum(x => x.C.DP + x.C.P) / Math.Max(1, filas.Sum(x => x.C.Total)))</td>
-                        <td>@Pct((decimal)filas.Sum(x => x.C.DP) / Math.Max(1, filas.Sum(x => x.C.Total)))</td>
-                        <td>@Pct((decimal)filas.Sum(x => x.C.P) / Math.Max(1, filas.Sum(x => x.C.Total)))</td>
-                        <td>@Pct((decimal)filas.Sum(x => x.C.N) / Math.Max(1, filas.Sum(x => x.C.Total)))</td>
-                        <td>@Pct((decimal)filas.Sum(x => x.C.E) / Math.Max(1, filas.Sum(x => x.C.Total)))</td>
-                        <td>@filas.Sum(x => x.C.Total)</td>
-                    </tr>
                 </tbody>
+
             </table>
         </div>
 
