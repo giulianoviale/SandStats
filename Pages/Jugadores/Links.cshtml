@@ -44,45 +44,100 @@
 
         <div class="card shadow-sm">
             <div class="card-body">
+
+                <!-- K1 -->
                 <div class="mb-2">
                     <label class="form-label mb-1" asp-for="Links.LinkK1">Link K1</label>
                     <div class="input-group">
                         <input type="url" asp-for="Links.LinkK1" class="form-control" placeholder="https://..." />
+                        @if (!string.IsNullOrWhiteSpace(Model.Links?.LinkK1))
+                        {
+                            <a class="btn btn-outline-primary"
+                               target="_blank"
+                               href="@Model.NormalizarUrl(Model.Links.LinkK1)">
+                                Abrir
+                            </a>
+                        }
                     </div>
                 </div>
 
+                <!-- K2 -->
                 <div class="mb-2">
                     <label class="form-label mb-1" asp-for="Links.LinkK2">Link K2</label>
                     <div class="input-group">
                         <input type="url" asp-for="Links.LinkK2" class="form-control" placeholder="https://..." />
+                        @if (!string.IsNullOrWhiteSpace(Model.Links?.LinkK2))
+                        {
+                            <a class="btn btn-outline-primary"
+                               target="_blank"
+                               href="@Model.NormalizarUrl(Model.Links.LinkK2)">
+                                Abrir
+                            </a>
+                        }
                     </div>
                 </div>
 
+                <!-- Saque -->
                 <div class="mb-2">
                     <label class="form-label mb-1" asp-for="Links.LinkSaque">Link Saque</label>
                     <div class="input-group">
                         <input type="url" asp-for="Links.LinkSaque" class="form-control" placeholder="https://..." />
+                        @if (!string.IsNullOrWhiteSpace(Model.Links?.LinkSaque))
+                        {
+                            <a class="btn btn-outline-primary"
+                               target="_blank"
+                               href="@Model.NormalizarUrl(Model.Links.LinkSaque)">
+                                Abrir
+                            </a>
+                        }
                     </div>
                 </div>
 
+                <!-- Armado -->
                 <div class="mb-2">
                     <label class="form-label mb-1" asp-for="Links.LinkArmado">Link Armado</label>
                     <div class="input-group">
                         <input type="url" asp-for="Links.LinkArmado" class="form-control" placeholder="https://..." />
+                        @if (!string.IsNullOrWhiteSpace(Model.Links?.LinkArmado))
+                        {
+                            <a class="btn btn-outline-primary"
+                               target="_blank"
+                               href="@Model.NormalizarUrl(Model.Links.LinkArmado)">
+                                Abrir
+                            </a>
+                        }
                     </div>
                 </div>
 
+                <!-- Bloqueo -->
                 <div class="mb-2">
                     <label class="form-label mb-1" asp-for="Links.LinkBloqueo">Link Bloqueo</label>
                     <div class="input-group">
                         <input type="url" asp-for="Links.LinkBloqueo" class="form-control" placeholder="https://..." />
+                        @if (!string.IsNullOrWhiteSpace(Model.Links?.LinkBloqueo))
+                        {
+                            <a class="btn btn-outline-primary"
+                               target="_blank"
+                               href="@Model.NormalizarUrl(Model.Links.LinkBloqueo)">
+                                Abrir
+                            </a>
+                        }
                     </div>
                 </div>
 
+                <!-- Extra -->
                 <div class="mb-2">
                     <label class="form-label mb-1" asp-for="Links.LinkExtra">Link Extra</label>
                     <div class="input-group">
                         <input type="url" asp-for="Links.LinkExtra" class="form-control" placeholder="https://..." />
+                        @if (!string.IsNullOrWhiteSpace(Model.Links?.LinkExtra))
+                        {
+                            <a class="btn btn-outline-primary"
+                               target="_blank"
+                               href="@Model.NormalizarUrl(Model.Links.LinkExtra)">
+                                Abrir
+                            </a>
+                        }
                     </div>
                 </div>
             </div>

@@ -61,6 +61,25 @@ namespace SandStats.Pages.Jugadores
             CargarCombos(jugador);
             return Page();
         }
+        public string NormalizarUrl(string? raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+                return "#";
+
+            var url = raw.Trim();
+
+            // Si ya viene con http/https, la usamos tal cual
+            if (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                return url;
+
+            // Si parece un ID de YouTube (11 caracteres sin espacios)
+            if (url.Length == 11 && !url.Contains(" "))
+                return "https://youtu.be/" + url;
+
+            // Caso genérico: le agregamos https://
+            return "https://" + url;
+        }
 
         public async Task<IActionResult> OnPostAsync()
         {
