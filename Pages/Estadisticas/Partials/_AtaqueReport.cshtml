@@ -229,7 +229,15 @@
             if (!match) continue;
 
             var (c, r) = CellOfZona(zona.Value);
-            list.Add(new MapaAccionVM(nombre, a.C ?? new AtkCounts(), c, r));
+            list.Add(new MapaAccionVM
+            {
+                Nombre = nombre,
+                C = a.C ?? new AtkCounts(),
+                Col = c,
+                Row = r,
+                TotalVarilla = a.TotalVarilla,
+                TotalEntreLinea = a.TotalEntreLinea
+            });
         }
         return list;
     }
