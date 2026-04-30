@@ -271,7 +271,7 @@
             int dp = items.Sum(x => x.C?.DP ?? 0);
             int p = items.Sum(x => x.C?.P ?? 0);
             int n = items.Sum(x => x.C?.N ?? 0);
-            int e = items.Sum(x => x.C?.E ?? 0);
+            int e = items.Sum(x => x.C?.DN ?? 0);
 
             // Creamos un nuevo objeto del tipo AtkCounts usando reflexión para forzar los valores calculados
             var temp = new SandStats.Pages.Estadisticas.AtkCounts();
@@ -314,25 +314,27 @@
     var k1Varios = F("Varios");
 
     int totalK1Principal = k1Atq.Total + k1Tl.Total + k1Td.Total + k1Varios.Total + k12da.Total;
+    int totalK1DPYPCon2da = k1Atq.DP + k1Atq.P + k1Tl.DP + k1Tl.P + k1Td.DP + k1Td.P + k1Varios.DP + k1Varios.P + k12da.DP + k12da.P;
+    int totalK1DPYPSin2da = k1Atq.DP + k1Atq.P + k1Tl.DP + k1Tl.P + k1Td.DP + k1Td.P + k1Varios.DP + k1Varios.P;
+    int totalK1DPYP2da = k12da.DP + k12da.P;
+    int totalk1DNCon2da = k1Atq.DN + k1Tl.DN + k1Td.DN + k1Varios.DN + k12da.DN;
+    int totalk1DNSin2da = k1Atq.DN + k1Tl.DN + k1Td.DN + k1Varios.DN;
+    int totalk1DN2da = k12da.DN;
     int totalK1De2da = k12da.Total;
     int totalK1Sin2da = Math.Max(0, totalK1Principal - totalK1De2da);
 
-    decimal SafeDiv(int a, int b) => b == 0 ? 0m : (decimal)a / b;
+    decimal SafeDiv(int dpyp, int dn, int total)
+    {
+        if (total == 0) return 0m;
+        return (decimal)(dpyp - dn) / total;
+    }
 
-    decimal efectK1Principal = SafeDiv(
-        (k1Atq.DP + k1Atq.P + k1Tl.DP + k1Tl.P + k1Td.DP + k1Td.P + k1Varios.DP + k1Varios.P + k12da.DP + k12da.P),
-        totalK1Principal);
-
-    decimal efectK1Sin2da = SafeDiv(
-        (k1Atq.DP + k1Atq.P + k1Tl.DP + k1Tl.P + k1Td.DP + k1Td.P + k1Varios.DP + k1Varios.P),
-        totalK1Sin2da);
-
-    decimal efectK1De2da = SafeDiv(
-        (k12da.DP + k12da.P),
-        totalK1De2da);
+    decimal eficK1Principal = SafeDiv(totalK1DPYPCon2da, totalk1DNCon2da, totalK1Principal);
+    decimal eficK1Sin2da = SafeDiv(totalK1DPYPSin2da,totalk1DNSin2da,totalK1Sin2da);
+    decimal eficK1De2da = SafeDiv(totalK1DPYP2da,totalk1DN2da,totalK1De2da);
 
     int totalK2Real = (Model.K2?.PuntosJugados.Total > 0) ? Model.K2.PuntosJugados.Total : Model.TotalK2;
-    decimal efectK2Real = (Model.K2?.PuntosJugados.Total > 0) ? Model.K2.PuntosJugados.Efect : Model.EfectividadK2;
+    decimal eficK2Real = (Model.K2?.PuntosJugados.Total > 0) ? Model.K2.PuntosJugados.Efic : Model.EficienciaK2;
 }
 
 <p class="text-muted small">Claves detectadas: @keys</p>
@@ -348,36 +350,36 @@
                     <tr>
                         <th style="width:55%;">Métrica</th>
                         <th class="text-end" style="width:15%;">Cant.</th>
-                        <th class="text-end" style="width:15%;">Efect.</th>
+                        <th class="text-end" style="width:15%;">Efic</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
                         <td>K1 (principal: recepción + 2da)</td>
                         <td class="text-end fw-semibold">@totalK1Principal</td>
-                        <td class="text-end fw-semibold @Semaforo(efectK1Principal)">@Pct(efectK1Principal)</td>
+                        <td class="text-end fw-semibold @Semaforo(eficK1Principal)">@Pct(eficK1Principal)</td>
                     </tr>
                     <tr>
                         <td>K1 sin pelotas de 2da</td>
                         <td class="text-end fw-semibold">@totalK1Sin2da</td>
-                        <td class="text-end fw-semibold @Semaforo(efectK1Sin2da)">@Pct(efectK1Sin2da)</td>
+                        <td class="text-end fw-semibold @Semaforo(eficK1Sin2da)">@Pct(eficK1Sin2da)</td>
                     </tr>
                     <tr>
                         <td>K1 solo de 2da</td>
                         <td class="text-end fw-semibold">@totalK1De2da</td>
-                        <td class="text-end fw-semibold @Semaforo(efectK1De2da)">@Pct(efectK1De2da)</td>
+                        <td class="text-end fw-semibold @Semaforo(eficK1De2da)">@Pct(eficK1De2da)</td>
                     </tr>
                     <tr>
                         <td>Total K2</td>
                         <td class="text-end fw-semibold">@totalK2Real</td>
-                        <td class="text-end fw-semibold @Semaforo(efectK2Real)">@Pct(efectK2Real)</td>
+                        <td class="text-end fw-semibold @Semaforo(eficK2Real)">@Pct(eficK2Real)</td>
                     </tr>
 
                     <tr><td>Cantidad #</td><td class="text-end">@Model.Totales.DP</td><td class="text-end text-muted">@Pct(Model.Totales.PctDP)</td></tr>
                     <tr><td>Cantidad +</td><td class="text-end">@Model.Totales.P</td><td class="text-end text-muted">@Pct(Model.Totales.PctP)</td></tr>
                     <tr><td>Cantidad −</td><td class="text-end">@Model.Totales.N</td><td class="text-end text-muted">@Pct(Model.Totales.PctN)</td></tr>
-                    <tr><td>Cantidad =</td><td class="text-end">@Model.Totales.E</td><td class="text-end text-muted">@Pct(Model.Totales.PctE)</td></tr>
-                    <tr><td>Varios</td><td class="text-end">@Model.VariosCantidad</td><td class="text-end text-muted">@Pct(Model.VariosEfectividad)</td></tr>
+                    <tr><td>Cantidad =</td><td class="text-end">@Model.Totales.DN</td><td class="text-end text-muted">@Pct(Model.Totales.PctDN)</td></tr>
+                    <tr><td>Varios</td><td class="text-end">@Model.VariosCantidad</td><td class="text-end text-muted">@Pct(Model.VariosEficiencia)</td></tr>
                 </tbody>
             </table>
         </div>
@@ -582,7 +584,7 @@
                     <tr>
                         <th class="text-start">Acción</th>
                         <th>%T <span class="text-muted small">(por lado)</span></th>
-                        <th>Efect</th>
+                        <th>Efic</th>
                         <th>%V</th>  
                         <th>%E</th>   
                         <th>%#</th>
@@ -607,15 +609,15 @@
                         decimal fracEntreLinea = totalAccion == 0 ? 0m : (decimal)e / totalAccion;
 
 
-                        <tr class="@Semaforo(c.Efect)">
+                        <tr class="@Semaforo(c.Efic)">
                             <td class="text-start">@f.Accion</td>
 
                             @* %T (por lado) — dejá lo que ya tenías, pongo un ejemplo genérico *@
                             <td>@Pct(Math.Round(f.PctT, 2))</td>
 
-                            @* Efectividad global (# + +) *@
-                            <td class="text-end fw-semibold @Semaforo(c.Efect)">
-                                @Pct(c.Efect)
+                            @* Eficiencia global (# + +) *@
+                            <td class="text-end fw-semibold @Semaforo(c.Efic)">
+                                @Pct(c.Efic)
                             </td>
 
                             @* NUEVO: % por Varilla *@
@@ -632,7 +634,7 @@
                             <td>@Pct(c.PctDP)</td>
                             <td>@Pct(c.PctP)</td>
                             <td>@Pct(c.PctN)</td>
-                            <td>@Pct(c.PctE)</td>
+                            <td>@Pct(c.PctDN)</td>
 
                             <td>@c.Total</td>
                         </tr>
@@ -660,7 +662,7 @@
                             <tr>
                                 <th class="text-start">Acción</th>
                                 <th>%T <span class="text-muted small">(por lado)</span></th>
-                                <th>Efect</th>
+                                <th>Efic</th>
                                 <th>%#</th>
                                 <th>%+</th>
                                 <th>%-</th>
@@ -672,14 +674,14 @@
                             @foreach (var f in filas2daOrden)
                             {
                                 var c = f.C;
-                                <tr class="@Semaforo(c.Efect)">
+                                <tr class="@Semaforo(c.Efic)">
                                     <td class="text-start">@f.Accion</td>
                                     <td>@Pct(Math.Round(f.PctK1, 2))</td>
-                                    <td class="text-end fw-semibold @Semaforo(c.Efect)">@Pct(c.Efect)</td>
+                                    <td class="text-end fw-semibold @Semaforo(c.Efic)">@Pct(c.Efic)</td>
                                     <td>@Pct(c.PctDP)</td>
                                     <td>@Pct(c.PctP)</td>
                                     <td>@Pct(c.PctN)</td>
-                                    <td>@Pct(c.PctE)</td>
+                                    <td>@Pct(c.PctDN)</td>
                                     <td>@c.Total</td>
                                 </tr>
                             }
@@ -693,7 +695,7 @@
                                 <td>@Pct((decimal)filas2da.Sum(x => x.C.DP) / Math.Max(1, filas2da.Sum(x => x.C.Total)))</td>
                                 <td>@Pct((decimal)filas2da.Sum(x => x.C.P) / Math.Max(1, filas2da.Sum(x => x.C.Total)))</td>
                                 <td>@Pct((decimal)filas2da.Sum(x => x.C.N) / Math.Max(1, filas2da.Sum(x => x.C.Total)))</td>
-                                <td>@Pct((decimal)filas2da.Sum(x => x.C.E) / Math.Max(1, filas2da.Sum(x => x.C.Total)))</td>
+                                <td>@Pct((decimal)filas2da.Sum(x => x.C.DN) / Math.Max(1, filas2da.Sum(x => x.C.Total)))</td>
                                 <td>@filas2da.Sum(x => x.C.Total)</td>
                             </tr>
                         </tbody>

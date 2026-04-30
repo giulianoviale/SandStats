@@ -144,7 +144,7 @@ namespace SandStats.Pages.Estadisticas
             // ↓ sincronizar con subreporte de ataque:
             RepJ1.Ataque.K2 = RepJ1.K2;
             RepJ1.Ataque.TotalK2 = RepJ1.K2.PuntosJugados.Total;
-            RepJ1.Ataque.EfectividadK2 = RepJ1.K2.PuntosJugados.Efect;
+            RepJ1.Ataque.EficienciaK2 = RepJ1.K2.PuntosJugados.Efic;
 
             // J2
             RepJ2.K2 = await CargarK2JugadorAsync(RepJ2.Jugador.Id, pid);
@@ -155,7 +155,7 @@ namespace SandStats.Pages.Estadisticas
 
             RepJ2.Ataque.K2 = RepJ2.K2;
             RepJ2.Ataque.TotalK2 = RepJ2.K2.PuntosJugados.Total;
-            RepJ2.Ataque.EfectividadK2 = RepJ2.K2.PuntosJugados.Efect;
+            RepJ2.Ataque.EficienciaK2 = RepJ2.K2.PuntosJugados.Efic;
 
             return Page();
         }
@@ -265,7 +265,7 @@ namespace SandStats.Pages.Estadisticas
                     case ResultadoRecepcion.doblePositivo: c.DP += r.C; break;
                     case ResultadoRecepcion.positivo: c.P += r.C; break;
                     case ResultadoRecepcion.negativo: c.N += r.C; break;
-                    case ResultadoRecepcion.dobleNegativo: c.E += r.C; break;
+                    case ResultadoRecepcion.dobleNegativo: c.DN += r.C; break;
                 }
             }
             return dict;
@@ -299,7 +299,7 @@ namespace SandStats.Pages.Estadisticas
                         case ResultadoRecepcion.doblePositivo: c.DP += r.C; break;
                         case ResultadoRecepcion.positivo: c.P += r.C; break;
                         case ResultadoRecepcion.negativo: c.N += r.C; break;
-                        case ResultadoRecepcion.dobleNegativo: c.E += r.C; break;
+                        case ResultadoRecepcion.dobleNegativo: c.DN += r.C; break;
                     }
                 }
 
@@ -352,12 +352,12 @@ namespace SandStats.Pages.Estadisticas
             var atq2da = FamOrEmpty("Atq2da");
             var varios = FamOrEmpty("Varios");
             int variosCount = varios.Total;
-            decimal variosEfect = varios.Efect;
+            decimal variosEfic = varios.Efic;
             var k2Counts = new AtkCounts(
                 atq2da.DP + varios.DP,
                 atq2da.P + varios.P,
                 atq2da.N + varios.N,
-                atq2da.E + varios.E
+                atq2da.DN + varios.DN
             );
             var k2Total = k2Counts.Total;
 
@@ -365,16 +365,18 @@ namespace SandStats.Pages.Estadisticas
 
             int k1DP = countsAll.DP - k2Counts.DP;
             int k1P = countsAll.P - k2Counts.P;
+            int k1DN = countsAll.DN - k2Counts.DN;
 
-            decimal efectK1Principal = k1Total > 0 ? (k1DP + k1P) / (decimal)k1Total : 0m;
-            decimal efectK1De2da = atq2da.Total > 0 ? (atq2da.DP + atq2da.P) / (decimal)atq2da.Total : 0m;
+            decimal eficK1Principal = k1Total > 0 ? (k1DP + k1P- k1DN) / (decimal)k1Total : 0m;
+            decimal eficK1De2da = atq2da.Total > 0 ? (atq2da.DP + atq2da.P - atq2da.DN) / (decimal)atq2da.Total : 0m;
 
             int k1Sin2daTotal = Math.Max(0, k1Total - atq2da.Total);
             int sin2daDP = k1DP - atq2da.DP;
             int sin2daP = k1P - atq2da.P;
-            decimal efectK1Sin2da = k1Sin2daTotal > 0 ? (sin2daDP + sin2daP) / (decimal)k1Sin2daTotal : 0m;
+            int sin2daDN = k1DN - atq2da.DN;
+            decimal eficK1Sin2da = k1Sin2daTotal > 0 ? (sin2daDP + sin2daP - sin2daDN) / (decimal)k1Sin2daTotal : 0m;
 
-            decimal efectAtk = countsAll.Efect;
+            decimal eficAtk = countsAll.Efic;
             decimal pctK1 = totalJugador > 0 ? k1Total / (decimal)totalJugador : 0m;
             decimal pctNoK1 = 1m - pctK1;
 
@@ -396,18 +398,18 @@ namespace SandStats.Pages.Estadisticas
                 TotalK1De2da = atq2da.Total,
                 PctK1 = pctK1,
                 PctNoK1 = pctNoK1,
-                EfectividadK1 = efectK1Principal,
-                EfectividadAtaque = efectAtk,
+                EficienciaK1 = eficK1Principal,
+                EficienciaAtaque = eficAtk,
 
-                EfectividadK1Principal = efectK1Principal,
-                EfectividadK1Sin2da = efectK1Sin2da,
-                EfectividadK1De2da = efectK1De2da,
+                EficienciaK1Principal = eficK1Principal,
+                EficienciaK1Sin2da = eficK1Sin2da,
+                EficienciaK1De2da = eficK1De2da,
 
                 TotalK2 = k2Total,
-                EfectividadK2 = k2Counts.Efect,
+                EficienciaK2 = k2Counts.Efic,
 
                 VariosCantidad = variosCount,
-                VariosEfectividad = variosEfect,
+                VariosEficiencia = variosEfic,
 
                 Total2da = total2da,
                 A1_2da = a1_2da,
@@ -437,7 +439,7 @@ namespace SandStats.Pages.Estadisticas
                              .Select(g => new { g.Key, S = g.Sum(x => x.Cantidad) })
                              .ToListAsync();
 
-            int dp = 0, p = 0, n = 0, e0 = 0;
+            int dp = 0, p = 0, n = 0, dn = 0;
 
             foreach (var r in raw)
             {
@@ -450,10 +452,10 @@ namespace SandStats.Pages.Estadisticas
                     case ResultadoAtaque.NegativoV:
                     case ResultadoAtaque.NegativoE: n += r.S; break;
                     case ResultadoAtaque.DobleNegativoV:
-                    case ResultadoAtaque.DobleNegativoE: e0 += r.S; break;
+                    case ResultadoAtaque.DobleNegativoE: dn += r.S; break;
                 }
             }
-            return new AtkCounts(dp, p, n, e0);
+            return new AtkCounts(dp, p, n, dn);
         }
 
         private static async Task<Dictionary<TipoAcciones, AtkCounts>> ContarPorAccion(IQueryable<EstadisticaAtaque> q)
@@ -477,7 +479,7 @@ namespace SandStats.Pages.Estadisticas
                     case ResultadoAtaque.NegativoV:
                     case ResultadoAtaque.NegativoE: c.N += r.S; break;
                     case ResultadoAtaque.DobleNegativoV:
-                    case ResultadoAtaque.DobleNegativoE: c.E += r.S; break;
+                    case ResultadoAtaque.DobleNegativoE: c.DN += r.S; break;
                 }
             }
             return dict;
@@ -561,7 +563,7 @@ namespace SandStats.Pages.Estadisticas
                 dst.DP += kv.Value.DP;
                 dst.P += kv.Value.P;
                 dst.N += kv.Value.N;
-                dst.E += kv.Value.E;
+                dst.DN += kv.Value.DN;
             }
 
             // Eliminamos los grupos sin datos y devolvemos
@@ -598,7 +600,7 @@ namespace SandStats.Pages.Estadisticas
                 dst.DP += kv.Value.DP;
                 dst.P += kv.Value.P;
                 dst.N += kv.Value.N;
-                dst.E += kv.Value.E;
+                dst.DN += kv.Value.DN;
             }
 
             return result.Where(x => x.Value.Total > 0)
@@ -659,7 +661,7 @@ namespace SandStats.Pages.Estadisticas
                             if (cuentaParaVE) { varT += r.S; varillaPorAccion[r.Accion] += r.S; }
                             break;
                         case ResultadoAtaque.DobleNegativoV:
-                            c.E += r.S; tot.E += r.S;
+                            c.DN += r.S; tot.DN += r.S;
                             if (cuentaParaVE) { varT += r.S; varillaPorAccion[r.Accion] += r.S; }
                             break;
 
@@ -676,7 +678,7 @@ namespace SandStats.Pages.Estadisticas
                             if (cuentaParaVE) { linT += r.S; entreLineaPorAccion[r.Accion] += r.S; }
                             break;
                         case ResultadoAtaque.DobleNegativoE:
-                            c.E += r.S; tot.E += r.S;
+                            c.DN += r.S; tot.DN += r.S;
                             if (cuentaParaVE) { linT += r.S; entreLineaPorAccion[r.Accion] += r.S; }
                             break;
                     }
@@ -922,18 +924,17 @@ namespace SandStats.Pages.Estadisticas
         public int DP { get; set; }
         public int P { get; set; }
         public int N { get; set; }
-        public int E { get; set; }
+        public int DN { get; set; }
 
-        public int Total => DP + P + N + E;
-        public decimal Efect => Total == 0 ? 0m : (DP + P) / (decimal)Total;
-
+        public int Total => DP + P + N + DN;
+        public decimal Efic => Total == 0 ? 0 : (DP + P - DN) / (decimal)Total;
         public decimal PctDP => Total == 0 ? 0m : DP / (decimal)Total;
         public decimal PctP => Total == 0 ? 0m : P / (decimal)Total;
         public decimal PctN => Total == 0 ? 0m : N / (decimal)Total;
-        public decimal PctE => Total == 0 ? 0m : E / (decimal)Total;
+        public decimal PctDN => Total == 0 ? 0m : DN / (decimal)Total;
 
         public RecCounts() { }
-        public RecCounts(int dp, int p, int n, int e) { DP = dp; P = p; N = n; E = e; }
+        public RecCounts(int dp, int p, int n, int dn) { DP = dp; P = p; N = n; DN = dn; }
     }
 
     public class RecSector
@@ -968,18 +969,18 @@ namespace SandStats.Pages.Estadisticas
         public int DP { get; set; }
         public int P { get; set; }
         public int N { get; set; }
-        public int E { get; set; }
+        public int DN { get; set; }
 
-        public int Total => DP + P + N + E;
-        public decimal Efect => Total == 0 ? 0m : (DP + P) / (decimal)Total;
+        public int Total => DP + P + N + DN;
+        public decimal Efic=> Total == 0 ? 0m : (DP + P-DN) / (decimal)Total;
 
         public decimal PctDP => Total == 0 ? 0m : DP / (decimal)Total;
         public decimal PctP => Total == 0 ? 0m : P / (decimal)Total;
         public decimal PctN => Total == 0 ? 0m : N / (decimal)Total;
-        public decimal PctE => Total == 0 ? 0m : E / (decimal)Total;
+        public decimal PctDN => Total == 0 ? 0m : DN / (decimal)Total;
 
         public AtkCounts() { }
-        public AtkCounts(int dp, int p, int n, int e) { DP = dp; P = p; N = n; E = e; }
+        public AtkCounts(int dp, int p, int n, int dn) { DP = dp; P = p; N = n; DN = dn; }
     }
 
     public class AtaqueAccion
@@ -1026,7 +1027,7 @@ namespace SandStats.Pages.Estadisticas
         public Dictionary<string, AtkCounts> Familias { get; set; } = new();
         public List<AtaqueLado> Lados { get; set; } = new();
         public int VariosCantidad { get; set; }
-        public decimal VariosEfectividad { get; set; }
+        public decimal VariosEficiencia { get; set; }
         public int Rol { get; set; } = 2;
 
         public int TotalK1 { get; set; }
@@ -1038,14 +1039,14 @@ namespace SandStats.Pages.Estadisticas
         public K2Report? K2 { get; set; }
 
         public int TotalK2 { get; set; }
-        public decimal EfectividadK2 { get; set; }
+        public decimal EficienciaK2 { get; set; }
 
-        public decimal EfectividadK1Principal { get; set; }
-        public decimal EfectividadK1Sin2da { get; set; }
-        public decimal EfectividadK1De2da { get; set; }
+        public decimal EficienciaK1Principal { get; set; }
+        public decimal EficienciaK1Sin2da { get; set; }
+        public decimal EficienciaK1De2da { get; set; }
 
-        public decimal EfectividadK1 { get; set; }
-        public decimal EfectividadAtaque { get; set; }
+        public decimal EficienciaK1 { get; set; }
+        public decimal EficienciaAtaque { get; set; }
         public AtaqueResumen General
         {
             get => new AtaqueResumen
@@ -1095,7 +1096,7 @@ namespace SandStats.Pages.Estadisticas
 
         public int Total => DP + P + N + DN;
 
-        public decimal Efect => Total > 0 ? (DP + P) / (decimal)Total : 0m;
+        public decimal Efic=> Total > 0 ? (DP + P - DN) / (decimal)Total : 0m;
         public decimal PctDP => Total > 0 ? DP / (decimal)Total : 0m;
         public decimal PctP => Total > 0 ? P / (decimal)Total : 0m;
         public decimal PctN => Total > 0 ? N / (decimal)Total : 0m;
@@ -1120,7 +1121,7 @@ namespace SandStats.Pages.Estadisticas
                 ? Partidos.Sum(p => p.SetsGanadosDupla1 + p.SetsGanadosDupla2)
                 : (Partido != null ? (Partido.SetsGanadosDupla1 + Partido.SetsGanadosDupla2) : 0);
 
-        public decimal EfectHeadline => PuntosJugados.Efect;
+        public decimal EfictHeadline => PuntosJugados.Efic;
         public int ErroresVarios { get; set; }
         public int Agregados { get; set; }
     }

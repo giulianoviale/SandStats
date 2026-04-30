@@ -10,9 +10,10 @@
     // % global del bloque (familia) sobre todos los ataques
     var pctGlobal = (Model.TotalAtaques <= 0) ? 0m : (decimal)Model.TotalFamilia / Model.TotalAtaques;
 
+
     // Helpers por acción
-    Func<AtkCounts, string> EfectTxt = c => c.Total == 0 ? "0%" : Pct((c.DP + c.P) / (decimal)c.Total);
-    Func<AtkCounts, string> Desglose = c => $"{c.DP}#/{c.P}+/{c.N}−/{c.E}=";
+    Func<AtkCounts, string> EficTxt = c => c.Total == 0 ? "0%" : Pct((c.DP + c.P- c.DN) / (decimal)c.Total);
+    Func<AtkCounts, string> Desglose = c => $"{c.DP}#/{c.P}+/{c.N}−/{c.DN}=";
     Func<AtkCounts, string> PctSobreFamilia = c => Model.TotalFamilia == 0 ? "0%" : Pct(c.Total / (decimal)Model.TotalFamilia);
 
     // Geometría (coincide con lo que ya aprobaste visualmente)
@@ -65,7 +66,7 @@
         var ry = y0 + a.Row * cellH;
         <rect x="@rx" y="@ry" width="@cellW" height="@cellH" fill="@Fill(a.C.Total > 0)" stroke="#cfcfcf" />
         <g transform="translate(@rx,@ry)">
-            <text x="8" y="16" font-size="11" fill="#666">Efec @EfectTxt(a.C) - Cant @a.C.Total</text>
+            <text x="8" y="16" font-size="11" fill="#666">Efic @EficTxt(a.C) - Cant @a.C.Total</text>
             <text x="8" y="28" font-size="10" fill="#666">@Desglose(a.C)</text>
             <text x="8" y="48" font-size="12" font-weight="700" fill="#333">@a.Nombre</text>
             <text x="@(cellW - 8)" y="48" font-size="14" font-weight="800" fill="#d00000" text-anchor="end">@PctSobreFamilia(a.C)</text>

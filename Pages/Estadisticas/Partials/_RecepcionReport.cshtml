@@ -24,7 +24,7 @@
 @:<thead>
 @:<tr>
 @:<th style="min-width:120px;">Tipo</th>
-@:<th class="text-center">Efect</th>
+@:<th class="text-center">Efic</th>
 @:<th class="text-center">%#</th>
 @:<th class="text-center">%+</th>
 @:<th class="text-center">%-</th>
@@ -47,11 +47,11 @@
         .Select(x => (x.Label, C: dict != null && dict.ContainsKey(x.K) ? dict[x.K] : new SandStats.Pages.Estadisticas.RecCounts()))
         // antes:
         // .OrderBy(x => x.C.Efect) // debilidades primero
-        .OrderBy(x => x.C.Efect)          // peor Efect primero
+        .OrderBy(x => x.C.Efic)          // por efic primero
         .ThenBy(x => x.C.PctDP)           // menor %# (doble positivo) peor -> arriba
         .ThenBy(x => x.C.PctP)            // menor %+ peor -> arriba
         .ThenByDescending(x => x.C.PctN)  // mayor %- peor -> arriba
-        .ThenByDescending(x => x.C.PctE)  // mayor %= peor -> arriba
+        .ThenByDescending(x => x.C.PctDN)  // mayor %= peor -> arriba
         .ThenBy(x => x.Label)    
         .ToList();
 
@@ -60,16 +60,16 @@
             var c = f.C;
 @:<tr>
 @:<td>@f.Label</td>
-@:<td class="text-end fw-semibold @EfClass(c.Efect)">@Pct(c.Efect)</td>
+@:<td class="text-end fw-semibold @EfClass(c.Efic)">@Pct(c.Efic)</td>
 @:<td class="text-end">@Pct(c.PctDP)</td>
 @:<td class="text-end">@Pct(c.PctP)</td>
 @:<td class="text-end">@Pct(c.PctN)</td>
-@:<td class="text-end">@Pct(c.PctE)</td>
+@:<td class="text-end">@Pct(c.PctDN)</td>
 @:<td class="text-end fw-semibold">@c.Total</td>
 @:<td class="text-end">@c.DP</td>
 @:<td class="text-end">@c.P</td>
 @:<td class="text-end">@c.N</td>
-@:<td class="text-end">@c.E</td>
+@:<td class="text-end">@c.DN</td>
 @:</tr>
         }
 @:</tbody>
@@ -131,14 +131,14 @@ Action<List<SandStats.Pages.Estadisticas.RecSector>> RenderSectoresSimple = list
             <td class="text-end fw-semibold">@totalJugador</td>
           </tr>
           <tr>
-            <th>Efectividad Rec Total</th>
-            <td class="text-end fw-semibold ">@Pct(tot.Efect)</td>
+            <th>Eficiencia Rec Total</th>
+            <td class="text-end fw-semibold ">@Pct(tot.Efic)</td>
           </tr>
           
           <tr><th>Cantidad #</th><td class="text-end">@tot.DP</td></tr>
           <tr><th>Cantidad +</th><td class="text-end">@tot.P</td></tr>
           <tr><th>Cantidad -</th><td class="text-end">@tot.N</td></tr>
-          <tr><th>Cantidad =</th><td class="text-end">@tot.E</td></tr>
+          <tr><th>Cantidad =</th><td class="text-end">@tot.DN</td></tr>
         </tbody>
       </table>
     </div>
@@ -146,7 +146,7 @@ Action<List<SandStats.Pages.Estadisticas.RecSector>> RenderSectoresSimple = list
     <!-- Tabla por tipo (suma flot+pot) -->
     <div class="d-flex justify-content-between align-items-center mb-2">
       <div class="fw-semibold">Suma Flotados + Potencia (por Tipo de Recepción)</div>
-      <span class="text-muted">Efect = (# + +) / Total</span>
+      <span class="text-muted">Efic = (DP + P - DN) / Total</span>
     </div>
     @{ RenderTablaPorTipoOrdenNuevo(g.PorTipo); }
 

@@ -16,7 +16,7 @@
             ("Interno", dict[TipoRecepcion.Interno]),
             ("Cuerpo",  dict[TipoRecepcion.Cuerpo]),
             ("Externo", dict[TipoRecepcion.Externo]),
-        }.OrderBy(x => x.Item2.Efect); // debilidades primero
+        }.OrderBy(x => x.Item2.Efic); // debilidades primero
 
     // Tabla por tipo (suma flot+pot) — orden ASC por efect
     Action<Dictionary<TipoRecepcion, RecCounts>> RenderTablaPorTipo = dict =>
@@ -27,23 +27,23 @@
             (Label:"Cuerpo",   K:TipoRecepcion.Cuerpo),
             (Label:"Externo",  K:TipoRecepcion.Externo),
         }.Select(x => (x.Label, C: dict[x.K]))
-         .OrderBy(x => x.C.Efect);
+         .OrderBy(x => x.C.Efic);
 
 @:<tbody>
         foreach (var f in filas)
         {
 @:<tr>
 @:<td>@f.Label</td>
-@:<td class="text-end fw-semibold @EfClass(f.C.Efect)">@Pct(f.C.Efect)</td>
+@:<td class="text-end fw-semibold @EfClass(f.C.Efic)">@Pct(f.C.Efic)</td>
 @:<td class="text-end">@f.C.DP</td>
 @:<td class="text-end">@f.C.P</td>
 @:<td class="text-end">@f.C.N</td>
-@:<td class="text-end">@f.C.E</td>
+@:<td class="text-end">@f.C.DN</td>
 @:<td class="text-end fw-semibold">@f.C.Total</td>
 @:<td class="text-end">@Pct(f.C.PctDP)</td>
 @:<td class="text-end">@Pct(f.C.PctP)</td>
 @:<td class="text-end">@Pct(f.C.PctN)</td>
-@:<td class="text-end">@Pct(f.C.PctE)</td>
+@:<td class="text-end">@Pct(f.C.PctDN)</td>
 @:</tr>
         }
 @:</tbody>
@@ -73,16 +73,16 @@
         {
 @:<tr>
 @:<td>@f.Accion</td>
-@:<td class="text-end fw-semibold @EfClass(f.C.Efect)">@Pct(f.C.Efect)</td>
+@:<td class="text-end fw-semibold @EfClass(f.C.Efic)">@Pct(f.C.Efic)</td>
 @:<td class="text-end col-hash">@f.C.DP</td>
 @:<td class="text-end col-plus">@f.C.P</td>
 @:<td class="text-end col-minus">@f.C.N</td>
-@:<td class="text-end col-eq">@f.C.E</td>
+@:<td class="text-end col-eq">@f.C.DN</td>
 @:<td class="text-end fw-semibold">@f.C.Total</td>
 @:<td class="text-end">@Pct(f.C.PctDP)</td>
 @:<td class="text-end">@Pct(f.C.PctP)</td>
 @:<td class="text-end">@Pct(f.C.PctN)</td>
-@:<td class="text-end">@Pct(f.C.PctE)</td>
+@:<td class="text-end">@Pct(f.C.PctDN)</td>
 @:</tr>
         }
 @:</tbody>
