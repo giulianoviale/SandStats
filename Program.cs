@@ -4,11 +4,9 @@ using SandStats.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// === Detect environment & select DB ===
 var env = builder.Environment;
 var conn = builder.Configuration.GetConnectionString("DefaultConnection");
 
-// Detect PostgreSQL on Render
 if (env.IsProduction())
 {
     var dbUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
@@ -16,7 +14,6 @@ if (env.IsProduction())
         conn = ConvertPostgresUrlToConnectionString(dbUrl);
 }
 
-// === Register DbContext ===
 builder.Services.AddDbContext<ApplicationDbContext>(opt =>
 {
     if (conn.Contains("Host="))
