@@ -5,7 +5,7 @@
 namespace SandStats.Migrations
 {
     /// <inheritdoc />
-    public partial class InitProdDB : Migration
+    public partial class FixSnapshot : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

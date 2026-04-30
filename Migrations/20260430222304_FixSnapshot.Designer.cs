@@ -11,8 +11,8 @@ using SandStats.Data;
 namespace SandStats.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260430220537_InitProdDB")]
-    partial class InitProdDB
+    [Migration("20260430222304_FixSnapshot")]
+    partial class FixSnapshot
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
