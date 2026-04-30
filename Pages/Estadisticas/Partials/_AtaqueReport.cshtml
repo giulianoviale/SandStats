@@ -263,32 +263,16 @@
                 .Where(a => a.Accion.ToString().StartsWith(prefijo, StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
-            // Si no hay elementos, devolvemos un AtkCounts vacío (sin tocar propiedades de solo lectura)
             if (items.Count == 0)
                 return new SandStats.Pages.Estadisticas.AtkCounts();
 
-            // Calculamos los totales sumando los valores numéricos
             int dp = items.Sum(x => x.C?.DP ?? 0);
             int p = items.Sum(x => x.C?.P ?? 0);
             int n = items.Sum(x => x.C?.N ?? 0);
-            int e = items.Sum(x => x.C?.DN ?? 0);
+            int dn = items.Sum(x => x.C?.DN ?? 0);
 
-            // Creamos un nuevo objeto del tipo AtkCounts usando reflexión para forzar los valores calculados
-            var temp = new SandStats.Pages.Estadisticas.AtkCounts();
-            typeof(SandStats.Pages.Estadisticas.AtkCounts)
-                .GetField("<DP>k__BackingField", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
-                ?.SetValue(temp, dp);
-            typeof(SandStats.Pages.Estadisticas.AtkCounts)
-                .GetField("<P>k__BackingField", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
-                ?.SetValue(temp, p);
-            typeof(SandStats.Pages.Estadisticas.AtkCounts)
-                .GetField("<N>k__BackingField", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
-                ?.SetValue(temp, n);
-            typeof(SandStats.Pages.Estadisticas.AtkCounts)
-                .GetField("<E>k__BackingField", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
-                ?.SetValue(temp, e);
-
-            return temp;
+            // 🚀 SIN reflection — usamos el constructor
+            return new SandStats.Pages.Estadisticas.AtkCounts(dp, p, n, dn);
         }
 
 
@@ -337,7 +321,6 @@
     decimal eficK2Real = (Model.K2?.PuntosJugados.Total > 0) ? Model.K2.PuntosJugados.Efic : Model.EficienciaK2;
 }
 
-<p class="text-muted small">Claves detectadas: @keys</p>
 
 
 
