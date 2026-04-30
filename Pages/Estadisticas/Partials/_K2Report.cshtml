@@ -29,13 +29,14 @@
     int sumP = filas.Sum(r => r.C.P);
     int sumN = filas.Sum(r => r.C.N);
     int sumDN = filas.Sum(r => r.C.DN);
-    decimal efectTotal = totalAll == 0 ? 0m : (sumDP + sumP) / (decimal)totalAll;
+   
+    decimal eficTotal = totalAll == 0 ? 0m : (sumDP + sumP- sumDN) / (decimal)totalAll;
 }
 
 <div class="card mb-3">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <div class="fw-semibold">Efectividad K2</div>
-        <div class="badge rounded-pill text-bg-warning fs-6">@Pct(Model.EfectHeadline)</div>
+        <div class="fw-semibold">Eficiencia K2</div>
+        <div class="badge rounded-pill text-bg-warning fs-6">@Pct(Model.EfictHeadline)</div>
     </div>
 
     <div class="card-body p-2">
@@ -45,7 +46,7 @@
                     <tr>
                         <th class="text-start">Acción</th>
                         <th>%T <span class="text-muted small">(K2)</span></th>
-                        <th>Efect</th>
+                        <th>Efic</th>
                         <th>%#</th>
                         <th>%+</th>
                         <th>%-</th>
@@ -66,7 +67,7 @@
                         <tr>
                             <td class="text-start fw-semibold">@r.Nombre</td>
                             <td>@Pct(pctT)</td>
-                            <td class="text-end fw-semibold">@Pct(c.Efect)</td>
+                            <td class="text-end fw-semibold">@Pct(c.Efic)</td>
 
                             <td>@Pct(c.PctDP)</td>
                             <td>@Pct(c.PctP)</td>
