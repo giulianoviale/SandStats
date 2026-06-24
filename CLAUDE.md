@@ -74,3 +74,10 @@ All statistic entities support `ScopeEstadistica` (PartidoCompleto vs Cierre) to
 ## Migrations
 
 Migrations are in `Migrations/`. New schema changes require a new migration — avoid editing existing ones that have been applied to production. The app does **not** auto-run migrations on startup; run `dotnet ef database update` manually or via deployment pipeline.
+
+## Convenciones de trabajo
+
+- **Rama de trabajo:** Siempre trabajar sobre `feature/carga-en-vivo`. Nunca sobre `dev` ni `main`/`master`.
+- **Verificación de cambios:** Ejecutar `dotnet build SandStats.csproj` antes de dar cualquier cambio por terminado (no existen tests automatizados).
+- **Aislamiento del módulo de carga en vivo:** Es un contexto independiente. Comparte únicamente las entidades de master data (`Jugador`, `Dupla`) con el sistema existente. No acoplarlo al resto de la aplicación.
+- **Convenciones del proyecto:** Código y nombres de dominio en español, patrón Razor Pages (`PageModel` + `.cshtml`), migraciones EF Core manuales (`dotnet ef migrations add` + `dotnet ef database update`).
