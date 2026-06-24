@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using SandStats.Models;
 using SandStats.Models.SandStats.Models;
+using SandStats.Models.EnVivo;
 
 namespace SandStats.Data
 {
@@ -68,6 +69,15 @@ namespace SandStats.Data
         public DbSet<EstadisticaK2> EstadisticaK2 { get; set; }
         public DbSet<VideoLinksJugadorPartido> VideoLinksJugadorPartido { get; set; } = default!;
         public DbSet<JugadorLinks> JugadorLinks { get; set; } = default!;
+
+        // --- EnVivo ---
+        public DbSet<PartidoEnVivo> PartidosEnVivo { get; set; }
+        public DbSet<SetEnVivo> SetsEnVivo { get; set; }
+        public DbSet<Rally> Rallies { get; set; }
+        public DbSet<Accion> Acciones { get; set; }
+        public DbSet<DetalleSaque> DetallesSaque { get; set; }
+        public DbSet<DetalleRecepcion> DetallesRecepcion { get; set; }
+        public DbSet<DetalleAtaque> DetallesAtaque { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -163,6 +173,93 @@ namespace SandStats.Data
                 .WithMany()
                 .HasForeignKey(v => v.JugadorId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // ── EnVivo ────────────────────────────────────────────────
+
+            // PartidoEnVivo → Duplas (Restrict)
+            modelBuilder.Entity<PartidoEnVivo>()
+                .HasOne(p => p.Dupla1)
+                .WithMany()
+                .HasForeignKey(p => p.Dupla1Id)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<PartidoEnVivo>()
+                .HasOne(p => p.Dupla2)
+                .WithMany()
+                .HasForeignKey(p => p.Dupla2Id)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // PartidoEnVivo → SetEnVivo (Cascade)
+            modelBuilder.Entity<SetEnVivo>()
+                .HasOne(s => s.PartidoEnVivo)
+                .WithMany(p => p.Sets)
+                .HasForeignKey(s => s.PartidoEnVivoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // SetEnVivo → SacadorInicialJugador (Restrict)
+            modelBuilder.Entity<SetEnVivo>()
+                .HasOne(s => s.SacadorInicialJugador)
+                .WithMany()
+                .HasForeignKey(s => s.SacadorInicialJugadorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // SetEnVivo → Rally (Cascade)
+            modelBuilder.Entity<Rally>()
+                .HasOne(r => r.SetEnVivo)
+                .WithMany(s => s.Rallies)
+                .HasForeignKey(r => r.SetEnVivoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Rally → DuplaGanadora (Restrict, nullable)
+            modelBuilder.Entity<Rally>()
+                .HasOne(r => r.DuplaGanadora)
+                .WithMany()
+                .HasForeignKey(r => r.DuplaGanadoraId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Rally → Accion (Cascade)
+            modelBuilder.Entity<Accion>()
+                .HasOne(a => a.Rally)
+                .WithMany(r => r.Acciones)
+                .HasForeignKey(a => a.RallyId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Accion → Jugador (Restrict)
+            modelBuilder.Entity<Accion>()
+                .HasOne(a => a.Jugador)
+                .WithMany()
+                .HasForeignKey(a => a.JugadorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Accion → DetalleSaque (1:1, Cascade)
+            modelBuilder.Entity<Accion>()
+                .HasOne(a => a.DetalleSaque)
+                .WithOne(d => d.Accion)
+                .HasForeignKey<DetalleSaque>(d => d.AccionId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<DetalleSaque>()
+                .HasIndex(d => d.AccionId)
+                .IsUnique();
+
+            // Accion → DetalleRecepcion (1:1, Cascade)
+            modelBuilder.Entity<Accion>()
+                .HasOne(a => a.DetalleRecepcion)
+                .WithOne(d => d.Accion)
+                .HasForeignKey<DetalleRecepcion>(d => d.AccionId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<DetalleRecepcion>()
+                .HasIndex(d => d.AccionId)
+                .IsUnique();
+
+            // Accion → DetalleAtaque (1:1, Cascade)
+            modelBuilder.Entity<Accion>()
+                .HasOne(a => a.DetalleAtaque)
+                .WithOne(d => d.Accion)
+                .HasForeignKey<DetalleAtaque>(d => d.AccionId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<DetalleAtaque>()
+                .HasIndex(d => d.AccionId)
+                .IsUnique();
         }
     }
 }
