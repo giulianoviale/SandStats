@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SandStats.Data;
 
@@ -10,9 +11,11 @@ using SandStats.Data;
 namespace SandStats.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260704224023_AjustesLogicaRally")]
+    partial class AjustesLogicaRally
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.10");
@@ -402,144 +405,6 @@ namespace SandStats.Migrations
                         .HasDatabaseName("UX_ModificadorCombinada");
 
                     b.ToTable("ModificadoresCombinadas");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            CalidadCargada = 5,
-                            CalidadDerivada = 1,
-                            FundamentoCargado = 1,
-                            FundamentoDerivado = 0
-                        },
-                        new
-                        {
-                            Id = 2,
-                            CalidadCargada = 4,
-                            CalidadDerivada = 1,
-                            FundamentoCargado = 1,
-                            FundamentoDerivado = 0
-                        },
-                        new
-                        {
-                            Id = 3,
-                            CalidadCargada = 3,
-                            CalidadDerivada = 3,
-                            FundamentoCargado = 1,
-                            FundamentoDerivado = 0
-                        },
-                        new
-                        {
-                            Id = 4,
-                            CalidadCargada = 2,
-                            CalidadDerivada = 2,
-                            FundamentoCargado = 1,
-                            FundamentoDerivado = 0
-                        },
-                        new
-                        {
-                            Id = 5,
-                            CalidadCargada = 1,
-                            CalidadDerivada = 4,
-                            FundamentoCargado = 1,
-                            FundamentoDerivado = 0
-                        },
-                        new
-                        {
-                            Id = 6,
-                            CalidadCargada = 0,
-                            CalidadDerivada = 5,
-                            FundamentoCargado = 1,
-                            FundamentoDerivado = 0
-                        },
-                        new
-                        {
-                            Id = 7,
-                            CalidadCargada = 5,
-                            CalidadDerivada = 2,
-                            FundamentoCargado = 3,
-                            FundamentoDerivado = 2
-                        },
-                        new
-                        {
-                            Id = 8,
-                            CalidadCargada = 4,
-                            CalidadDerivada = 1,
-                            FundamentoCargado = 3,
-                            FundamentoDerivado = 2
-                        },
-                        new
-                        {
-                            Id = 9,
-                            CalidadCargada = 2,
-                            CalidadDerivada = 3,
-                            FundamentoCargado = 3,
-                            FundamentoDerivado = 2
-                        },
-                        new
-                        {
-                            Id = 10,
-                            CalidadCargada = 1,
-                            CalidadDerivada = 4,
-                            FundamentoCargado = 3,
-                            FundamentoDerivado = 2
-                        },
-                        new
-                        {
-                            Id = 11,
-                            CalidadCargada = 0,
-                            CalidadDerivada = 5,
-                            FundamentoCargado = 3,
-                            FundamentoDerivado = 2
-                        },
-                        new
-                        {
-                            Id = 12,
-                            CalidadCargada = 5,
-                            CalidadDerivada = 1,
-                            FundamentoCargado = 4,
-                            FundamentoDerivado = 2
-                        },
-                        new
-                        {
-                            Id = 13,
-                            CalidadCargada = 4,
-                            CalidadDerivada = 1,
-                            FundamentoCargado = 4,
-                            FundamentoDerivado = 2
-                        },
-                        new
-                        {
-                            Id = 14,
-                            CalidadCargada = 3,
-                            CalidadDerivada = 3,
-                            FundamentoCargado = 4,
-                            FundamentoDerivado = 2
-                        },
-                        new
-                        {
-                            Id = 15,
-                            CalidadCargada = 2,
-                            CalidadDerivada = 4,
-                            FundamentoCargado = 4,
-                            FundamentoDerivado = 2
-                        },
-                        new
-                        {
-                            Id = 16,
-                            CalidadCargada = 1,
-                            CalidadDerivada = 4,
-                            FundamentoCargado = 4,
-                            FundamentoDerivado = 2
-                        },
-                        new
-                        {
-                            Id = 17,
-                            CalidadCargada = 0,
-                            CalidadDerivada = 5,
-                            FundamentoCargado = 4,
-                            FundamentoDerivado = 2
-                        });
                 });
 
             modelBuilder.Entity("SandStats.Models.EnVivo.PartidoEnVivo", b =>

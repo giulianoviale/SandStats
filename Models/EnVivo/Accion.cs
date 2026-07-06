@@ -26,6 +26,11 @@ namespace SandStats.Models.EnVivo
         [Required]
         public Calidad Calidad { get; set; }
 
+        [Required]
+        public Complejo Complejo { get; set; }
+
+        public bool EsDe2da { get; set; }
+
         public bool EsRejuego { get; set; }
 
         [Required]

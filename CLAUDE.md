@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Build
 dotnet build SandStats.csproj
 
-# Run (development — uses SQLite at app.db)
+# Run (development — uses SQLite at SandStats.db, definido en appsettings.Development.json)
 dotnet run
 
 # EF Core migrations
@@ -30,7 +30,7 @@ The codebase is written in **Spanish**: entity names, properties, page names, va
 
 ASP.NET Core 9.0 **Razor Pages** application (not MVC). All pages live under `Pages/` and follow the `PageModel` + `.cshtml` pair pattern.
 
-**Database:** SQLite in development (`app.db`), PostgreSQL in production via the `DATABASE_URL` env var (postgres:// URI format). The provider is selected at startup in `Program.cs` by checking for `"Host="` in the connection string. All `DateTime` values are normalized to UTC by overrides in `ApplicationDbContext.SaveChanges*`.
+**Database:** SQLite in development (`SandStats.db`, defined in `appsettings.Development.json` which overrides the base `appsettings.json`), PostgreSQL in production via the `DATABASE_URL` env var (postgres:// URI format). The provider is selected at startup in `Program.cs` by checking for `"Host="` in the connection string. All `DateTime` values are normalized to UTC by overrides in `ApplicationDbContext.SaveChanges*`.
 
 **Auth:** ASP.NET Identity with custom `AppSignInManager` (allows login by username or email, supports `IsActive` and `MustResetPassword` flags). All pages are authorized by default; only `/Identity/**` and `/Index` are anonymous.
 

@@ -16,9 +16,14 @@ namespace SandStats.Models.EnVivo
         public int NumeroSet { get; set; }
 
         [Required]
-        [Display(Name = "Jugador que saca primero")]
-        public int SacadorInicialJugadorId { get; set; }
-        public Jugador? SacadorInicialJugador { get; set; }
+        [Display(Name = "Sacador inicial Dupla 1")]
+        public int SacadorInicialDupla1JugadorId { get; set; }
+        public Jugador? SacadorInicialDupla1Jugador { get; set; }
+
+        [Required]
+        [Display(Name = "Sacador inicial Dupla 2")]
+        public int SacadorInicialDupla2JugadorId { get; set; }
+        public Jugador? SacadorInicialDupla2Jugador { get; set; }
 
         public List<Rally> Rallies { get; set; } = new();
     }
