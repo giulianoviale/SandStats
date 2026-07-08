@@ -23,8 +23,7 @@ namespace SandStats.Models.EnVivo
         [Required]
         public Fundamento Fundamento { get; set; }
 
-        [Required]
-        public Calidad Calidad { get; set; }
+        public Calidad? Calidad { get; set; }
 
         [Required]
         public Complejo Complejo { get; set; }
