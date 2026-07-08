@@ -20,7 +20,7 @@ docker build -t sandstats .
 docker run -p 8080:8080 -e DATABASE_URL=postgres://user:pass@host:port/db sandstats
 ```
 
-No automated test project exists in this repo.
+Tests del dominio EnVivo en `SandStats.Tests/`. Correr con `dotnet test`.
 
 ## Language
 

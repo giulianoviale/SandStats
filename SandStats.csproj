@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="SandStats.Tests\**" />
     <Compile Remove="Pages\NewFolder\**" />
     <Compile Remove="wwwroot\NewFolder1\**" />
     <Content Remove="Pages\NewFolder\**" />

@@ -208,6 +208,13 @@ namespace SandStats.Data
                 .HasForeignKey(s => s.SacadorInicialDupla2JugadorId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // SetEnVivo → DuplaQueSacaPrimero (Restrict)
+            modelBuilder.Entity<SetEnVivo>()
+                .HasOne(s => s.DuplaQueSacaPrimero)
+                .WithMany()
+                .HasForeignKey(s => s.DuplaQueSacaPrimeroId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             // SetEnVivo → Rally (Cascade)
             modelBuilder.Entity<Rally>()
                 .HasOne(r => r.SetEnVivo)
