@@ -273,6 +273,33 @@ namespace SandStats.Services.EnVivo
         private static Accion UltimaAccionConFundamento(ContextoRally ctx, Fundamento f)
             => ctx.AccionesRallyActual.Last(a => a.Fundamento == f);
 
+        public ResultadoMarcador EvaluarMarcador(
+            int dupla1Id, int dupla2Id,
+            int puntosD1, int puntosD2,
+            int numeroSet, int setsGanadosD1, int setsGanadosD2)
+        {
+            int objetivo = numeroSet <= 2 ? 21 : 15;
+            bool setTerminado = (puntosD1 >= objetivo || puntosD2 >= objetivo)
+                             && Math.Abs(puntosD1 - puntosD2) >= 2;
+
+            int? ganadorSetId = null;
+            bool partidoTerminado = false;
+
+            if (setTerminado)
+            {
+                bool d1Gano = puntosD1 > puntosD2;
+                ganadorSetId = d1Gano ? dupla1Id : dupla2Id;
+                partidoTerminado = (d1Gano && setsGanadosD1 + 1 == 2)
+                                || (!d1Gano && setsGanadosD2 + 1 == 2);
+            }
+
+            int total = puntosD1 + puntosD2;
+            int divisor = numeroSet <= 2 ? 7 : 5;
+            bool cambioDeLado = !setTerminado && total > 0 && total % divisor == 0;
+
+            return new ResultadoMarcador(setTerminado, partidoTerminado, cambioDeLado, ganadorSetId);
+        }
+
         private static int DuplaDeJugador(ContextoRally ctx, int jugadorId)
         {
             foreach (var (duplaId, jugadores) in ctx.JugadoresPorDupla)
