@@ -30,6 +30,9 @@ namespace SandStats.Models.EnVivo
         public int DuplaQueSacaPrimeroId { get; set; }
         public Dupla? DuplaQueSacaPrimero { get; set; }
 
+        public int? DuplaGanadoraId { get; set; }
+        public Dupla? DuplaGanadora { get; set; }
+
         public List<Rally> Rallies { get; set; } = new();
     }
 }

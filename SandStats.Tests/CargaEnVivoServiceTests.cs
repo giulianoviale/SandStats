@@ -136,6 +136,156 @@ namespace SandStats.Tests
             Assert.Equal(0, rallyActualizado.MarcadorDupla2);
         }
 
+        // ── Test 4: deshacer recepción Positivo → saque vuelve a null ────────
+
+        [Fact]
+        public async Task DeshacerRecepcionPositivo_SaqueVuelveANull()
+        {
+            var (_, set) = await CrearPartidoYSet();
+            var rally = await _svc.AbrirRallyAsync(set.Id);
+
+            await _svc.RegistrarAccionAsync(rally.Id,
+                new CargaAccion(Fundamento.Saque, null, _j1.Id, false), null);
+            await _svc.RegistrarAccionAsync(rally.Id,
+                new CargaAccion(Fundamento.Recepcion, Calidad.Positivo, _j3.Id, false), null);
+
+            // Pre-assert: saque ya fue derivado a Negativo
+            var accionesPre = await _db.Acciones
+                .Where(a => a.RallyId == rally.Id).OrderBy(a => a.Secuencia).ToListAsync();
+            Assert.Equal(Calidad.Negativo, accionesPre[0].Calidad);
+
+            await _svc.DeshacerUltimaAccionAsync(rally.Id);
+
+            var acciones = await _db.Acciones
+                .Where(a => a.RallyId == rally.Id).OrderBy(a => a.Secuencia).ToListAsync();
+            Assert.Single(acciones);
+            Assert.Null(acciones[0].Calidad);
+        }
+
+        // ── Test 5: deshacer bloqueo que cerró → ataque null y rally reabierto
+
+        [Fact]
+        public async Task DeshacerBloqueoQueCerro_AtaqueNullYRallyReabierto()
+        {
+            var (_, set) = await CrearPartidoYSet();
+            var rally = await _svc.AbrirRallyAsync(set.Id);
+
+            await _svc.RegistrarAccionAsync(rally.Id,
+                new CargaAccion(Fundamento.Saque, null, _j1.Id, false), null);
+            await _svc.RegistrarAccionAsync(rally.Id,
+                new CargaAccion(Fundamento.Recepcion, Calidad.Positivo, _j3.Id, false), null);
+            await _svc.RegistrarAccionAsync(rally.Id,
+                new CargaAccion(Fundamento.Ataque, null, _j3.Id, false), null);
+            // Bloqueo DobleNegativo → deriva Ataque→DoblePositivo, cierra D2
+            await _svc.RegistrarAccionAsync(rally.Id,
+                new CargaAccion(Fundamento.Bloqueo, Calidad.DobleNegativo, _j1.Id, false), null);
+
+            await _svc.DeshacerUltimaAccionAsync(rally.Id);
+
+            var acciones = await _db.Acciones
+                .Where(a => a.RallyId == rally.Id).OrderBy(a => a.Secuencia).ToListAsync();
+            var rallyActualizado = await _db.Rallies.FindAsync(rally.Id);
+
+            Assert.Equal(3, acciones.Count);
+            Assert.Null(acciones[2].Calidad);              // ataque vuelve a null
+            Assert.Null(rallyActualizado!.DuplaGanadoraId); // rally reabierto
+            Assert.Null(rallyActualizado.TipoCierre);
+            Assert.Equal(0, rallyActualizado.MarcadorDupla2); // marcador decrementado
+        }
+
+        // ── Test 6: deshacer con rally abierto y vacío → excepción ───────────
+
+        [Fact]
+        public async Task DeshacerConRallyVacio_LanzaExcepcion()
+        {
+            var (_, set) = await CrearPartidoYSet();
+            var rally = await _svc.AbrirRallyAsync(set.Id);
+
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => _svc.DeshacerUltimaAccionAsync(rally.Id));
+        }
+
+        // ── Test 7: CierreDirecto(Ace) → Deshacer → rally reabierto 0-0 ─────
+
+        [Fact]
+        public async Task CierreDirectoAce_Deshacer_RallyReabiertoMarcadorCero()
+        {
+            var (_, set) = await CrearPartidoYSet();
+            var rally = await _svc.AbrirRallyAsync(set.Id);
+            await _svc.CierreDirectoAsync(rally.Id, TipoCierreDirecto.Ace);
+
+            // Pre-assert: cerrado
+            var pre = await _db.Rallies.FindAsync(rally.Id);
+            Assert.NotNull(pre!.DuplaGanadoraId);
+            Assert.Equal(1, pre.MarcadorDupla1);
+
+            await _svc.DeshacerUltimaAccionAsync(rally.Id);
+
+            var post = await _db.Rallies.FindAsync(rally.Id);
+            Assert.Null(post!.DuplaGanadoraId);
+            Assert.Null(post.TipoCierre);
+            Assert.Equal(0, post.MarcadorDupla1);
+            Assert.Equal(0, post.MarcadorDupla2);
+        }
+
+        // ── Test 8: CerrarSet dupla ajena → excepción; válida → persiste ─────
+
+        [Fact]
+        public async Task CerrarSet_DuplaAjenaLanzaExcepcion_DuplaValidaPersiste()
+        {
+            var (_, set) = await CrearPartidoYSet();
+
+            // Dupla ajena (J1 con J3 = dupla no existente; usamos una dupla nueva)
+            var j5 = new Jugador { Nombre = "J5", Apellido = "X", Posicion = PosicionJugador.Bloqueador, RolPrincipal = RolJugador.Rol4 };
+            var j6 = new Jugador { Nombre = "J6", Apellido = "X", Posicion = PosicionJugador.Defensor,  RolPrincipal = RolJugador.Rol2 };
+            _db.Jugadores.AddRange(j5, j6);
+            await _db.SaveChangesAsync();
+            var d3 = new Dupla { Jugador1Id = j5.Id, Jugador2Id = j6.Id };
+            _db.Duplas.Add(d3);
+            await _db.SaveChangesAsync();
+
+            await Assert.ThrowsAsync<ArgumentException>(
+                () => _svc.CerrarSetAsync(set.Id, d3.Id));
+
+            await _svc.CerrarSetAsync(set.Id, _d1.Id);
+            var setActualizado = await _db.SetsEnVivo.FindAsync(set.Id);
+            Assert.Equal(_d1.Id, setActualizado!.DuplaGanadoraId);
+        }
+
+        // ── Test 9: TipoCierre Ace ────────────────────────────────────────────
+
+        [Fact]
+        public async Task CierreDirectoAce_TipoCierreEsAce()
+        {
+            var (_, set) = await CrearPartidoYSet();
+            var rally = await _svc.AbrirRallyAsync(set.Id);
+            await _svc.CierreDirectoAsync(rally.Id, TipoCierreDirecto.Ace);
+
+            var rallyActualizado = await _db.Rallies.FindAsync(rally.Id);
+            Assert.Equal(TipoCierreRally.Ace, rallyActualizado!.TipoCierre);
+        }
+
+        // ── Test 10: TipoCierre PorJuego ─────────────────────────────────────
+
+        [Fact]
+        public async Task RegistrarBloqueo_CierrePorJuego_TipoCierreEsPorJuego()
+        {
+            var (_, set) = await CrearPartidoYSet();
+            var rally = await _svc.AbrirRallyAsync(set.Id);
+
+            await _svc.RegistrarAccionAsync(rally.Id,
+                new CargaAccion(Fundamento.Saque, null, _j1.Id, false), null);
+            await _svc.RegistrarAccionAsync(rally.Id,
+                new CargaAccion(Fundamento.Recepcion, Calidad.Positivo, _j3.Id, false), null);
+            await _svc.RegistrarAccionAsync(rally.Id,
+                new CargaAccion(Fundamento.Ataque, null, _j3.Id, false), null);
+            await _svc.RegistrarAccionAsync(rally.Id,
+                new CargaAccion(Fundamento.Bloqueo, Calidad.DobleNegativo, _j1.Id, false), null);
+
+            var rallyActualizado = await _db.Rallies.FindAsync(rally.Id);
+            Assert.Equal(TipoCierreRally.PorJuego, rallyActualizado!.TipoCierre);
+        }
+
         // ── Test 3: dos rallies consecutivos, NumeroRally y marcador acumulado
 
         [Fact]

@@ -215,6 +215,14 @@ namespace SandStats.Data
                 .HasForeignKey(s => s.DuplaQueSacaPrimeroId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // SetEnVivo → DuplaGanadora (Restrict, nullable)
+            modelBuilder.Entity<SetEnVivo>()
+                .HasOne(s => s.DuplaGanadora)
+                .WithMany()
+                .HasForeignKey(s => s.DuplaGanadoraId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+
             // SetEnVivo → Rally (Cascade)
             modelBuilder.Entity<Rally>()
                 .HasOne(r => r.SetEnVivo)

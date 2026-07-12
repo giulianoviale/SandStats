@@ -22,6 +22,8 @@ namespace SandStats.Models.EnVivo
         public int MarcadorDupla1 { get; set; }
         public int MarcadorDupla2 { get; set; }
 
+        public TipoCierreRally? TipoCierre { get; set; }
+
         public List<Accion> Acciones { get; set; } = new();
     }
 }

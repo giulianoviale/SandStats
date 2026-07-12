@@ -123,7 +123,7 @@ namespace SandStats.Services.EnVivo
             }
 
             if (resultado.Cierre != null)
-                await AplicarCierreAsync(rallyId, resultado.Cierre.DuplaGanadoraId, ctx);
+                await AplicarCierreAsync(rallyId, resultado.Cierre.DuplaGanadoraId, ctx, TipoCierreRally.PorJuego);
 
             return resultado;
         }
@@ -133,16 +133,104 @@ namespace SandStats.Services.EnVivo
         {
             var ctx = await ArmarContextoAsync(rallyId);
             var resultado = _motor.CierreDirecto(ctx, tipo, duplaGanadoraId);
-            await AplicarCierreAsync(rallyId, resultado.Cierre!.DuplaGanadoraId, ctx);
+            TipoCierreRally tipoCierre = tipo switch
+            {
+                TipoCierreDirecto.Ace          => TipoCierreRally.Ace,
+                TipoCierreDirecto.ErrorSaque   => TipoCierreRally.ErrorSaque,
+                TipoCierreDirecto.ErrorVario   => TipoCierreRally.ErrorVario,
+                TipoCierreDirecto.CierreRapido => TipoCierreRally.CierreRapido,
+                _ => throw new ArgumentOutOfRangeException(nameof(tipo))
+            };
+            await AplicarCierreAsync(rallyId, resultado.Cierre!.DuplaGanadoraId, ctx, tipoCierre);
             return resultado;
         }
 
-        private async Task AplicarCierreAsync(int rallyId, int duplaGanadoraId, ContextoRally ctx)
+        public async Task CerrarSetAsync(int setEnVivoId, int duplaGanadoraId)
+        {
+            var set = await db.SetsEnVivo
+                .Include(s => s.PartidoEnVivo)
+                .FirstOrDefaultAsync(s => s.Id == setEnVivoId)
+                ?? throw new InvalidOperationException($"Set {setEnVivoId} no encontrado");
+
+            var partido = set.PartidoEnVivo!;
+            if (duplaGanadoraId != partido.Dupla1Id && duplaGanadoraId != partido.Dupla2Id)
+                throw new ArgumentException($"Dupla {duplaGanadoraId} no pertenece al partido");
+
+            set.DuplaGanadoraId = duplaGanadoraId;
+            await db.SaveChangesAsync();
+        }
+
+        public async Task DeshacerUltimaAccionAsync(int rallyId)
+        {
+            var ctx = await ArmarContextoAsync(rallyId);
+            var rally = await db.Rallies.FindAsync(rallyId)
+                ?? throw new InvalidOperationException($"Rally {rallyId} no encontrado");
+
+            bool rallyCerrado = rally.DuplaGanadoraId != null;
+            bool sinAcciones  = ctx.AccionesRallyActual.Count == 0;
+
+            // Rally cerrado sin acciones (Ace/ErrorSaque/CierreRapido) → solo reabrir
+            if (rallyCerrado && sinAcciones)
+            {
+                if (rally.DuplaGanadoraId == ctx.Dupla1Id) rally.MarcadorDupla1--;
+                else                                        rally.MarcadorDupla2--;
+                rally.DuplaGanadoraId = null;
+                rally.TipoCierre      = null;
+                await db.SaveChangesAsync();
+                return;
+            }
+
+            // Rally abierto sin acciones → excepción
+            if (sinAcciones)
+                throw new InvalidOperationException("El rally no tiene acciones para deshacer");
+
+            var ultima = ctx.AccionesRallyActual[^1];
+
+            // Deshacer derivación si aplica
+            if (ultima.Calidad.HasValue)
+            {
+                var combinada = ctx.Combinadas.FirstOrDefault(c =>
+                    c.FundamentoCargado == ultima.Fundamento &&
+                    c.CalidadCargada    == ultima.Calidad.Value &&
+                    c.CalidadDerivada   != null);
+
+                if (combinada != null)
+                {
+                    var target = await db.Acciones
+                        .Where(a => a.RallyId    == rallyId
+                                 && a.Fundamento == combinada.FundamentoDerivado
+                                 && a.Calidad    == combinada.CalidadDerivada)
+                        .OrderByDescending(a => a.Secuencia)
+                        .FirstOrDefaultAsync();
+
+                    if (target != null)
+                        target.Calidad = null;
+                }
+            }
+
+            // Reabrir rally si estaba cerrado
+            if (rallyCerrado)
+            {
+                if (rally.DuplaGanadoraId == ctx.Dupla1Id) rally.MarcadorDupla1--;
+                else                                        rally.MarcadorDupla2--;
+                rally.DuplaGanadoraId = null;
+                rally.TipoCierre      = null;
+            }
+
+            var accionParaEliminar = await db.Acciones.FindAsync(ultima.Id)
+                ?? throw new InvalidOperationException($"Acción {ultima.Id} no encontrada");
+            db.Acciones.Remove(accionParaEliminar);
+
+            await db.SaveChangesAsync();
+        }
+
+        private async Task AplicarCierreAsync(int rallyId, int duplaGanadoraId, ContextoRally ctx, TipoCierreRally tipoCierre)
         {
             var rally = await db.Rallies.FindAsync(rallyId)
                 ?? throw new InvalidOperationException($"Rally {rallyId} no encontrado");
 
             rally.DuplaGanadoraId  = duplaGanadoraId;
+            rally.TipoCierre       = tipoCierre;
             rally.MarcadorDupla1  += duplaGanadoraId == ctx.Dupla1Id ? 1 : 0;
             rally.MarcadorDupla2  += duplaGanadoraId == ctx.Dupla2Id ? 1 : 0;
 
