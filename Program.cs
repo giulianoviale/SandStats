@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SandStats.Data;
+using SandStats.Endpoints.EnVivo;
+using SandStats.Services.EnVivo;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -39,6 +41,40 @@ builder.Services.AddRazorPages(options =>
 });
 //faltaba esta linea para que funcione el logueo
 builder.Services.AddAuthorization();
+
+builder.Services.AddScoped<CargaEnVivoService>();
+
+// Para rutas /api/*, responder con 401/403 en vez de redirigir al login/acceso denegado.
+// CSRF mitigado por SameSite=Lax (decisión consciente, sin antiforgery en el grupo API):
+// la UI es same-origin y el estado mutable queda protegido por la cookie de Identity.
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Events.OnRedirectToLogin = ctx =>
+    {
+        if (ctx.Request.Path.StartsWithSegments("/api"))
+        {
+            ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return Task.CompletedTask;
+        }
+        ctx.Response.Redirect(ctx.RedirectUri);
+        return Task.CompletedTask;
+    };
+    options.Events.OnRedirectToAccessDenied = ctx =>
+    {
+        if (ctx.Request.Path.StartsWithSegments("/api"))
+        {
+            ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
+            return Task.CompletedTask;
+        }
+        ctx.Response.Redirect(ctx.RedirectUri);
+        return Task.CompletedTask;
+    };
+});
+
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.Converters.Add(
+        new System.Text.Json.Serialization.JsonStringEnumConverter()));
+
 var app = builder.Build();
 
 // === Pipeline ===
@@ -54,6 +90,7 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapRazorPages();
+app.MapEnVivoEndpoints();
 
 app.Run();
 
@@ -70,3 +107,6 @@ static string ConvertPostgresUrlToConnectionString(string dbUrl)
 
     return $"Host={host};Port={port};Database={db};Username={user};Password={pass};SSL Mode=Require;Trust Server Certificate=true";
 }
+
+// Expone Program al proyecto de tests para WebApplicationFactory<Program>
+public partial class Program { }

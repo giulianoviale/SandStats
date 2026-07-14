@@ -81,6 +81,11 @@ namespace SandStats.Services.EnVivo
             }
 
             var ctx = await ArmarContextoAsync(rallyId);
+
+            var rallyEntity = (await db.Rallies.FindAsync(rallyId))!;
+            if (rallyEntity.DuplaGanadoraId != null)
+                throw new InvalidOperationException("El rally ya está cerrado");
+
             var sugerencia = _motor.SugerirProximoPaso(ctx);
 
             var accion = new Accion
@@ -222,6 +227,33 @@ namespace SandStats.Services.EnVivo
             db.Acciones.Remove(accionParaEliminar);
 
             await db.SaveChangesAsync();
+        }
+
+        public async Task<EstadoRallyData> ObtenerEstadoRallyAsync(int rallyId)
+        {
+            var ctx   = await ArmarContextoAsync(rallyId);
+            var rally = (await db.Rallies.FindAsync(rallyId))!;
+
+            SugerenciaPaso? sugerencia = rally.DuplaGanadoraId == null
+                ? _motor.SugerirProximoPaso(ctx)
+                : null;
+
+            var setsGanadores = await db.SetsEnVivo
+                .Where(s => s.PartidoEnVivoId == rally.SetEnVivo!.PartidoEnVivoId
+                         && s.DuplaGanadoraId != null)
+                .Select(s => s.DuplaGanadoraId!.Value)
+                .ToListAsync();
+
+            int setsGanadosD1 = setsGanadores.Count(id => id == ctx.Dupla1Id);
+            int setsGanadosD2 = setsGanadores.Count(id => id == ctx.Dupla2Id);
+
+            var marcador = _motor.EvaluarMarcador(
+                ctx.Dupla1Id, ctx.Dupla2Id,
+                rally.MarcadorDupla1, rally.MarcadorDupla2,
+                rally.SetEnVivo!.NumeroSet,
+                setsGanadosD1, setsGanadosD2);
+
+            return new EstadoRallyData(rally, ctx.AccionesRallyActual, sugerencia, marcador);
         }
 
         private async Task AplicarCierreAsync(int rallyId, int duplaGanadoraId, ContextoRally ctx, TipoCierreRally tipoCierre)
