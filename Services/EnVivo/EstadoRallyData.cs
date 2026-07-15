@@ -6,6 +6,7 @@ namespace SandStats.Services.EnVivo
         Rally Rally,
         IReadOnlyList<Accion> Acciones,
         SugerenciaPaso? Sugerencia,
-        ResultadoMarcador Marcador
+        ResultadoMarcador Marcador,
+        IReadOnlyDictionary<int, string> NombresJugadores
     );
 }

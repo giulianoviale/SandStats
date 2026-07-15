@@ -48,12 +48,13 @@ namespace SandStats.Endpoints.EnVivo
     public record AccionResponse(
         int Secuencia,
         int JugadorId,
+        string JugadorNombre,
         Fundamento Fundamento,
         Calidad? Calidad,
         Complejo Complejo,
         bool EsRejuego);
 
-    public record OpcionPasoResponse(Fundamento Fundamento, int? JugadorSugeridoId);
+    public record OpcionPasoResponse(Fundamento Fundamento, int? JugadorSugeridoId, string? JugadorNombre);
 
     public record SugerenciaPasoResponse(
         IReadOnlyList<OpcionPasoResponse> Opciones,

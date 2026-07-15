@@ -253,7 +253,7 @@ namespace SandStats.Services.EnVivo
                 rally.SetEnVivo!.NumeroSet,
                 setsGanadosD1, setsGanadosD2);
 
-            return new EstadoRallyData(rally, ctx.AccionesRallyActual, sugerencia, marcador);
+            return new EstadoRallyData(rally, ctx.AccionesRallyActual, sugerencia, marcador, ctx.NombresJugadores);
         }
 
         private async Task AplicarCierreAsync(int rallyId, int duplaGanadoraId, ContextoRally ctx, TipoCierreRally tipoCierre)
@@ -325,7 +325,14 @@ namespace SandStats.Services.EnVivo
                 DuplaQueSacaPrimeroId          = rally.SetEnVivo.DuplaQueSacaPrimeroId,
                 GanadoresRalliesPrevios        = ganadores,
                 AccionesRallyActual            = rally.Acciones.OrderBy(a => a.Secuencia).ToList(),
-                Combinadas                     = combinadas
+                Combinadas                     = combinadas,
+                NombresJugadores               = new Dictionary<int, string>
+                {
+                    [dupla1.Jugador1!.Id] = dupla1.Jugador1.NombreCompleto,
+                    [dupla1.Jugador2!.Id] = dupla1.Jugador2.NombreCompleto,
+                    [dupla2.Jugador1!.Id] = dupla2.Jugador1.NombreCompleto,
+                    [dupla2.Jugador2!.Id] = dupla2.Jugador2.NombreCompleto,
+                }
             };
         }
     }

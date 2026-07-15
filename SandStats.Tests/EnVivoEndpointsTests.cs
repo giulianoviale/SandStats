@@ -139,7 +139,37 @@ namespace SandStats.Tests
             Assert.Equal(HttpStatusCode.NotFound, r.StatusCode);
         }
 
-        // ── Test 5: GET estado con rally vacío → sugerencia es Saque ─────────
+        // ── Test 5: GET estado con set sin rallies → 200, cerrado=true ──────
+
+        [Fact]
+        public async Task GetEstado_SetSinRallies_Retorna200CerradoTrue()
+        {
+            var (d1Id, d2Id, j1Id, j3Id) = await SeedDuplasAsync();
+
+            var rP = await _client.PostAsJsonAsync("/api/envivo/partidos",
+                new { dupla1Id = d1Id, dupla2Id = d2Id, torneo = "T", fecha = DateTime.UtcNow });
+            rP.EnsureSuccessStatusCode();
+            int pId = JsonDocument.Parse(await rP.Content.ReadAsStringAsync())
+                .RootElement.GetProperty("id").GetInt32();
+
+            var rS = await _client.PostAsJsonAsync($"/api/envivo/partidos/{pId}/sets",
+                new { numeroSet = 1, sacadorInicialD1Id = j1Id, sacadorInicialD2Id = j3Id, duplaQueSacaPrimeroId = d1Id });
+            rS.EnsureSuccessStatusCode();
+            int setId = JsonDocument.Parse(await rS.Content.ReadAsStringAsync())
+                .RootElement.GetProperty("id").GetInt32();
+
+            var r = await _client.GetAsync($"/api/envivo/sets/{setId}/estado");
+
+            Assert.Equal(HttpStatusCode.OK, r.StatusCode);
+
+            using var doc = JsonDocument.Parse(await r.Content.ReadAsStringAsync());
+            var root = doc.RootElement;
+            Assert.True(root.GetProperty("cerrado").GetBoolean());
+            Assert.Equal(0, root.GetProperty("marcadorDupla1").GetInt32());
+            Assert.Equal(0, root.GetProperty("marcadorDupla2").GetInt32());
+        }
+
+        // ── Test 6: GET estado con rally vacío → sugerencia es Saque ─────────
 
         [Fact]
         public async Task GetEstado_RallyVacio_SugerenciaEsSaque()

@@ -1,0 +1,56 @@
+@page
+@model SandStats.Pages.EnVivo.IndexModel
+@{
+    ViewData["Title"] = "Partidos en vivo";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Partidos en vivo</h2>
+        <a asp-page="NuevoPartido" class="btn btn-primary">➕ Nuevo partido</a>
+    </div>
+
+    @if (!Model.Partidos.Any())
+    {
+        <div class="alert alert-info">No hay partidos en vivo. Creá uno con el botón de arriba.</div>
+    }
+    else
+    {
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Fecha</th>
+                    <th>Torneo</th>
+                    <th>Dupla 1</th>
+                    <th>Dupla 2</th>
+                    <th>Sets</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model.Partidos)
+                {
+                    var ultimoSet = p.Sets.OrderByDescending(s => s.Id).FirstOrDefault();
+                    <tr>
+                        <td>@p.Fecha.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                        <td>@p.Torneo</td>
+                        <td>@IndexModel.NombreDupla(p.Dupla1)</td>
+                        <td>@IndexModel.NombreDupla(p.Dupla2)</td>
+                        <td>@p.Sets.Count</td>
+                        <td class="d-flex gap-2">
+                            @if (ultimoSet != null)
+                            {
+                                <a asp-page="Carga" asp-route-setId="@ultimoSet.Id"
+                                   class="btn btn-sm btn-success">▶ Continuar carga</a>
+                            }
+                            <a asp-page="IniciarSet" asp-route-partidoId="@p.Id"
+                               class="btn btn-sm btn-outline-primary">
+                                @(ultimoSet == null ? "Iniciar set" : "Nuevo set")
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>

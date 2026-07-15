@@ -13,5 +13,6 @@ namespace SandStats.Services.EnVivo
         public required IReadOnlyList<int> GanadoresRalliesPrevios { get; init; }
         public required IReadOnlyList<Accion> AccionesRallyActual { get; init; }
         public required IReadOnlyList<ModificadorCombinada> Combinadas { get; init; }
+        public IReadOnlyDictionary<int, string> NombresJugadores { get; init; } = new Dictionary<int, string>();
     }
 }

@@ -94,6 +94,10 @@ namespace SandStats.Endpoints.EnVivo
             {
                 try
                 {
+                    var setExiste = await db.SetsEnVivo.AnyAsync(s => s.Id == id);
+                    if (!setExiste)
+                        return Results.Problem($"Set {id} no encontrado", statusCode: 404);
+
                     var rallyId = await db.Rallies
                         .Where(r => r.SetEnVivoId == id)
                         .OrderByDescending(r => r.NumeroRally)
@@ -101,7 +105,16 @@ namespace SandStats.Endpoints.EnVivo
                         .FirstOrDefaultAsync();
 
                     if (rallyId == null)
-                        return Results.Problem("El set no tiene rallies", statusCode: 404);
+                    {
+                        // Set recién iniciado sin rallies: estado vacío con cerrado=true para mostrar "Abrir rally"
+                        return Results.Ok(new EstadoRallyResponse(
+                            0, 0, 0, 0,
+                            Array.Empty<AccionResponse>(),
+                            null,
+                            new ResultadoMarcadorResponse(false, false, false, null),
+                            Cerrado: true,
+                            null, null));
+                    }
 
                     return Results.Ok(MapEstado(await svc.ObtenerEstadoRallyAsync(rallyId.Value)));
                 }
@@ -147,15 +160,19 @@ namespace SandStats.Endpoints.EnVivo
 
         private static EstadoRallyResponse MapEstado(EstadoRallyData estado)
         {
-            var rally = estado.Rally;
-            var m     = estado.Marcador;
+            var rally  = estado.Rally;
+            var m      = estado.Marcador;
+            var nombre = (int id) => estado.NombresJugadores.GetValueOrDefault(id, "");
 
             SugerenciaPasoResponse? sugerencia = null;
             if (estado.Sugerencia != null)
             {
                 var s = estado.Sugerencia;
                 sugerencia = new SugerenciaPasoResponse(
-                    s.Opciones.Select(o => new OpcionPasoResponse(o.Fundamento, o.JugadorSugeridoId)).ToList(),
+                    s.Opciones.Select(o => new OpcionPasoResponse(
+                        o.Fundamento,
+                        o.JugadorSugeridoId,
+                        o.JugadorSugeridoId.HasValue ? nombre(o.JugadorSugeridoId.Value) : null)).ToList(),
                     s.DuplaId, s.Complejo, s.PermiteDe2da, s.JugadorDe2daId, s.EsRejuego);
             }
 
@@ -163,7 +180,7 @@ namespace SandStats.Endpoints.EnVivo
                 rally.Id, rally.NumeroRally,
                 rally.MarcadorDupla1, rally.MarcadorDupla2,
                 estado.Acciones
-                    .Select(a => new AccionResponse(a.Secuencia, a.JugadorId, a.Fundamento, a.Calidad, a.Complejo, a.EsRejuego))
+                    .Select(a => new AccionResponse(a.Secuencia, a.JugadorId, nombre(a.JugadorId), a.Fundamento, a.Calidad, a.Complejo, a.EsRejuego))
                     .ToList(),
                 sugerencia,
                 new ResultadoMarcadorResponse(m.SetTerminado, m.PartidoTerminado, m.CambioDeLado, m.DuplaGanadoraSetId),
