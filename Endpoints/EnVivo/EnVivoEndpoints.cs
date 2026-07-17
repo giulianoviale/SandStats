@@ -64,7 +64,17 @@ namespace SandStats.Endpoints.EnVivo
             {
                 try
                 {
-                    await svc.CierreDirectoAsync(id, req.Tipo, req.DuplaGanadoraId);
+                    DetalleSaque? detalleSaque = null;
+                    if ((req.Tipo == TipoCierreDirecto.Ace || req.Tipo == TipoCierreDirecto.ErrorSaque)
+                        && req.ZonaSaque.HasValue && req.TipoSaque.HasValue)
+                    {
+                        detalleSaque = new DetalleSaque
+                        {
+                            ZonaSaque = req.ZonaSaque.Value,
+                            TipoSaque = req.TipoSaque.Value
+                        };
+                    }
+                    await svc.CierreDirectoAsync(id, req.Tipo, req.DuplaGanadoraId, detalleSaque);
                     return Results.Ok(MapEstado(await svc.ObtenerEstadoRallyAsync(id)));
                 }
                 catch (Exception ex) { return MapError(ex); }
@@ -173,7 +183,10 @@ namespace SandStats.Endpoints.EnVivo
                         o.Fundamento,
                         o.JugadorSugeridoId,
                         o.JugadorSugeridoId.HasValue ? nombre(o.JugadorSugeridoId.Value) : null)).ToList(),
-                    s.DuplaId, s.Complejo, s.PermiteDe2da, s.JugadorDe2daId, s.EsRejuego);
+                    s.DuplaId, s.Complejo, s.PermiteDe2da,
+                    s.JugadorDe2daId,
+                    s.JugadorDe2daId.HasValue ? nombre(s.JugadorDe2daId.Value) : null,
+                    s.EsRejuego);
             }
 
             return new EstadoRallyResponse(

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SandStats.Data;
 using SandStats.Models;
 using SandStats.Models.EnVivo;
+using SandStats.Models.SandStats.Models;
 using SandStats.Services.EnVivo;
 using Xunit;
 
@@ -116,6 +117,72 @@ namespace SandStats.Tests
             Assert.Equal(_d2.Id, rallyActualizado!.DuplaGanadoraId);
             Assert.Equal(0, rallyActualizado.MarcadorDupla1);
             Assert.Equal(1, rallyActualizado.MarcadorDupla2);
+        }
+
+        // ── Test 2b: cierre directo Ace con DetalleSaque ─────────────────────
+
+        [Fact]
+        public async Task CierreDirectoAce_ConDetalle_PersisteSaqueDoblePositivo()
+        {
+            var (_, set) = await CrearPartidoYSet();
+            var rally = await _svc.AbrirRallyAsync(set.Id);
+
+            var detalle = new DetalleSaque { ZonaSaque = ZonaSaque.Zona1, TipoSaque = TipoSaque.Potencia };
+            await _svc.CierreDirectoAsync(rally.Id, TipoCierreDirecto.Ace, null, detalle);
+
+            var acciones = await _db.Acciones.Include(a => a.DetalleSaque)
+                .Where(a => a.RallyId == rally.Id).ToListAsync();
+            var rallyActualizado = await _db.Rallies.FindAsync(rally.Id);
+
+            Assert.Single(acciones);
+            Assert.Equal(Fundamento.Saque, acciones[0].Fundamento);
+            Assert.Equal(Calidad.DoblePositivo, acciones[0].Calidad);
+            Assert.NotNull(acciones[0].DetalleSaque);
+            Assert.Equal(ZonaSaque.Zona1, acciones[0].DetalleSaque!.ZonaSaque);
+            Assert.Equal(_d1.Id, rallyActualizado!.DuplaGanadoraId);
+            Assert.Equal(1, rallyActualizado.MarcadorDupla1);
+        }
+
+        [Fact]
+        public async Task CierreDirectoErrorSaque_ConDetalle_PersisteSaqueDobleNegativo()
+        {
+            var (_, set) = await CrearPartidoYSet();
+            var rally = await _svc.AbrirRallyAsync(set.Id);
+
+            var detalle = new DetalleSaque { ZonaSaque = ZonaSaque.Zona6, TipoSaque = TipoSaque.Flotado };
+            await _svc.CierreDirectoAsync(rally.Id, TipoCierreDirecto.ErrorSaque, null, detalle);
+
+            var acciones = await _db.Acciones.Include(a => a.DetalleSaque)
+                .Where(a => a.RallyId == rally.Id).ToListAsync();
+            var rallyActualizado = await _db.Rallies.FindAsync(rally.Id);
+
+            Assert.Single(acciones);
+            Assert.Equal(Fundamento.Saque, acciones[0].Fundamento);
+            Assert.Equal(Calidad.DobleNegativo, acciones[0].Calidad);
+            Assert.NotNull(acciones[0].DetalleSaque);
+            Assert.Equal(_d2.Id, rallyActualizado!.DuplaGanadoraId);
+            Assert.Equal(1, rallyActualizado.MarcadorDupla2);
+        }
+
+        [Fact]
+        public async Task CierreDirectoAce_ConDetalle_Deshacer_EliminaAccionYReabre()
+        {
+            var (_, set) = await CrearPartidoYSet();
+            var rally = await _svc.AbrirRallyAsync(set.Id);
+
+            var detalle = new DetalleSaque { ZonaSaque = ZonaSaque.Zona1, TipoSaque = TipoSaque.Potencia };
+            await _svc.CierreDirectoAsync(rally.Id, TipoCierreDirecto.Ace, null, detalle);
+
+            await _svc.DeshacerUltimaAccionAsync(rally.Id);
+
+            var acciones = await _db.Acciones.Where(a => a.RallyId == rally.Id).ToListAsync();
+            var rallyActualizado = await _db.Rallies.FindAsync(rally.Id);
+
+            Assert.Empty(acciones);
+            Assert.Null(rallyActualizado!.DuplaGanadoraId);
+            Assert.Null(rallyActualizado.TipoCierre);
+            Assert.Equal(0, rallyActualizado.MarcadorDupla1);
+            Assert.Equal(0, rallyActualizado.MarcadorDupla2);
         }
 
         // ── Test 2: cierre directo sin acciones ──────────────────────────────

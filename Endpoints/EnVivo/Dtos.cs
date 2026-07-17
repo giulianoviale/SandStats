@@ -33,7 +33,9 @@ namespace SandStats.Endpoints.EnVivo
         bool EsDe2da,
         DetalleAccionRequest? Detalle);
 
-    public record CierreDirectoRequest(TipoCierreDirecto Tipo, int? DuplaGanadoraId);
+    public record CierreDirectoRequest(
+        TipoCierreDirecto Tipo, int? DuplaGanadoraId,
+        ZonaSaque? ZonaSaque, TipoSaque? TipoSaque);
 
     public record CerrarSetRequest(int DuplaGanadoraId);
 
@@ -62,6 +64,7 @@ namespace SandStats.Endpoints.EnVivo
         Complejo Complejo,
         bool PermiteDe2da,
         int? JugadorDe2daId,
+        string? JugadorDe2daNombre,
         bool EsRejuego);
 
     public record ResultadoMarcadorResponse(

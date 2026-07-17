@@ -7,21 +7,46 @@
 
 @section Styles {
 <style>
-    .marcador-num { font-size: 4rem; font-weight: 700; line-height: 1; }
-    .marcador-sep { font-size: 3rem; font-weight: 300; color: #adb5bd; }
+    .marcador-num  { font-size: 4rem; font-weight: 700; line-height: 1; }
+    .marcador-sep  { font-size: 3rem; font-weight: 300; color: #adb5bd; }
     .panel-marcador { background: #f8f9fa; border-radius: .5rem; padding: 1.5rem; }
+
+    /* Calidad en tabla de acciones */
     .calidad-dp  { color: #198754; font-weight: 600; }
     .calidad-p   { color: #20c997; }
-    .calidad-n   { color: #fd7e14; }
-    .calidad-dn  { color: #dc3545; font-weight: 600; }
+    .calidad-ex  { color: #0dcaf0; }
+    .calidad-sl  { color: #fd7e14; }
+    .calidad-n   { color: #dc3545; }
+    .calidad-dn  { color: #6c2a2a; font-weight: 600; }
     .calidad-null { color: #adb5bd; }
-    #msg-error   { display: none; }
+
+    /* Botón seleccionado en paneles */
+    .btn-sel { box-shadow: 0 0 0 3px rgba(13,110,253,.45); }
+
+    /* Grilla zona ataque */
+    .zona-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .35rem; }
+
+    /* Botones de calidad */
+    .cal-dp { background: #198754; color: #fff; border-color: #198754; }
+    .cal-p  { background: #20c997; color: #212529; border-color: #20c997; }
+    .cal-ex { background: #0dcaf0; color: #212529; border-color: #0dcaf0; }
+    .cal-sl { background: #fd7e14; color: #fff; border-color: #fd7e14; }
+    .cal-n  { background: #dc3545; color: #fff; border-color: #dc3545; }
+    .cal-dn { background: #6c2a2a; color: #fff; border-color: #6c2a2a; }
+
+    #msg-error { display: none; }
 </style>
 }
 
 <div id="envivo-app"
      class="container-fluid py-3"
-     data-set-id="@Model.SetId">
+     data-set-id="@Model.SetId"
+     data-dupla1-id="@Model.Dupla1Id"
+     data-dupla2-id="@Model.Dupla2Id"
+     data-partido-id="@Model.PartidoId"
+     data-dupla1-nombre="@Model.NombreDupla1"
+     data-dupla2-nombre="@Model.NombreDupla2"
+     data-jugadores='@Html.Raw(Model.JugadoresJson)'>
 
     <div class="row g-3 mb-3 align-items-center">
         <div class="col-auto">
@@ -35,8 +60,11 @@
     <div id="msg-error" class="alert alert-danger"></div>
 
     <div class="row g-4">
-        <!-- Panel izquierdo: marcador -->
-        <div class="col-md-4">
+
+        <!-- Panel izquierdo -->
+        <div class="col-md-5">
+
+            <!-- Marcador -->
             <div class="panel-marcador text-center">
                 <div class="text-muted small mb-1">Rally <span id="numero-rally">—</span></div>
                 <div class="d-flex justify-content-center align-items-center gap-3">
@@ -53,6 +81,7 @@
                 <div class="mt-2" id="badge-estado"></div>
             </div>
 
+            <!-- Botón abrir rally (estado inicial sin rally) -->
             <div class="mt-3 text-center">
                 <button id="btn-abrir-rally"
                         class="btn btn-primary w-100"
@@ -62,14 +91,48 @@
                 </button>
             </div>
 
-            <div class="mt-3 p-3 bg-light rounded" id="panel-sugerencia" style="display:none">
-                <div class="fw-semibold mb-1">Próximo paso</div>
-                <div id="sugerencia-contenido"></div>
+            <!-- Panel de carga (dinámico según sugerencia) -->
+            <div id="panel-carga" class="mt-3" style="display:none"></div>
+
+            <!-- Panel de cierre (cuando rally cierra) -->
+            <div id="panel-cierre" class="mt-3 p-3 bg-light rounded" style="display:none">
+                <div id="banner-ganadora" class="fw-bold fs-5 mb-2"></div>
+                <div id="aviso-cambio-lado" class="alert alert-warning py-2 mb-2" style="display:none">
+                    ↔ Cambio de lado
+                </div>
+                <div class="d-grid gap-2">
+                    <button id="btn-siguiente-rally" class="btn btn-primary"
+                            onclick="siguienteRally()">Siguiente rally →</button>
+                    <div id="panel-fin-set" style="display:none"></div>
+                    <div id="panel-fin-partido" style="display:none">
+                        <div class="alert alert-success mb-2">¡Partido terminado!</div>
+                        <a asp-page="Index" class="btn btn-outline-primary w-100">Volver al índice</a>
+                    </div>
+                </div>
             </div>
+
+            <!-- Controles permanentes -->
+            <div class="mt-3">
+                <div class="d-flex gap-2 mb-2">
+                    <button class="btn btn-outline-warning flex-fill"
+                            onclick="cierreRapido(@Model.Dupla1Id)">
+                        Punto @Model.NombreDupla1
+                    </button>
+                    <button class="btn btn-outline-warning flex-fill"
+                            onclick="cierreRapido(@Model.Dupla2Id)">
+                        Punto @Model.NombreDupla2
+                    </button>
+                </div>
+                <button id="btn-deshacer" class="btn btn-outline-secondary w-100"
+                        style="display:none" onclick="deshacer()">
+                    ↩ Deshacer
+                </button>
+            </div>
+
         </div>
 
         <!-- Panel derecho: acciones del rally -->
-        <div class="col-md-8">
+        <div class="col-md-7">
             <h6 class="fw-semibold mb-2">Acciones del rally</h6>
             <div class="table-responsive">
                 <table class="table table-sm table-hover mb-0">
@@ -89,6 +152,7 @@
                 </table>
             </div>
         </div>
+
     </div>
 </div>
 

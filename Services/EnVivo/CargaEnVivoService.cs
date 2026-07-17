@@ -134,7 +134,8 @@ namespace SandStats.Services.EnVivo
         }
 
         public async Task<ResultadoRegistro> CierreDirectoAsync(
-            int rallyId, TipoCierreDirecto tipo, int? duplaGanadoraId = null)
+            int rallyId, TipoCierreDirecto tipo, int? duplaGanadoraId = null,
+            DetalleSaque? detalleSaque = null)
         {
             var ctx = await ArmarContextoAsync(rallyId);
             var resultado = _motor.CierreDirecto(ctx, tipo, duplaGanadoraId);
@@ -146,6 +147,27 @@ namespace SandStats.Services.EnVivo
                 TipoCierreDirecto.CierreRapido => TipoCierreRally.CierreRapido,
                 _ => throw new ArgumentOutOfRangeException(nameof(tipo))
             };
+
+            if ((tipo == TipoCierreDirecto.Ace || tipo == TipoCierreDirecto.ErrorSaque)
+                && detalleSaque != null)
+            {
+                var calidad = tipo == TipoCierreDirecto.Ace
+                    ? Calidad.DoblePositivo : Calidad.DobleNegativo;
+                db.Acciones.Add(new Accion
+                {
+                    RallyId      = rallyId,
+                    Secuencia    = 1,
+                    JugadorId    = _motor.QuienSaca(ctx),
+                    Fundamento   = Fundamento.Saque,
+                    Calidad      = calidad,
+                    Complejo     = Complejo.K2,
+                    EsDe2da      = false,
+                    EsRejuego    = false,
+                    FechaHora    = DateTime.UtcNow,
+                    DetalleSaque = detalleSaque
+                });
+            }
+
             await AplicarCierreAsync(rallyId, resultado.Cierre!.DuplaGanadoraId, ctx, tipoCierre);
             return resultado;
         }

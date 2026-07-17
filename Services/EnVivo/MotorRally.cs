@@ -186,7 +186,7 @@ namespace SandStats.Services.EnVivo
                     );
                 }
 
-                // Regla 7: bloqueo − → mismo atacante previo, K2
+                // Regla 7: bloqueo − → mismo atacante previo, K2, permite 2da
                 if (ultima.Calidad == Calidad.Negativo)
                 {
                     var atacantePrevio = UltimaAccionConFundamento(ctx, Fundamento.Ataque);
@@ -194,13 +194,13 @@ namespace SandStats.Services.EnVivo
                         Opciones: [new OpcionPaso(Fundamento.Ataque, atacantePrevio.JugadorId)],
                         DuplaId: DuplaDeJugador(ctx, atacantePrevio.JugadorId),
                         Complejo: Complejo.K2,
-                        PermiteDe2da: false,
-                        JugadorDe2daId: null,
+                        PermiteDe2da: true,
+                        JugadorDe2daId: Companero(ctx, atacantePrevio.JugadorId),
                         EsRejuego: false
                     );
                 }
 
-                // Regla 8: bloqueo / → mismo atacante previo, K2, rejuego
+                // Regla 8: bloqueo / → mismo atacante previo, K2, rejuego, permite 2da
                 if (ultima.Calidad == Calidad.Slash)
                 {
                     var atacantePrevio = UltimaAccionConFundamento(ctx, Fundamento.Ataque);
@@ -208,8 +208,8 @@ namespace SandStats.Services.EnVivo
                         Opciones: [new OpcionPaso(Fundamento.Ataque, atacantePrevio.JugadorId)],
                         DuplaId: DuplaDeJugador(ctx, atacantePrevio.JugadorId),
                         Complejo: Complejo.K2,
-                        PermiteDe2da: false,
-                        JugadorDe2daId: null,
+                        PermiteDe2da: true,
+                        JugadorDe2daId: Companero(ctx, atacantePrevio.JugadorId),
                         EsRejuego: true
                     );
                 }
@@ -232,7 +232,7 @@ namespace SandStats.Services.EnVivo
                     );
                 }
 
-                // Regla 10: defensa ! (cobertura) → mismo atacante previo, K2
+                // Regla 10: defensa ! (cobertura) → mismo atacante previo, K2, permite 2da
                 if (ultima.Calidad == Calidad.Exclamativa)
                 {
                     var atacantePrevio = UltimaAccionConFundamento(ctx, Fundamento.Ataque);
@@ -240,13 +240,13 @@ namespace SandStats.Services.EnVivo
                         Opciones: [new OpcionPaso(Fundamento.Ataque, atacantePrevio.JugadorId)],
                         DuplaId: DuplaDeJugador(ctx, atacantePrevio.JugadorId),
                         Complejo: Complejo.K2,
-                        PermiteDe2da: false,
-                        JugadorDe2daId: null,
+                        PermiteDe2da: true,
+                        JugadorDe2daId: Companero(ctx, atacantePrevio.JugadorId),
                         EsRejuego: false
                     );
                 }
 
-                // Regla 11: defensa −/ → atacante previo, K2 (pelota vuelve como free ball o vendida)
+                // Regla 11: defensa −/ → atacante previo, K2, permite 2da
                 if (ultima.Calidad == Calidad.Negativo || ultima.Calidad == Calidad.Slash)
                 {
                     var atacantePrevio = UltimaAccionConFundamento(ctx, Fundamento.Ataque);
@@ -254,8 +254,8 @@ namespace SandStats.Services.EnVivo
                         Opciones: [new OpcionPaso(Fundamento.Ataque, atacantePrevio.JugadorId)],
                         DuplaId: DuplaDeJugador(ctx, atacantePrevio.JugadorId),
                         Complejo: Complejo.K2,
-                        PermiteDe2da: false,
-                        JugadorDe2daId: null,
+                        PermiteDe2da: true,
+                        JugadorDe2daId: Companero(ctx, atacantePrevio.JugadorId),
                         EsRejuego: false
                     );
                 }

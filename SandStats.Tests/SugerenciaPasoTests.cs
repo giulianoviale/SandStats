@@ -165,6 +165,8 @@ namespace SandStats.Tests
             Assert.Equal(C, s.Opciones[0].JugadorSugeridoId);
             Assert.Equal(D2, s.DuplaId);
             Assert.Equal(Complejo.K2, s.Complejo);
+            Assert.True(s.PermiteDe2da);
+            Assert.Equal(D, s.JugadorDe2daId);
             Assert.False(s.EsRejuego);
         }
 
@@ -185,6 +187,8 @@ namespace SandStats.Tests
             Assert.Equal(C, s.Opciones[0].JugadorSugeridoId);
             Assert.Equal(D2, s.DuplaId);
             Assert.Equal(Complejo.K2, s.Complejo);
+            Assert.True(s.PermiteDe2da);
+            Assert.Equal(D, s.JugadorDe2daId);
             Assert.True(s.EsRejuego);
         }
 
@@ -228,7 +232,8 @@ namespace SandStats.Tests
             Assert.Equal(C, s.Opciones[0].JugadorSugeridoId);
             Assert.Equal(D2, s.DuplaId);
             Assert.Equal(Complejo.K2, s.Complejo);
-            Assert.False(s.PermiteDe2da);
+            Assert.True(s.PermiteDe2da);
+            Assert.Equal(D, s.JugadorDe2daId);
             Assert.False(s.EsRejuego);
         }
 
@@ -249,6 +254,8 @@ namespace SandStats.Tests
             Assert.Equal(C, s.Opciones[0].JugadorSugeridoId);
             Assert.Equal(D2, s.DuplaId);
             Assert.Equal(Complejo.K2, s.Complejo);
+            Assert.True(s.PermiteDe2da);
+            Assert.Equal(D, s.JugadorDe2daId);
             Assert.False(s.EsRejuego);
         }
 
@@ -269,6 +276,8 @@ namespace SandStats.Tests
             Assert.Equal(C, s.Opciones[0].JugadorSugeridoId);
             Assert.Equal(D2, s.DuplaId);
             Assert.Equal(Complejo.K2, s.Complejo);
+            Assert.True(s.PermiteDe2da);
+            Assert.Equal(D, s.JugadorDe2daId);
             Assert.False(s.EsRejuego);
         }
 
