@@ -172,6 +172,66 @@ namespace SandStats.Services.EnVivo
             return resultado;
         }
 
+        public async Task DegradePrimerContactoAsync(int rallyId)
+        {
+            var ctx = await ArmarContextoAsync(rallyId);
+
+            var primerContacto = ctx.AccionesRallyActual
+                .LastOrDefault(a => a.Fundamento == Fundamento.Recepcion
+                                 || a.Fundamento == Fundamento.Defensa);
+
+            if (primerContacto == null)
+                throw new InvalidOperationException("No hay recepción o defensa en el rally");
+
+            // Degradar si la calidad actual es mejor que Negativo
+            bool degradar = !primerContacto.Calidad.HasValue
+                         || (int)primerContacto.Calidad.Value > (int)Calidad.Negativo;
+
+            if (degradar)
+            {
+                var accionEntity = (await db.Acciones.FindAsync(primerContacto.Id))!;
+                accionEntity.Calidad = Calidad.Negativo;
+
+                // Recalcular derivación del saque (combinada: Recepcion− → Saque+)
+                if (primerContacto.Fundamento == Fundamento.Recepcion)
+                {
+                    var saque = await db.Acciones
+                        .Where(a => a.RallyId == rallyId && a.Fundamento == Fundamento.Saque)
+                        .FirstOrDefaultAsync();
+                    if (saque != null)
+                        saque.Calidad = Calidad.Positivo;
+                }
+                await db.SaveChangesAsync();
+            }
+
+            // Recepcion: Regla 3 seguiría sugiriendo receptor ataca.
+            // Insertar marcador FreeBall (sin carga estadística, Calidad null) del compañero
+            // para que Regla 14 garantice rival ataca K2. En Case A el armado NO fue malo.
+            // Defensa: Defensa Negativo ya dispara Regla 11 → rival ataca. Sin marcador extra.
+            if (primerContacto.Fundamento == Fundamento.Recepcion)
+            {
+                var duplaEntry = ctx.JugadoresPorDupla
+                    .First(kvp => kvp.Value.Any(j => j.JugadorId == primerContacto.JugadorId));
+                int companeroId = duplaEntry.Value
+                    .First(j => j.JugadorId != primerContacto.JugadorId)
+                    .JugadorId;
+
+                db.Acciones.Add(new Accion
+                {
+                    RallyId    = rallyId,
+                    Secuencia  = ctx.AccionesRallyActual.Count + 1,
+                    JugadorId  = companeroId,
+                    Fundamento = Fundamento.FreeBall,
+                    Calidad    = null,
+                    Complejo   = Complejo.K2,
+                    EsDe2da    = false,
+                    EsRejuego  = false,
+                    FechaHora  = DateTime.UtcNow
+                });
+                await db.SaveChangesAsync();
+            }
+        }
+
         public async Task CerrarSetAsync(int setEnVivoId, int duplaGanadoraId)
         {
             var set = await db.SetsEnVivo

@@ -6,6 +6,8 @@ namespace SandStats.Models.EnVivo
         Recepcion,
         Ataque,
         Bloqueo,
-        Defensa
+        Defensa,
+        Armado,
+        FreeBall
     }
 }

@@ -49,12 +49,44 @@ namespace SandStats.Endpoints.EnVivo
                 catch (Exception ex) { return MapError(ex); }
             });
 
-            g.MapPost("/rallies/{id:int}/acciones", async (int id, RegistrarAccionRequest req, CargaEnVivoService svc) =>
+            g.MapPost("/rallies/{id:int}/acciones", async (int id, RegistrarAccionRequest req, CargaEnVivoService svc, ApplicationDbContext db) =>
             {
                 try
                 {
-                    var detalle = MapDetalle(req.Fundamento, req.Detalle);
+                    object? detalle;
+                    if (req.Fundamento == Fundamento.Ataque
+                        && req.Detalle?.GolpeSimplificado != null)
+                    {
+                        var jug = await db.Jugadores.FindAsync(req.JugadorId)
+                            ?? throw new ArgumentException($"Jugador {req.JugadorId} no encontrado");
+                        var lado = req.Detalle.Lado
+                            ?? throw new ArgumentException("Lado requerido para Ataque");
+                        var zona = req.Detalle.ZonaDestino
+                            ?? throw new ArgumentException("ZonaDestino requerida para Ataque");
+                        detalle = new DetalleAtaque
+                        {
+                            Lado        = lado,
+                            TipoAccion  = InferenciaAtaque.Inferir(req.Detalle.GolpeSimplificado, lado, zona, jug.RolPrincipal),
+                            ZonaDestino = zona,
+                            EsVarilla   = req.Detalle.EsVarilla  ?? false,
+                            EsEspecial  = false
+                        };
+                    }
+                    else
+                    {
+                        detalle = MapDetalle(req.Fundamento, req.Detalle);
+                    }
                     await svc.RegistrarAccionAsync(id, new CargaAccion(req.Fundamento, req.Calidad, req.JugadorId, req.EsDe2da), detalle);
+                    return Results.Ok(MapEstado(await svc.ObtenerEstadoRallyAsync(id)));
+                }
+                catch (Exception ex) { return MapError(ex); }
+            });
+
+            g.MapPost("/rallies/{id:int}/degradar-primer-contacto", async (int id, CargaEnVivoService svc) =>
+            {
+                try
+                {
+                    await svc.DegradePrimerContactoAsync(id);
                     return Results.Ok(MapEstado(await svc.ObtenerEstadoRallyAsync(id)));
                 }
                 catch (Exception ex) { return MapError(ex); }

@@ -24,7 +24,8 @@ namespace SandStats.Endpoints.EnVivo
         bool? EsEspecial,
         ZonaSaque? ZonaSaque,
         TipoSaque? TipoSaque,
-        TipoRecepcion? TipoRecepcion);
+        TipoRecepcion? TipoRecepcion,
+        string? GolpeSimplificado);   // "Spike"|"Tip" — el servidor infiere TipoAccion
 
     public record RegistrarAccionRequest(
         Fundamento Fundamento,

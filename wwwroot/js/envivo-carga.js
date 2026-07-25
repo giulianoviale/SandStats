@@ -177,7 +177,7 @@
 
         // Tabla de acciones
         Array.from(elTablaBody.querySelectorAll('tr:not(#fila-vacia)')).forEach(r => r.remove());
-        const acciones = estado.acciones || [];
+        const acciones = (estado.acciones || []).filter(a => a.fundamento !== 'FreeBall');
         if (acciones.length === 0) {
             elFilaVacia.style.display = '';
         } else {
@@ -446,21 +446,31 @@
         let lado = null, golpe = null, zona = null;
         let esVarilla = false;
 
-        const PREFIJOS = { Spike: 'Atq', LineTip: 'Tl', CrossTip: 'Td' };
-
         const el = elPanelCarga;
         el.innerHTML = '<div class="fw-semibold mb-2">Ataque</div>';
 
-        // Jugador / De 2da
-        el.appendChild(seccion('Atacante'));
+        const dupJug = jugadores[sug.duplaId] || [];
+
+        // ── Decisión binaria ATACA / NO ATACA (primero) ───────────────────────
+        const wrapDecision = document.createElement('div');
+        wrapDecision.className = 'd-flex gap-2 mb-3';
+
+        const btnAtaca   = makeBtn('ATACA',               'btn btn-primary flex-fill btn-sel');
+        const btnNoAtaca = makeBtn('NO ATACA / FREE BALL', 'btn btn-outline-secondary flex-fill');
+        wrapDecision.appendChild(btnAtaca);
+        wrapDecision.appendChild(btnNoAtaca);
+        el.appendChild(wrapDecision);
+
+        // ── Sección ATACA (visible por defecto) ───────────────────────────────
+        const secAtaca = document.createElement('div');
+
+        // Atacante (dentro de secAtaca)
+        secAtaca.appendChild(seccion('Atacante'));
         const wrapJug = document.createElement('div');
         wrapJug.className = 'd-flex gap-2 flex-wrap mb-2';
-
-        const dupJug = jugadores[sug.duplaId] || [];
         let btn2da = null;
 
         dupJug.forEach(j => {
-            // Si tiene botón "2da" propio, no duplicar como botón genérico
             if (sug.permiteDe2da && j.id === sug.jugadorDe2daId) return;
             const esSugerido = j.id === opc.jugadorSugeridoId;
             const b = makeBtn(j.nombre, `btn btn-outline-primary${esSugerido ? ' btn-sel' : ''}`);
@@ -484,12 +494,12 @@
             });
             wrapJug.appendChild(btn2da);
         }
-        el.appendChild(wrapJug);
+        secAtaca.appendChild(wrapJug);
 
         // Lado
-        el.appendChild(seccion('Lado'));
-        const elSecArmado = document.createElement('div'); // referencia para show/hide
-        el.appendChild(grupoBotones(
+        secAtaca.appendChild(seccion('Lado'));
+        const elSecArmado = document.createElement('div');
+        secAtaca.appendChild(grupoBotones(
             [{ valor: 'Bueno', texto: 'Bueno' }, { valor: 'Medio', texto: 'Medio' }, { valor: 'Atras', texto: 'Atrás' }],
             'btn-outline-secondary',
             (v) => {
@@ -500,19 +510,18 @@
         ));
 
         // Golpe
-        el.appendChild(seccion('Golpe'));
-        el.appendChild(grupoBotones(
-            [{ valor: 'Spike', texto: 'Spike' }, { valor: 'LineTip', texto: 'Line tip' }, { valor: 'CrossTip', texto: 'Cross tip' }],
+        secAtaca.appendChild(seccion('Golpe'));
+        secAtaca.appendChild(grupoBotones(
+            [{ valor: 'Spike', texto: 'Spike' }, { valor: 'Tip', texto: 'Tip' }],
             'btn-outline-secondary',
             (v) => { golpe = v; checkRegistrar(); }
         ));
 
         // Zona destino
-        el.appendChild(seccion('Zona destino'));
+        secAtaca.appendChild(seccion('Zona destino'));
         const zonaGrid = document.createElement('div');
         zonaGrid.className = 'zona-grid mb-2';
-        // Layout: fila superior 4-3-2, media 7-8-9, inferior 5-6-1
-        [4, 3, 2, 7, 8, 9, 5, 6, 1].forEach(z => {
+        [1, 6, 5, 9, 8, 7, 2, 3, 4].forEach(z => {
             const b = makeBtn(String(z), 'btn btn-outline-secondary btn-sm');
             b.addEventListener('click', () => {
                 zonaGrid.querySelectorAll('button').forEach(x => x.classList.remove('btn-sel'));
@@ -522,47 +531,36 @@
             });
             zonaGrid.appendChild(b);
         });
-        el.appendChild(zonaGrid);
+        secAtaca.appendChild(zonaGrid);
 
-        // Armado (oculto si Medio)
-        const lblArmado = seccion('Armado');
+        // Armado
         const wrapArmado = document.createElement('div');
         wrapArmado.className = 'd-flex gap-2 mb-2';
 
         const btnVarilla = makeBtn('Varilla', 'btn btn-outline-secondary btn-sm');
         btnVarilla.addEventListener('click', () => {
-            if (esVarilla) {
-                esVarilla = false;
-                btnVarilla.classList.remove('btn-sel');
-            } else {
-                esVarilla = true;
-                btnVarilla.classList.add('btn-sel');
-                btnEntrePosicion.classList.remove('btn-sel');
-            }
+            esVarilla = !esVarilla;
+            btnVarilla.classList.toggle('btn-sel', esVarilla);
+            if (esVarilla) btnEntrePosicion.classList.remove('btn-sel');
         });
 
         const btnEntrePosicion = makeBtn('Entre posición', 'btn btn-outline-secondary btn-sm');
         btnEntrePosicion.addEventListener('click', () => {
-            // Entre posición no activa esVarilla ni esEspecial — reset a ambos false
             esVarilla = false;
             btnVarilla.classList.remove('btn-sel');
-            if (btnEntrePosicion.classList.contains('btn-sel')) {
-                btnEntrePosicion.classList.remove('btn-sel');
-            } else {
-                btnEntrePosicion.classList.add('btn-sel');
-            }
+            btnEntrePosicion.classList.toggle('btn-sel',
+                !btnEntrePosicion.classList.contains('btn-sel'));
         });
 
         wrapArmado.appendChild(btnVarilla);
         wrapArmado.appendChild(btnEntrePosicion);
-
-        elSecArmado.appendChild(lblArmado);
+        elSecArmado.appendChild(seccion('Armado'));
         elSecArmado.appendChild(wrapArmado);
-        el.appendChild(elSecArmado);
+        secAtaca.appendChild(elSecArmado);
 
-        // Botones de resultado
+        // Resultados
         const wrapResult = document.createElement('div');
-        wrapResult.className = 'd-flex gap-2 flex-wrap mt-3';
+        wrapResult.className = 'd-flex gap-2 flex-wrap mt-2';
 
         const btnRegistrar = makeBtn('Registrar (sigue)', 'btn btn-outline-primary');
         btnRegistrar.disabled = true;
@@ -572,30 +570,105 @@
         btnPunto.disabled = true;
         btnPunto.addEventListener('click', () => enviarAtaque('DoblePositivo'));
 
-        const btnError = makeBtn('= Error propio', 'btn btn-danger');
-        btnError.disabled = true;
-        btnError.addEventListener('click', () => enviarAtaque('DobleNegativo'));
+        const btnErrorAtq = makeBtn('= Error propio', 'btn btn-danger');
+        btnErrorAtq.disabled = true;
+        btnErrorAtq.addEventListener('click', () => enviarAtaque('DobleNegativo'));
 
         wrapResult.appendChild(btnRegistrar);
         wrapResult.appendChild(btnPunto);
-        wrapResult.appendChild(btnError);
-        el.appendChild(wrapResult);
+        wrapResult.appendChild(btnErrorAtq);
+        secAtaca.appendChild(wrapResult);
+
+        el.appendChild(secAtaca);
+
+        // ── Sección NO ATACA / FREE BALL (oculta por defecto) ────────────────
+        const secFreeBall = document.createElement('div');
+        secFreeBall.style.display = 'none';
+
+        const innerFB = document.createElement('div');
+        innerFB.className = 'd-grid gap-2';
+
+        const lblContexto = document.createElement('div');
+        lblContexto.className = 'text-muted small mb-1';
+        lblContexto.textContent = 'Dupla en posesión: ' + dupJug.map(j => j.nombre).join(' / ');
+        innerFB.appendChild(lblContexto);
+
+        const btnFBA = makeBtn('Por el toque anterior', 'btn btn-outline-secondary');
+        btnFBA.addEventListener('click', async () => {
+            ocultarError();
+            const data = await apiFetch(
+                `/api/envivo/rallies/${ultimoRallyId}/degradar-primer-contacto`,
+                { method: 'POST' });
+            if (data) renderEstado(data);
+        });
+        innerFB.appendChild(btnFBA);
+
+        const sugeridoId = opc.jugadorSugeridoId;
+        if (dupJug.find(j => j.id === sugeridoId)) {
+            const armador = dupJug.find(j => j.id !== sugeridoId);
+            if (armador) {
+                const btnFBB = makeBtn(`Por armado malo — ${armador.nombre}`, 'btn btn-outline-secondary');
+                btnFBB.addEventListener('click', () => {
+                    ocultarError();
+                    window.registrarAccion({
+                        fundamento: 'Armado', calidad: 'Negativo',
+                        jugadorId: armador.id, esDe2da: false, detalle: null
+                    });
+                });
+                innerFB.appendChild(btnFBB);
+            }
+        } else {
+            dupJug.forEach(j => {
+                const btnFBB = makeBtn(`Armado malo — ${j.nombre}`, 'btn btn-outline-secondary');
+                btnFBB.addEventListener('click', () => {
+                    ocultarError();
+                    window.registrarAccion({
+                        fundamento: 'Armado', calidad: 'Negativo',
+                        jugadorId: j.id, esDe2da: false, detalle: null
+                    });
+                });
+                innerFB.appendChild(btnFBB);
+            });
+        }
+
+        secFreeBall.appendChild(innerFB);
+        el.appendChild(secFreeBall);
+
+        // ── Toggle decisión ───────────────────────────────────────────────────
+        btnAtaca.addEventListener('click', () => {
+            btnAtaca.classList.add('btn-sel', 'btn-primary');
+            btnAtaca.classList.remove('btn-outline-secondary');
+            btnNoAtaca.classList.remove('btn-sel', 'btn-primary');
+            btnNoAtaca.classList.add('btn-outline-secondary');
+            secAtaca.style.display    = '';
+            secFreeBall.style.display = 'none';
+        });
+
+        btnNoAtaca.addEventListener('click', () => {
+            btnNoAtaca.classList.add('btn-sel', 'btn-primary');
+            btnNoAtaca.classList.remove('btn-outline-secondary');
+            btnAtaca.classList.remove('btn-sel', 'btn-primary');
+            btnAtaca.classList.add('btn-outline-secondary');
+            secAtaca.style.display    = 'none';
+            secFreeBall.style.display = '';
+        });
+
+        // ── Helpers ───────────────────────────────────────────────────────────
 
         function checkRegistrar() {
             const habilitado = !!(lado && golpe && zona);
             btnRegistrar.disabled = !habilitado;
             btnPunto.disabled     = !habilitado;
-            btnError.disabled     = !habilitado;
+            btnErrorAtq.disabled  = !habilitado;
         }
 
         function enviarAtaque(calidad) {
-            const tipoAccion = PREFIJOS[golpe] + zona;
             window.registrarAccion({
                 fundamento: 'Ataque', calidad,
                 jugadorId, esDe2da,
                 detalle: {
                     lado,
-                    tipoAccion,
+                    golpeSimplificado: golpe,
                     zonaDestino: 'Zona' + zona,
                     esVarilla,
                     esEspecial: false

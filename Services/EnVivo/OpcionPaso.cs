@@ -2,5 +2,8 @@ using SandStats.Models.EnVivo;
 
 namespace SandStats.Services.EnVivo
 {
-    public record OpcionPaso(Fundamento Fundamento, int? JugadorSugeridoId);
+    public record OpcionPaso(
+        Fundamento Fundamento,
+        int? JugadorSugeridoId,
+        IReadOnlyList<Calidad>? CalidadesValidas = null);
 }

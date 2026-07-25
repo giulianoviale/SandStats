@@ -261,6 +261,32 @@ namespace SandStats.Services.EnVivo
                 }
             }
 
+            // Regla 13: armado − → rival ataca, free ball K2
+            if (ultima.Fundamento == Fundamento.Armado && ultima.Calidad == Calidad.Negativo)
+            {
+                return new SugerenciaPaso(
+                    Opciones: [new OpcionPaso(Fundamento.Ataque, null)],
+                    DuplaId: RivalDe(ctx, DuplaDeJugador(ctx, ultima.JugadorId)),
+                    Complejo: Complejo.K2,
+                    PermiteDe2da: false,
+                    JugadorDe2daId: null,
+                    EsRejuego: false
+                );
+            }
+
+            // Regla 14: free ball (marcador de posesión, Calidad null) → rival ataca K2
+            if (ultima.Fundamento == Fundamento.FreeBall)
+            {
+                return new SugerenciaPaso(
+                    Opciones: [new OpcionPaso(Fundamento.Ataque, null)],
+                    DuplaId: RivalDe(ctx, DuplaDeJugador(ctx, ultima.JugadorId)),
+                    Complejo: Complejo.K2,
+                    PermiteDe2da: false,
+                    JugadorDe2daId: null,
+                    EsRejuego: false
+                );
+            }
+
             throw new InvalidOperationException($"Estado no manejado: {ultima.Fundamento}/{ultima.Calidad}");
         }
 

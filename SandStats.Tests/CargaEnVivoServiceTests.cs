@@ -380,5 +380,182 @@ namespace SandStats.Tests
             Assert.Equal(1, rally2Actualizado.MarcadorDupla1);
             Assert.Equal(1, rally2Actualizado.MarcadorDupla2);
         }
+
+        // ── Test 11: Armado Negativo no cierra ni deriva ──────────────────────
+
+        [Fact]
+        public async Task ArmadoNegativo_NoDeriva_NoSeCierra()
+        {
+            var (_, set) = await CrearPartidoYSet();
+            var rally = await _svc.AbrirRallyAsync(set.Id);
+
+            await _svc.RegistrarAccionAsync(rally.Id,
+                new CargaAccion(Fundamento.Saque, null, _j1.Id, false), null);
+            await _svc.RegistrarAccionAsync(rally.Id,
+                new CargaAccion(Fundamento.Recepcion, Calidad.Positivo, _j3.Id, false), null);
+            await _svc.RegistrarAccionAsync(rally.Id,
+                new CargaAccion(Fundamento.Armado, Calidad.Negativo, _j4.Id, false), null);
+
+            var rallyDb = await _db.Rallies.FindAsync(rally.Id);
+            Assert.Null(rallyDb!.DuplaGanadoraId);
+
+            // Ninguna acción con fundamento Armado tiene calidad derivada (no hay combinada)
+            var acciones = await _db.Acciones
+                .Where(a => a.RallyId == rally.Id)
+                .ToListAsync();
+            var saque = acciones.First(a => a.Fundamento == Fundamento.Saque);
+            // Saque fue derivado por la Recepcion+, no por el Armado
+            Assert.Equal(Calidad.Negativo, saque.Calidad);
+        }
+
+        // ── Test 12: DegradePrimerContacto — Recepcion+ → degrada y agrega FreeBall
+
+        [Fact]
+        public async Task DegradePrimerContacto_RecepcionPositiva_DegradaYAgregaFreeBall()
+        {
+            var (_, set) = await CrearPartidoYSet();
+            var rally = await _svc.AbrirRallyAsync(set.Id);
+
+            await _svc.RegistrarAccionAsync(rally.Id,
+                new CargaAccion(Fundamento.Saque, null, _j1.Id, false), null);
+            await _svc.RegistrarAccionAsync(rally.Id,
+                new CargaAccion(Fundamento.Recepcion, Calidad.Positivo, _j3.Id, false), null);
+
+            await _svc.DegradePrimerContactoAsync(rally.Id);
+
+            var acciones = await _db.Acciones
+                .Where(a => a.RallyId == rally.Id)
+                .OrderBy(a => a.Secuencia)
+                .ToListAsync();
+
+            // Recepcion degradada a Negativo
+            var recep = acciones.First(a => a.Fundamento == Fundamento.Recepcion);
+            Assert.Equal(Calidad.Negativo, recep.Calidad);
+
+            // Saque recalculado a Positivo (combinada: Recepcion− → Saque+)
+            var saque = acciones.First(a => a.Fundamento == Fundamento.Saque);
+            Assert.Equal(Calidad.Positivo, saque.Calidad);
+
+            // FreeBall insertado (compañero del receptor = _j4), sin calidad estadística
+            var fb = acciones.First(a => a.Fundamento == Fundamento.FreeBall);
+            Assert.Null(fb.Calidad);
+            Assert.Equal(_j4.Id, fb.JugadorId);
+
+            // Rally sigue abierto
+            var rallyDb = await _db.Rallies.FindAsync(rally.Id);
+            Assert.Null(rallyDb!.DuplaGanadoraId);
+        }
+
+        // ── Test 13: DegradePrimerContacto — Recepcion ya Negativa → no-op calidad, igual agrega FreeBall
+
+        [Fact]
+        public async Task DegradePrimerContacto_RecepcionYaNegativa_SoloAgregaFreeBall()
+        {
+            var (_, set) = await CrearPartidoYSet();
+            var rally = await _svc.AbrirRallyAsync(set.Id);
+
+            await _svc.RegistrarAccionAsync(rally.Id,
+                new CargaAccion(Fundamento.Saque, null, _j1.Id, false), null);
+            await _svc.RegistrarAccionAsync(rally.Id,
+                new CargaAccion(Fundamento.Recepcion, Calidad.Negativo, _j3.Id, false), null);
+
+            // La recepcion ya es Negativo → no-op de degradación, pero sigue el flujo
+            await _svc.DegradePrimerContactoAsync(rally.Id);
+
+            var acciones = await _db.Acciones
+                .Where(a => a.RallyId == rally.Id)
+                .OrderBy(a => a.Secuencia)
+                .ToListAsync();
+
+            var recep = acciones.First(a => a.Fundamento == Fundamento.Recepcion);
+            Assert.Equal(Calidad.Negativo, recep.Calidad);
+
+            // FreeBall igual se agrega (sin calidad estadística)
+            Assert.Contains(acciones, a => a.Fundamento == Fundamento.FreeBall && a.Calidad == null);
+        }
+
+        // ── Test 14: DegradePrimerContacto — Defensa degrada sin Armado ───────
+
+        [Fact]
+        public async Task DegradePrimerContacto_DefensaExclamativa_DegradaSinArmado()
+        {
+            var (_, set) = await CrearPartidoYSet();
+            var rally = await _svc.AbrirRallyAsync(set.Id);
+
+            // Saque → Recep → Ataque → Defensa!
+            await _svc.RegistrarAccionAsync(rally.Id,
+                new CargaAccion(Fundamento.Saque, null, _j1.Id, false), null);
+            await _svc.RegistrarAccionAsync(rally.Id,
+                new CargaAccion(Fundamento.Recepcion, Calidad.Positivo, _j3.Id, false), null);
+            await _svc.RegistrarAccionAsync(rally.Id,
+                new CargaAccion(Fundamento.Ataque, null, _j3.Id, false), null);
+            await _svc.RegistrarAccionAsync(rally.Id,
+                new CargaAccion(Fundamento.Defensa, Calidad.Exclamativa, _j1.Id, false), null);
+
+            await _svc.DegradePrimerContactoAsync(rally.Id);
+
+            var acciones = await _db.Acciones
+                .Where(a => a.RallyId == rally.Id)
+                .ToListAsync();
+
+            // Defensa degradada a Negativo
+            var defensa = acciones.First(a => a.Fundamento == Fundamento.Defensa);
+            Assert.Equal(Calidad.Negativo, defensa.Calidad);
+
+            // Sin acción Armado ni FreeBall (Defensa ya cruza posesión por Regla 11)
+            Assert.DoesNotContain(acciones, a => a.Fundamento == Fundamento.Armado);
+            Assert.DoesNotContain(acciones, a => a.Fundamento == Fundamento.FreeBall);
+
+            // Rally sigue abierto
+            var rallyDb = await _db.Rallies.FindAsync(rally.Id);
+            Assert.Null(rallyDb!.DuplaGanadoraId);
+        }
+
+        // ── Test 15b: DegradePrimerContacto → Deshacer elimina FreeBall ─────────
+
+        [Fact]
+        public async Task DegradePrimerContacto_Deshacer_EliminaFreeBallRallyAbierto()
+        {
+            var (_, set) = await CrearPartidoYSet();
+            var rally = await _svc.AbrirRallyAsync(set.Id);
+
+            await _svc.RegistrarAccionAsync(rally.Id,
+                new CargaAccion(Fundamento.Saque, null, _j1.Id, false), null);
+            await _svc.RegistrarAccionAsync(rally.Id,
+                new CargaAccion(Fundamento.Recepcion, Calidad.Positivo, _j3.Id, false), null);
+
+            await _svc.DegradePrimerContactoAsync(rally.Id);
+            await _svc.DeshacerUltimaAccionAsync(rally.Id);
+
+            var acciones = await _db.Acciones
+                .Where(a => a.RallyId == rally.Id)
+                .ToListAsync();
+
+            // FreeBall eliminado
+            Assert.DoesNotContain(acciones, a => a.Fundamento == Fundamento.FreeBall);
+
+            // Rally sigue abierto
+            var rallyDb = await _db.Rallies.FindAsync(rally.Id);
+            Assert.Null(rallyDb!.DuplaGanadoraId);
+
+            // Limitación conocida: recepcion queda en Negativo (calidad previa no se restaura)
+            var recep = acciones.First(a => a.Fundamento == Fundamento.Recepcion);
+            Assert.Equal(Calidad.Negativo, recep.Calidad);
+        }
+
+        // ── Test 15: DegradePrimerContacto sin Recepcion/Defensa → excepción ──
+
+        [Fact]
+        public async Task DegradePrimerContacto_SoloSaque_LanzaExcepcion()
+        {
+            var (_, set) = await CrearPartidoYSet();
+            var rally = await _svc.AbrirRallyAsync(set.Id);
+
+            await _svc.RegistrarAccionAsync(rally.Id,
+                new CargaAccion(Fundamento.Saque, null, _j1.Id, false), null);
+
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => _svc.DegradePrimerContactoAsync(rally.Id));
+        }
     }
 }

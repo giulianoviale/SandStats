@@ -281,6 +281,54 @@ namespace SandStats.Tests
             Assert.False(s.EsRejuego);
         }
 
+        // ── Regla 13: armado − → rival ataca K2 ─────────────────────────────
+
+        [Fact]
+        public void Regla13_ArmadoNegativo_SugiereAtaqueRival()
+        {
+            // D2 recibió y su compañero D armó mal (free ball a D1)
+            var acciones = new Accion[]
+            {
+                Acc(Fundamento.Saque,     null,             A),
+                Acc(Fundamento.Recepcion, Calidad.Positivo, C),
+                Acc(Fundamento.Armado,    Calidad.Negativo, D)
+            };
+            var s = new MotorRally().SugerirProximoPaso(Ctx(acciones));
+
+            Assert.Single(s.Opciones);
+            Assert.Equal(Fundamento.Ataque, s.Opciones[0].Fundamento);
+            Assert.Null(s.Opciones[0].JugadorSugeridoId);
+            Assert.Equal(D1, s.DuplaId);
+            Assert.Equal(Complejo.K2, s.Complejo);
+            Assert.False(s.PermiteDe2da);
+            Assert.Null(s.JugadorDe2daId);
+            Assert.False(s.EsRejuego);
+        }
+
+        // ── Regla 14: free ball → rival ataca K2 ─────────────────────────────
+
+        [Fact]
+        public void Regla14_FreeBall_SugiereAtaqueRival()
+        {
+            // D2 recibió; el compañero D marcó free ball (por toque anterior malo)
+            var acciones = new Accion[]
+            {
+                Acc(Fundamento.Saque,     null,             A),
+                Acc(Fundamento.Recepcion, Calidad.Positivo, C),
+                Acc(Fundamento.FreeBall,  null,             D)
+            };
+            var s = new MotorRally().SugerirProximoPaso(Ctx(acciones));
+
+            Assert.Single(s.Opciones);
+            Assert.Equal(Fundamento.Ataque, s.Opciones[0].Fundamento);
+            Assert.Null(s.Opciones[0].JugadorSugeridoId);
+            Assert.Equal(D1, s.DuplaId);
+            Assert.Equal(Complejo.K2, s.Complejo);
+            Assert.False(s.PermiteDe2da);
+            Assert.Null(s.JugadorDe2daId);
+            Assert.False(s.EsRejuego);
+        }
+
         // ── Regla 12: transversal K1→K2 (segundo ataque del rally) ──────────
 
         [Fact]
