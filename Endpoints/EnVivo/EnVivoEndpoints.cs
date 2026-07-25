@@ -155,7 +155,7 @@ namespace SandStats.Endpoints.EnVivo
                             null,
                             new ResultadoMarcadorResponse(false, false, false, null),
                             Cerrado: true,
-                            null, null));
+                            null, null, null));
                     }
 
                     return Results.Ok(MapEstado(await svc.ObtenerEstadoRallyAsync(rallyId.Value)));
@@ -214,7 +214,8 @@ namespace SandStats.Endpoints.EnVivo
                     s.Opciones.Select(o => new OpcionPasoResponse(
                         o.Fundamento,
                         o.JugadorSugeridoId,
-                        o.JugadorSugeridoId.HasValue ? nombre(o.JugadorSugeridoId.Value) : null)).ToList(),
+                        o.JugadorSugeridoId.HasValue ? nombre(o.JugadorSugeridoId.Value) : null,
+                        o.CalidadesValidas?.Select(c => c.ToString()).ToList() ?? [])).ToList(),
                     s.DuplaId, s.Complejo, s.PermiteDe2da,
                     s.JugadorDe2daId,
                     s.JugadorDe2daId.HasValue ? nombre(s.JugadorDe2daId.Value) : null,
@@ -231,7 +232,8 @@ namespace SandStats.Endpoints.EnVivo
                 new ResultadoMarcadorResponse(m.SetTerminado, m.PartidoTerminado, m.CambioDeLado, m.DuplaGanadoraSetId),
                 rally.DuplaGanadoraId != null,
                 rally.DuplaGanadoraId,
-                rally.TipoCierre);
+                rally.TipoCierre,
+                estado.AdvertenciaEstado);
         }
     }
 }

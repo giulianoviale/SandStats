@@ -17,7 +17,8 @@ namespace SandStats.Tests
             FechaHora = DateTime.UtcNow
         };
 
-        private static ContextoRally Ctx(IReadOnlyList<Accion> acciones) => new()
+        private static ContextoRally Ctx(IReadOnlyList<Accion> acciones,
+            IReadOnlyList<ModificadorCombinada>? combinadas = null) => new()
         {
             Dupla1Id = D1,
             Dupla2Id = D2,
@@ -31,8 +32,23 @@ namespace SandStats.Tests
             DuplaQueSacaPrimeroId = D1,
             GanadoresRalliesPrevios = Array.Empty<int>(),
             AccionesRallyActual = acciones,
-            Combinadas = Array.Empty<ModificadorCombinada>()
+            Combinadas = combinadas ?? Array.Empty<ModificadorCombinada>()
         };
+
+        private static IReadOnlyList<ModificadorCombinada> CombinasBloqueoDefensa() =>
+        [
+            new ModificadorCombinada { Id = 7,  FundamentoCargado = Fundamento.Bloqueo, CalidadCargada = Calidad.DoblePositivo, FundamentoDerivado = Fundamento.Ataque, CalidadDerivada = Calidad.Slash },
+            new ModificadorCombinada { Id = 8,  FundamentoCargado = Fundamento.Bloqueo, CalidadCargada = Calidad.Positivo,      FundamentoDerivado = Fundamento.Ataque, CalidadDerivada = Calidad.Negativo },
+            new ModificadorCombinada { Id = 9,  FundamentoCargado = Fundamento.Bloqueo, CalidadCargada = Calidad.Slash,         FundamentoDerivado = Fundamento.Ataque, CalidadDerivada = Calidad.Positivo },
+            new ModificadorCombinada { Id = 10, FundamentoCargado = Fundamento.Bloqueo, CalidadCargada = Calidad.Negativo,      FundamentoDerivado = Fundamento.Ataque, CalidadDerivada = Calidad.Positivo },
+            new ModificadorCombinada { Id = 11, FundamentoCargado = Fundamento.Bloqueo, CalidadCargada = Calidad.DobleNegativo, FundamentoDerivado = Fundamento.Ataque, CalidadDerivada = Calidad.DoblePositivo },
+            new ModificadorCombinada { Id = 12, FundamentoCargado = Fundamento.Defensa, CalidadCargada = Calidad.DoblePositivo, FundamentoDerivado = Fundamento.Ataque, CalidadDerivada = Calidad.Negativo },
+            new ModificadorCombinada { Id = 13, FundamentoCargado = Fundamento.Defensa, CalidadCargada = Calidad.Positivo,      FundamentoDerivado = Fundamento.Ataque, CalidadDerivada = Calidad.Negativo },
+            new ModificadorCombinada { Id = 14, FundamentoCargado = Fundamento.Defensa, CalidadCargada = Calidad.Exclamativa,   FundamentoDerivado = Fundamento.Ataque, CalidadDerivada = Calidad.Positivo },
+            new ModificadorCombinada { Id = 15, FundamentoCargado = Fundamento.Defensa, CalidadCargada = Calidad.Slash,         FundamentoDerivado = Fundamento.Ataque, CalidadDerivada = Calidad.Positivo },
+            new ModificadorCombinada { Id = 16, FundamentoCargado = Fundamento.Defensa, CalidadCargada = Calidad.Negativo,      FundamentoDerivado = Fundamento.Ataque, CalidadDerivada = Calidad.Positivo },
+            new ModificadorCombinada { Id = 17, FundamentoCargado = Fundamento.Defensa, CalidadCargada = Calidad.DobleNegativo, FundamentoDerivado = Fundamento.Ataque, CalidadDerivada = Calidad.DoblePositivo }
+        ];
 
         // ── Regla 1: rally vacío ─────────────────────────────────────────────
 
@@ -327,6 +343,36 @@ namespace SandStats.Tests
             Assert.False(s.PermiteDe2da);
             Assert.Null(s.JugadorDe2daId);
             Assert.False(s.EsRejuego);
+        }
+
+        // ── R5: CalidadesValidas por fundamento ──────────────────────────────
+
+        [Fact]
+        public void R5_CalidadesValidas_Bloqueo_NoIncluyeExclamativa()
+        {
+            var acciones = new Accion[] { Acc(Fundamento.Ataque, null, C) };
+            var s = new MotorRally().SugerirProximoPaso(Ctx(acciones, CombinasBloqueoDefensa()));
+
+            var opc = s.Opciones.First(o => o.Fundamento == Fundamento.Bloqueo);
+            Assert.NotNull(opc.CalidadesValidas);
+            Assert.Contains(Calidad.DoblePositivo, opc.CalidadesValidas);
+            Assert.Contains(Calidad.Positivo,      opc.CalidadesValidas);
+            Assert.Contains(Calidad.Slash,         opc.CalidadesValidas);
+            Assert.Contains(Calidad.Negativo,      opc.CalidadesValidas);
+            Assert.Contains(Calidad.DobleNegativo, opc.CalidadesValidas);
+            Assert.DoesNotContain(Calidad.Exclamativa, opc.CalidadesValidas);
+        }
+
+        [Fact]
+        public void R5_CalidadesValidas_Defensa_IncluyeExclamativa()
+        {
+            var acciones = new Accion[] { Acc(Fundamento.Ataque, null, C) };
+            var s = new MotorRally().SugerirProximoPaso(Ctx(acciones, CombinasBloqueoDefensa()));
+
+            var opc = s.Opciones.First(o => o.Fundamento == Fundamento.Defensa);
+            Assert.NotNull(opc.CalidadesValidas);
+            Assert.Contains(Calidad.Exclamativa, opc.CalidadesValidas);
+            Assert.Equal(6, opc.CalidadesValidas.Count);
         }
 
         // ── Regla 12: transversal K1→K2 (segundo ataque del rally) ──────────

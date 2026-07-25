@@ -88,6 +88,16 @@ namespace SandStats.Services.EnVivo
 
             var sugerencia = _motor.SugerirProximoPaso(ctx);
 
+            if (carga.Fundamento is Fundamento.Recepcion or Fundamento.Bloqueo or Fundamento.Defensa)
+            {
+                if (!carga.Calidad.HasValue ||
+                    !ctx.Combinadas.Any(c => c.FundamentoCargado == carga.Fundamento
+                                          && c.CalidadCargada    == carga.Calidad.Value))
+                    throw new ArgumentException(
+                        $"{carga.Fundamento} con calidad {carga.Calidad?.ToString() ?? "null"} " +
+                        $"no es una combinación válida");
+            }
+
             var accion = new Accion
             {
                 RallyId    = rallyId,
@@ -316,9 +326,13 @@ namespace SandStats.Services.EnVivo
             var ctx   = await ArmarContextoAsync(rallyId);
             var rally = (await db.Rallies.FindAsync(rallyId))!;
 
-            SugerenciaPaso? sugerencia = rally.DuplaGanadoraId == null
-                ? _motor.SugerirProximoPaso(ctx)
-                : null;
+            SugerenciaPaso? sugerencia = null;
+            string? advertenciaEstado = null;
+            if (rally.DuplaGanadoraId == null)
+            {
+                try { sugerencia = _motor.SugerirProximoPaso(ctx); }
+                catch (Exception ex) { advertenciaEstado = ex.Message; }
+            }
 
             var setsGanadores = await db.SetsEnVivo
                 .Where(s => s.PartidoEnVivoId == rally.SetEnVivo!.PartidoEnVivoId
@@ -335,7 +349,7 @@ namespace SandStats.Services.EnVivo
                 rally.SetEnVivo!.NumeroSet,
                 setsGanadosD1, setsGanadosD2);
 
-            return new EstadoRallyData(rally, ctx.AccionesRallyActual, sugerencia, marcador, ctx.NombresJugadores);
+            return new EstadoRallyData(rally, ctx.AccionesRallyActual, sugerencia, marcador, ctx.NombresJugadores, advertenciaEstado);
         }
 
         private async Task AplicarCierreAsync(int rallyId, int duplaGanadoraId, ContextoRally ctx, TipoCierreRally tipoCierre)

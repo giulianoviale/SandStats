@@ -24,8 +24,29 @@ namespace SandStats.Tests
             DuplaQueSacaPrimeroId = D1,
             GanadoresRalliesPrevios = ganadores ?? Array.Empty<int>(),
             AccionesRallyActual = Array.Empty<Accion>(),
-            Combinadas = Array.Empty<ModificadorCombinada>()
+            Combinadas = TodasLasCombinadas()
         };
+
+        private static IReadOnlyList<ModificadorCombinada> TodasLasCombinadas() =>
+        [
+            new ModificadorCombinada { Id = 1,  FundamentoCargado = Fundamento.Recepcion, CalidadCargada = Calidad.DoblePositivo, FundamentoDerivado = Fundamento.Saque, CalidadDerivada = Calidad.Negativo },
+            new ModificadorCombinada { Id = 2,  FundamentoCargado = Fundamento.Recepcion, CalidadCargada = Calidad.Positivo,      FundamentoDerivado = Fundamento.Saque, CalidadDerivada = Calidad.Negativo },
+            new ModificadorCombinada { Id = 3,  FundamentoCargado = Fundamento.Recepcion, CalidadCargada = Calidad.Exclamativa,   FundamentoDerivado = Fundamento.Saque, CalidadDerivada = Calidad.Exclamativa },
+            new ModificadorCombinada { Id = 4,  FundamentoCargado = Fundamento.Recepcion, CalidadCargada = Calidad.Slash,         FundamentoDerivado = Fundamento.Saque, CalidadDerivada = Calidad.Slash },
+            new ModificadorCombinada { Id = 5,  FundamentoCargado = Fundamento.Recepcion, CalidadCargada = Calidad.Negativo,      FundamentoDerivado = Fundamento.Saque, CalidadDerivada = Calidad.Positivo },
+            new ModificadorCombinada { Id = 6,  FundamentoCargado = Fundamento.Recepcion, CalidadCargada = Calidad.DobleNegativo, FundamentoDerivado = Fundamento.Saque, CalidadDerivada = Calidad.DoblePositivo },
+            new ModificadorCombinada { Id = 7,  FundamentoCargado = Fundamento.Bloqueo,   CalidadCargada = Calidad.DoblePositivo, FundamentoDerivado = Fundamento.Ataque, CalidadDerivada = Calidad.Slash },
+            new ModificadorCombinada { Id = 8,  FundamentoCargado = Fundamento.Bloqueo,   CalidadCargada = Calidad.Positivo,      FundamentoDerivado = Fundamento.Ataque, CalidadDerivada = Calidad.Negativo },
+            new ModificadorCombinada { Id = 9,  FundamentoCargado = Fundamento.Bloqueo,   CalidadCargada = Calidad.Slash,         FundamentoDerivado = Fundamento.Ataque, CalidadDerivada = Calidad.Positivo },
+            new ModificadorCombinada { Id = 10, FundamentoCargado = Fundamento.Bloqueo,   CalidadCargada = Calidad.Negativo,      FundamentoDerivado = Fundamento.Ataque, CalidadDerivada = Calidad.Positivo },
+            new ModificadorCombinada { Id = 11, FundamentoCargado = Fundamento.Bloqueo,   CalidadCargada = Calidad.DobleNegativo, FundamentoDerivado = Fundamento.Ataque, CalidadDerivada = Calidad.DoblePositivo },
+            new ModificadorCombinada { Id = 12, FundamentoCargado = Fundamento.Defensa,   CalidadCargada = Calidad.DoblePositivo, FundamentoDerivado = Fundamento.Ataque, CalidadDerivada = Calidad.Negativo },
+            new ModificadorCombinada { Id = 13, FundamentoCargado = Fundamento.Defensa,   CalidadCargada = Calidad.Positivo,      FundamentoDerivado = Fundamento.Ataque, CalidadDerivada = Calidad.Negativo },
+            new ModificadorCombinada { Id = 14, FundamentoCargado = Fundamento.Defensa,   CalidadCargada = Calidad.Exclamativa,   FundamentoDerivado = Fundamento.Ataque, CalidadDerivada = Calidad.Positivo },
+            new ModificadorCombinada { Id = 15, FundamentoCargado = Fundamento.Defensa,   CalidadCargada = Calidad.Slash,         FundamentoDerivado = Fundamento.Ataque, CalidadDerivada = Calidad.Positivo },
+            new ModificadorCombinada { Id = 16, FundamentoCargado = Fundamento.Defensa,   CalidadCargada = Calidad.Negativo,      FundamentoDerivado = Fundamento.Ataque, CalidadDerivada = Calidad.Positivo },
+            new ModificadorCombinada { Id = 17, FundamentoCargado = Fundamento.Defensa,   CalidadCargada = Calidad.DobleNegativo, FundamentoDerivado = Fundamento.Ataque, CalidadDerivada = Calidad.DoblePositivo }
+        ];
 
         // ── Cierres por carga ────────────────────────────────────────────────
 

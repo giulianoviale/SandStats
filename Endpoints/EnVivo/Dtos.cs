@@ -57,7 +57,11 @@ namespace SandStats.Endpoints.EnVivo
         Complejo Complejo,
         bool EsRejuego);
 
-    public record OpcionPasoResponse(Fundamento Fundamento, int? JugadorSugeridoId, string? JugadorNombre);
+    public record OpcionPasoResponse(
+        Fundamento Fundamento,
+        int? JugadorSugeridoId,
+        string? JugadorNombre,
+        IReadOnlyList<string> CalidadesValidas);
 
     public record SugerenciaPasoResponse(
         IReadOnlyList<OpcionPasoResponse> Opciones,
@@ -84,5 +88,6 @@ namespace SandStats.Endpoints.EnVivo
         ResultadoMarcadorResponse Marcador,
         bool Cerrado,
         int? DuplaGanadoraId,
-        TipoCierreRally? TipoCierre);
+        TipoCierreRally? TipoCierre,
+        string? AdvertenciaEstado);
 }

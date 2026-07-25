@@ -7,6 +7,7 @@ namespace SandStats.Services.EnVivo
         IReadOnlyList<Accion> Acciones,
         SugerenciaPaso? Sugerencia,
         ResultadoMarcador Marcador,
-        IReadOnlyDictionary<int, string> NombresJugadores
+        IReadOnlyDictionary<int, string> NombresJugadores,
+        string? AdvertenciaEstado = null
     );
 }

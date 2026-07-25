@@ -42,6 +42,16 @@ namespace SandStats.Services.EnVivo
 
         public ResultadoRegistro Registrar(ContextoRally ctx, CargaAccion carga)
         {
+            if (carga.Fundamento is Fundamento.Recepcion or Fundamento.Bloqueo or Fundamento.Defensa)
+            {
+                if (!carga.Calidad.HasValue ||
+                    !ctx.Combinadas.Any(c => c.FundamentoCargado == carga.Fundamento
+                                          && c.CalidadCargada    == carga.Calidad.Value))
+                    throw new ArgumentException(
+                        $"{carga.Fundamento} con calidad {carga.Calidad?.ToString() ?? "null"} " +
+                        $"no es una combinación válida");
+            }
+
             Derivacion? derivacion = null;
             if (carga.Calidad.HasValue)
             {
@@ -161,7 +171,9 @@ namespace SandStats.Services.EnVivo
                 int bloqueadorId = jugadoresRival.First(j => j.Posicion == PosicionJugador.Bloqueador).JugadorId;
                 int defensorId   = jugadoresRival.First(j => j.Posicion == PosicionJugador.Defensor).JugadorId;
                 return new SugerenciaPaso(
-                    Opciones: [new OpcionPaso(Fundamento.Bloqueo, bloqueadorId), new OpcionPaso(Fundamento.Defensa, defensorId)],
+                    Opciones: [
+                        new OpcionPaso(Fundamento.Bloqueo, bloqueadorId, CalidadesDesde(ctx, Fundamento.Bloqueo)),
+                        new OpcionPaso(Fundamento.Defensa, defensorId,   CalidadesDesde(ctx, Fundamento.Defensa))],
                     DuplaId: duplaRival,
                     Complejo: Complejo.K2,
                     PermiteDe2da: false,
@@ -289,6 +301,14 @@ namespace SandStats.Services.EnVivo
 
             throw new InvalidOperationException($"Estado no manejado: {ultima.Fundamento}/{ultima.Calidad}");
         }
+
+        private static IReadOnlyList<Calidad> CalidadesDesde(ContextoRally ctx, Fundamento f) =>
+            ctx.Combinadas
+               .Where(c => c.FundamentoCargado == f)
+               .Select(c => c.CalidadCargada)
+               .Distinct()
+               .OrderBy(c => (int)c)
+               .ToList();
 
         private static int Companero(ContextoRally ctx, int jugadorId)
         {

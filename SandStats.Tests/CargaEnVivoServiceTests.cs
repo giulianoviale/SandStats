@@ -543,6 +543,33 @@ namespace SandStats.Tests
             Assert.Equal(Calidad.Negativo, recep.Calidad);
         }
 
+        // ── Test 16: Bloqueo con Exclamativa → ArgumentException, no persiste ─
+
+        [Fact]
+        public async Task RegistrarBloqueoExclamativa_LanzaArgumentException_AccionNoGuardada()
+        {
+            var (_, set) = await CrearPartidoYSet();
+            var rally = await _svc.AbrirRallyAsync(set.Id);
+
+            // Secuencia previa: Saque → Recepcion → Ataque (sin calidad)
+            await _svc.RegistrarAccionAsync(rally.Id,
+                new CargaAccion(Fundamento.Saque, null, _j1.Id, false), null);
+            await _svc.RegistrarAccionAsync(rally.Id,
+                new CargaAccion(Fundamento.Recepcion, Calidad.Positivo, _j3.Id, false), null);
+            await _svc.RegistrarAccionAsync(rally.Id,
+                new CargaAccion(Fundamento.Ataque, null, _j3.Id, false), null);
+
+            int accionesAntes = await _db.Acciones.CountAsync(a => a.RallyId == rally.Id);
+
+            var ex = await Assert.ThrowsAsync<ArgumentException>(
+                () => _svc.RegistrarAccionAsync(rally.Id,
+                    new CargaAccion(Fundamento.Bloqueo, Calidad.Exclamativa, _j1.Id, false), null));
+
+            Assert.Contains("no es una combinación válida", ex.Message);
+            int accionesDespues = await _db.Acciones.CountAsync(a => a.RallyId == rally.Id);
+            Assert.Equal(accionesAntes, accionesDespues);
+        }
+
         // ── Test 15: DegradePrimerContacto sin Recepcion/Defensa → excepción ──
 
         [Fact]

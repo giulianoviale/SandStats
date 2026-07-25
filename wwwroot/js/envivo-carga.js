@@ -249,10 +249,15 @@
             // Panel carga
             elPanelCierre.style.display = 'none';
             elPanelCarga.style.display  = '';
-            renderPanel(estado.sugerencia);
-
-            // Deshacer solo si hay acciones
-            elBtnDeshacer.style.display = acciones.length > 0 ? '' : 'none';
+            if (estado.advertenciaEstado) {
+                elPanelCarga.innerHTML =
+                    `<div class="alert alert-warning mb-2"><strong>Estado bloqueado:</strong> ${estado.advertenciaEstado}</div>` +
+                    `<p class="text-muted small mb-0">Usá <strong>Deshacer</strong> para retroceder, o el cierre rápido para terminar el rally.</p>`;
+                elBtnDeshacer.style.display = '';
+            } else {
+                renderPanel(estado.sugerencia);
+                elBtnDeshacer.style.display = acciones.length > 0 ? '' : 'none';
+            }
         }
     }
 
@@ -304,7 +309,7 @@
         return wrap;
     }
 
-    function botonesCalidad(onCalidad) {
+    function botonesCalidad(onCalidad, calidadesValidas) {
         const CALIDADES = [
             { val: 'DoblePositivo', sim: '#', cls: 'cal-dp' },
             { val: 'Positivo',      sim: '+', cls: 'cal-p'  },
@@ -313,15 +318,18 @@
             { val: 'Negativo',      sim: '−', cls: 'cal-n'  },
             { val: 'DobleNegativo', sim: '=', cls: 'cal-dn' }
         ];
+        const filtro = (calidadesValidas && calidadesValidas.length) ? calidadesValidas : null;
         const wrap = document.createElement('div');
         wrap.className = 'd-flex gap-1 flex-wrap';
-        CALIDADES.forEach(c => {
-            const b = makeBtn(c.sim, `btn btn-sm ${c.cls} fw-bold`);
-            b.title = c.val;
-            b.style.minWidth = '2.4rem';
-            b.addEventListener('click', () => onCalidad(c.val));
-            wrap.appendChild(b);
-        });
+        CALIDADES
+            .filter(c => !filtro || filtro.includes(c.val))
+            .forEach(c => {
+                const b = makeBtn(c.sim, `btn btn-sm ${c.cls} fw-bold`);
+                b.title = c.val;
+                b.style.minWidth = '2.4rem';
+                b.addEventListener('click', () => onCalidad(c.val));
+                wrap.appendChild(b);
+            });
         return wrap;
     }
 
@@ -724,7 +732,7 @@
                     jugadorId: jugadorIdLocal, esDe2da: false,
                     detalle: null
                 });
-            }));
+            }, opc.calidadesValidas));
 
             wrap.appendChild(col);
         });
