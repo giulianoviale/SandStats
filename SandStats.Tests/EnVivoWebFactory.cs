@@ -22,15 +22,14 @@ namespace SandStats.Tests
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
-            builder.UseEnvironment("Development");
+            // En "Testing", Program.cs no registra ningún proveedor de base de datos:
+            // el DbContext se registra acá con SQLite en memoria como único proveedor.
+            builder.UseEnvironment("Testing");
 
             builder.ConfigureServices(services =>
             {
-                // Reemplazar DbContext por SQLite :memory: compartida entre requests y seeds
-                var descriptor = services.SingleOrDefault(
-                    d => d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>));
-                if (descriptor != null) services.Remove(descriptor);
-
+                // Conexión :memory: compartida entre requests y seeds (se mantiene abierta
+                // mientras viva la factory; si se cerrara, SQLite descarta la base).
                 services.AddDbContext<ApplicationDbContext>(opts => opts.UseSqlite(_conn));
 
                 // Auth bypass: el TestAuthHandler siempre autentica sin cookies

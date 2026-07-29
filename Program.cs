@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using SandStats.Data;
 using SandStats.Endpoints.EnVivo;
 using SandStats.Services.EnVivo;
@@ -19,13 +20,30 @@ if (env.IsProduction())
 }
 
 // === Register DbContext ===
-builder.Services.AddDbContext<ApplicationDbContext>(opt =>
+// En el entorno "Testing" no se registra ningún proveedor: EnVivoWebFactory registra
+// el DbContext con SQLite en memoria. Si acá se registrara Npgsql (los user secrets
+// apuntan a Postgres) quedarían dos proveedores en el mismo contenedor y EF Core lo
+// rechaza; los servicios internos del proveedor no se pueden quitar de forma confiable
+// desde la factory.
+if (!env.IsEnvironment("Testing"))
 {
-    if (conn.Contains("Host="))
-        opt.UseNpgsql(conn);
-    else
-        opt.UseSqlite(conn);
-});
+    builder.Services.AddDbContext<ApplicationDbContext>(opt =>
+    {
+        if (conn.Contains("Host="))
+            opt.UseNpgsql(conn);
+        else
+            opt.UseSqlite(conn);
+
+        // Las 21 migraciones se generaron con el proveedor SQLite. Al construir el
+        // modelo con Npgsql, EF detecta diferencias cosméticas de tipos (INTEGER vs
+        // integer) contra el snapshot y las reporta como cambios pendientes. No lo
+        // son: Npgsql traduce esos tipos correctamente y las dos apps corren así en
+        // producción desde hace meses. Se suprime la advertencia para poder usar
+        // PostgreSQL también en desarrollo. Contrapartida: si en el futuro cambia el
+        // modelo y falta la migración, EF no avisa — hay que generarla conscientemente.
+        //opt.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
+    });
+}
 
 // === Identity ===
 builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
@@ -92,6 +110,7 @@ app.UseAuthorization();
 app.MapRazorPages();
 app.MapEnVivoEndpoints();
 
+await SeedAsync(app);
 app.Run();
 
 // === Helper ===
@@ -106,6 +125,54 @@ static string ConvertPostgresUrlToConnectionString(string dbUrl)
     var db = uri.AbsolutePath.Trim('/');
 
     return $"Host={host};Port={port};Database={db};Username={user};Password={pass};SSL Mode=Require;Trust Server Certificate=true";
+}
+
+// Bootstraps roles y usuario admin para entornos nuevos.
+// El registro de usuarios requiere un Admin previo: sin este seed, un entorno
+// vacío quedaría inutilizable porque nadie podría crear el primer usuario.
+static async Task SeedAsync(WebApplication app)
+{
+    if (app.Environment.IsEnvironment("Testing"))
+        return;
+
+    var logger = app.Logger;
+    using var scope = app.Services.CreateScope();
+    var cfg   = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+    var env   = scope.ServiceProvider.GetRequiredService<IHostEnvironment>();
+    var roles = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+    var runSeed = env.IsDevelopment() ||
+                  (cfg["RUN_SEED"]?.Equals("true", StringComparison.OrdinalIgnoreCase) ?? false);
+
+    if (!runSeed)
+    {
+        logger.LogInformation("[Seed] Omitido: no es Development y RUN_SEED no está habilitado.");
+        return;
+    }
+
+    foreach (var rol in new[] { "Admin", "Coach" })
+        if (!await roles.RoleExistsAsync(rol))
+            await roles.CreateAsync(new IdentityRole(rol));
+
+    var adminEmail = cfg["SEED_ADMIN_EMAIL"] ?? "admin@sandstats.dev";
+    var adminPass  = cfg["SEED_ADMIN_PASSWORD"] ?? "Admin123!";
+
+    if (await users.FindByEmailAsync(adminEmail) == null)
+    {
+        var admin = new ApplicationUser
+        {
+            UserName       = adminEmail,
+            Email          = adminEmail,
+            EmailConfirmed = true
+        };
+        var res = await users.CreateAsync(admin, adminPass);
+        if (!res.Succeeded)
+            throw new Exception("[Seed] No se pudo crear el usuario admin: " +
+                string.Join("; ", res.Errors.Select(e => e.Description)));
+        await users.AddToRoleAsync(admin, "Admin");
+        logger.LogInformation("[Seed] Usuario admin creado: {Email}", adminEmail);
+    }
 }
 
 // Expone Program al proyecto de tests para WebApplicationFactory<Program>

@@ -59,7 +59,7 @@ All statistic entities support `ScopeEstadistica` (PartidoCompleto vs Cierre) to
 - `Set` → `Partido` (Cascade delete)
 - `EstadisticaAtaque/Recepcion/K2` → `Partido` (Cascade) + `Jugador` (Restrict)
 - `VideoLinksJugadorPartido` → both `Partido` and `Jugador` (Cascade)
-
+ 
 ## Pages Structure
 
 - `Pages/Jugadores/` — player CRUD + video links
